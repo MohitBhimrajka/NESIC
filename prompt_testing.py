@@ -2,6 +2,7 @@
 
 import textwrap
 
+# REVISED Standardized Final Source List instructions block (v3 - New Hyperlink Format)
 # REVISED Standardized Final Source List instructions block (v4 - Enhanced Grounding Integrity)
 FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     **Final Source List Requirements:**
