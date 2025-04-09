@@ -11,7 +11,7 @@ import prompt_testing
 import tiktoken
 import json
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 import time
 import re
@@ -31,6 +31,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 from rich.logging import RichHandler
 from rich.panel import Panel
 from bs4 import BeautifulSoup
+from pdf_generator import process_markdown_files
 
 # Configure logging
 logging.basicConfig(
