@@ -31,27 +31,35 @@ class EnhancedPDFGenerator:
         )
         self.template = self.env.get_template(self.template_name)
         
-        # Initialize markdown with extensions
+        # Initialize markdown with a robust set of extensions
         self.md = markdown.Markdown(extensions=[
+            'extra',  # Includes tables, fenced_code, footnotes, etc.
             'meta',
-            'tables',
-            'fenced_code',
             'codehilite',
+            'admonition',
             'attr_list',
-            'def_list',
-            'footnotes',
-            'admonition'
-        ])
+            'toc'
+        ], extension_configs={
+            'codehilite': {'css_class': 'highlight', 'guess_lang': False}
+        })
 
     def _extract_section_metadata(self, content: str) -> Tuple[Dict, str]:
         """Extract YAML frontmatter and content from a markdown section."""
         metadata = {}
+        content = content.lstrip()  # Remove leading whitespace
         if content.startswith('---'):
             try:
-                _, frontmatter, markdown_content = content.split('---', 2)
-                metadata = yaml.safe_load(frontmatter)
-                return metadata, markdown_content.strip()
-            except:
+                # Split carefully, expecting '---', yaml block, '---', content
+                parts = content.split('---', 2)
+                if len(parts) >= 3:
+                    frontmatter = parts[1]
+                    markdown_content = parts[2]
+                    loaded_meta = yaml.safe_load(frontmatter)
+                    # Ensure it's a dict, handle empty frontmatter gracefully
+                    metadata = loaded_meta if isinstance(loaded_meta, dict) else {}
+                    return metadata, markdown_content.strip()
+            except (yaml.YAMLError, IndexError, ValueError) as e:
+                # If debugging needed: print(f"Failed to parse YAML frontmatter: {e}")
                 pass
         return metadata, content.strip()
 
@@ -69,17 +77,9 @@ class EnhancedPDFGenerator:
 
     def _convert_markdown_to_html(self, content: str) -> str:
         """Convert markdown content to HTML with enhanced features."""
-        md = markdown.Markdown(extensions=[
-            'markdown.extensions.fenced_code',
-            'markdown.extensions.tables',
-            'markdown.extensions.toc',
-            'markdown.extensions.attr_list',
-            'markdown.extensions.def_list',
-            'markdown.extensions.footnotes',
-            'markdown.extensions.codehilite',
-            'markdown.extensions.meta'
-        ])
-        html = md.convert(content)
+        # Use the initialized self.md instance
+        self.md.reset()  # Reset state for each conversion
+        html = self.md.convert(content)
         
         # Process tables for better styling
         soup = BeautifulSoup(html, 'html.parser')
@@ -92,43 +92,54 @@ class EnhancedPDFGenerator:
                     thead.append(first_row.extract())
                     table.insert(0, thead)
         
-        # Process source sections
-        for div in soup.find_all('div', class_='source'):
-            div['class'] = div.get('class', []) + ['source-section']
+        # Find the H2/H3 'Sources' section and add a class to its container
+        source_heading = soup.find(['h2', 'h3'], string=re.compile(r'^\s*Sources\s*$'))
+        if source_heading:
+            # Try to find the next sibling element that contains the list
+            source_container = source_heading.find_next_sibling()
+            if source_container:
+                # Add class to the container for styling
+                source_container['class'] = source_container.get('class', []) + ['sources-list']
+        
+        # Process links to ensure they're properly formatted
+        for a_tag in soup.find_all('a'):
+            href = a_tag.get('href', '')
+            if href and len(href) > 80:  # If it's a very long URL
+                # Ensure it has the word-wrap class
+                a_tag['class'] = a_tag.get('class', []) + ['long-url']
         
         return str(soup)
 
     def _generate_toc(self, sections: List[Dict]) -> str:
-        """Generate a structured table of contents."""
-        toc = ['<nav class="toc">']
-        toc.append('<h2>Table of Contents</h2>')
-        toc.append('<ul>')
+        """Generate a structured table of contents using section IDs."""
+        toc_items = []
+        toc_items.append('<nav class="toc-navigation">')
+        toc_items.append('<ul>')
         
-        for section in sections:
-            title = section.get('title', '')
+        for i, section in enumerate(sections, 1):
+            title = section.get('title', f'Section {i}')
             section_id = section.get('id', '')
             anchor = f"section-{section_id}"
-            toc.append(f'<li><a href="#{anchor}">{title}</a>')
-            
-            if section.get('subsections'):
-                toc.append('<ul>')
-                for subsection in section['subsections']:
-                    sub_title = subsection.get('title', '')
-                    sub_id = subsection.get('id', f"sub-{hash(sub_title) & 0xFFFFFFFF}")
-                    sub_anchor = f"subsection-{sub_id}"
-                    toc.append(f'<li><a href="#{sub_anchor}">{sub_title}</a></li>')
-                toc.append('</ul>')
-            
-            toc.append('</li>')
+            # Add section number for clarity
+            toc_items.append(f'<li><span class="toc-section-number">{i}.</span> <a href="#{anchor}">{title}</a></li>')
         
-        toc.append('</ul>')
-        toc.append('</nav>')
-        return '\n'.join(toc)
+        toc_items.append('</ul>')
+        toc_items.append('</nav>')
+        return '\n'.join(toc_items)
 
     def _extract_intro(self, content: str) -> str:
-        """Extract the introduction paragraph from a content section."""
-        soup = BeautifulSoup(self._convert_markdown_to_html(content), 'html.parser')
-        first_p = soup.find('p')
+        """Extract the text content of the introduction paragraph."""
+        # Convert MD to HTML first to handle potential formatting
+        html_content = self._convert_markdown_to_html(content)
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Find the first paragraph after any headings
+        first_content_element = soup.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+        if first_content_element:
+            first_p = first_content_element.find_next('p')
+        else:
+            first_p = soup.find('p')  # If no headings, just find the first p
+        
         if first_p:
             return str(first_p)
         return "<p>This section provides detailed analysis and insights.</p>"

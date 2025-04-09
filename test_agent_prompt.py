@@ -83,7 +83,7 @@ def format_time(seconds: float) -> str:
     remaining_minutes = minutes % 60
     return f"{hours} hours {remaining_minutes} minutes {remaining_seconds:.2f} seconds"
 
-def generate_content(client: genai.Client, prompt: str, output_path: Path, task_id: Optional[int] = None) -> Dict:
+def generate_content(client: genai.Client, prompt: str, output_path: Path) -> Dict:
     """Generate content for a single prompt and save to file. Returns token counts and timing."""
     start_time = time.time()
     try:

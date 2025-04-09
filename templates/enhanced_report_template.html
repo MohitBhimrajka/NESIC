@@ -181,6 +181,9 @@
             margin-bottom: 1em;
             color: #1a1a1a;
             counter-increment: section;
+            string-set: chapter content(text);
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.2em;
         }
         .content-section h3 {
             font-size: 16pt;
@@ -340,6 +343,64 @@
             font-size: 12pt;
             color: #666;
         }
+        
+        /* Link styles */
+        a {
+            color: #0066cc;
+            text-decoration: none;
+            word-wrap: break-word;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Style for the final sources list */
+        .sources-list p, .sources-list li {
+            font-size: 9pt;
+            line-height: 1.4;
+            margin: 0.5em 0;
+        }
+        .sources-list a {
+            color: #004c99;
+        }
+
+        /* Prevent long URLs in code blocks/pre from overflowing */
+        pre code {
+           word-wrap: break-word;
+           white-space: pre-wrap;
+        }
+        
+        /* Enhanced table styles */
+        table.enhanced-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+            font-size: 9.5pt;
+            border: 1px solid #ddd;
+        }
+        table.enhanced-table thead {
+            display: table-header-group;
+            background-color: #f5f5f5;
+        }
+        table.enhanced-table th,
+        table.enhanced-table td {
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.enhanced-table th {
+            font-weight: bold;
+            color: #333;
+        }
+        table.enhanced-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        /* Optional: Alignment classes */
+        table.enhanced-table td.text-right { text-align: right; }
+        table.enhanced-table td.text-center { text-align: center; }
     </style>
 </head>
 <body>
@@ -352,7 +413,7 @@
     
     <div class="toc">
         <h1>Table of Contents</h1>
-        {{ toc }}
+        {{ toc | safe }}
     </div>
     
     {% for section in sections %}
@@ -366,7 +427,7 @@
                 <strong>Estimated Reading Time:</strong> {{ section.reading_time }} minutes
             </div>
             <div class="meta-item">
-                <strong>Key Topics:</strong> {{ section.key_topics|join(', ') }}
+                <strong>Key Topics:</strong> {{ section.key_topics | join(', ') }}
             </div>
             {% if section.key_takeaways %}
             <div class="meta-item">
@@ -401,7 +462,7 @@
         </div>
     </div>
     <div class="content-section" id="section-{{ section.id }}">
-        {{ section.content }}
+        {{ section.content | safe }}
     </div>
     {% endfor %}
     
