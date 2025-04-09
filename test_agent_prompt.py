@@ -15,11 +15,11 @@ from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 import time
 import re
-import mistune
-import mdformat
+import markdown
+from markdown.extensions import fenced_code, tables, toc, attr_list, def_list, footnotes
+from markdown.extensions.codehilite import CodeHiliteExtension
 from weasyprint import HTML, CSS
-from bs4 import BeautifulSoup
-import latex2mathml.converter
+from weasyprint.text.fonts import FontConfiguration
 from jinja2 import Environment, FileSystemLoader
 import yaml
 import logging
@@ -30,6 +30,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich.logging import RichHandler
 from rich.panel import Panel
+from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(
@@ -199,18 +200,29 @@ def generate_all_prompts(company_name: str, language: str):
 
     client = genai.Client(api_key=api_key)
 
-    # Create base output directory
-    base_dir = Path("output") / f"{company_name}_{language}"
+    # Create timestamp for the directory
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Create base output directory with timestamp
+    base_dir = Path("output") / f"{company_name}_{language}_{timestamp}"
     base_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save generation config
+    # Create subdirectories
+    markdown_dir = base_dir / "markdown"
+    pdf_dir = base_dir / "pdf"
+    misc_dir = base_dir / "misc"
+    
+    for dir_path in [markdown_dir, pdf_dir, misc_dir]:
+        dir_path.mkdir(exist_ok=True)
+    
+    # Save generation config in misc directory
     config = {
         "company_name": company_name,
         "language": language,
         "timestamp": datetime.now().isoformat(),
         "sections": [section[0] for section in SECTION_ORDER]
     }
-    with open(base_dir / "generation_config.yaml", "w") as f:
+    with open(misc_dir / "generation_config.yaml", "w") as f:
         yaml.dump(config, f)
     
     # Process all prompts with progress tracking
@@ -247,7 +259,7 @@ def generate_all_prompts(company_name: str, language: str):
                     break
                     
                 prompt = prompt_func(company_name, language)
-                output_path = base_dir / f"{prompt_name}.md"
+                output_path = markdown_dir / f"{prompt_name}.md"
                 
                 future = executor.submit(generate_content, client, prompt, output_path)
                 futures.append((prompt_name, future))
@@ -304,285 +316,40 @@ def generate_all_prompts(company_name: str, language: str):
         }
     }
     
-    # Save token statistics
-    stats_path = base_dir / "token_usage_report.json"
+    # Save token statistics in misc directory
+    stats_path = misc_dir / "token_usage_report.json"
     with open(stats_path, 'w', encoding='utf-8') as f:
         json.dump(token_stats, f, indent=2, ensure_ascii=False)
     
-    return token_stats
+    return token_stats, base_dir
 
-class MarkdownValidator:
-    """Validates markdown files for common issues and formatting problems."""
+class EnhancedPDFGenerator:
+    """Enhanced PDF Generator with better markdown support and styling."""
     
-    def __init__(self):
-        self.markdown_parser = mistune.create_markdown()
-        # Compile regex patterns once
-        self.latex_pattern = re.compile(r'\$\$([^$]+)\$\$|\$([^$\n]+)\$')
-        self.currency_pattern = re.compile(r'(?:USD|₹|€|£|\$)\s*\d+(?:[,.]\d+)?(?:\s*(?:billion|million|thousand|crore|lakh))?', re.IGNORECASE)
-    
-    def validate_latex(self, content: str, section_id: str) -> List[Dict]:
-        """Check for LaTeX syntax errors with line numbers."""
-        errors = []
-        lines = content.split('\n')
-        line_offsets = [0]  # Track cumulative length of lines for position mapping
-        current_offset = 0
-        for line in lines:
-            current_offset += len(line) + 1  # +1 for newline
-            line_offsets.append(current_offset)
-        
-        # First, identify currency amounts to ignore
-        currency_matches = set()
-        for match in self.currency_pattern.finditer(content):
-            currency_matches.add((match.start(), match.end()))
-        
-        # Find all LaTeX expressions (both inline and block)
-        for match in self.latex_pattern.finditer(content):
-            # Skip if this match overlaps with a currency match
-            if any(curr_start <= match.start() <= curr_end or 
-                  curr_start <= match.end() <= curr_end 
-                  for curr_start, curr_end in currency_matches):
-                continue
-                
-            latex_expr = match.group(1) or match.group(2)
-            if not latex_expr:  # Skip empty matches
-                continue
-                
-            start_pos = match.start()
-            # Find line number by binary search in line_offsets
-            line_num = next(i for i, offset in enumerate(line_offsets) if offset > start_pos)
-            context = lines[max(0, line_num-1):min(len(lines), line_num+2)]
-            try:
-                latex2mathml.converter.convert(latex_expr)
-            except Exception as e:
-                errors.append({
-                    "section": section_id,
-                    "error": f"LaTeX error: {str(e)}",
-                    "line": line_num,
-                    "context": "\n".join(context),
-                    "expression": latex_expr[:50] + ("..." if len(latex_expr) > 50 else "")
-                })
-        
-        return errors
-
-    def validate_markdown_structure(self, content: str, section_id: str) -> Tuple[List[Dict], str]:
-        """Check for markdown structural issues and auto-fix when possible."""
-        errors = []
-        fixed_content = content
-        lines = content.split('\n')
-        
-        # Check for unclosed code blocks
-        code_block_starts = []
-        code_block_ends = []
-        in_code_block = False
-        current_block_start = None
-        
-        for i, line in enumerate(lines, 1):
-            if line.strip().startswith('```'):
-                if not in_code_block:
-                    in_code_block = True
-                    current_block_start = i
-                    code_block_starts.append(i)
-                else:
-                    in_code_block = False
-                    code_block_ends.append(i)
-        
-        if len(code_block_starts) != len(code_block_ends):
-            if in_code_block:  # Unclosed block at EOF
-                context = lines[current_block_start-1:min(current_block_start+3, len(lines))]
-                errors.append({
-                    "section": section_id,
-                    "error": "Unclosed code block",
-                    "line": current_block_start,
-                    "context": "\n".join(context)
-                })
-                fixed_content += "\n```"  # Auto-fix by closing
-        
-        # Check for broken links with context
-        for i, line in enumerate(lines, 1):
-            links = re.finditer(r'\[([^\]]+)\]\(([^\)]+)\)', line)
-            for link in links:
-                text, url = link.groups()
-                if not url or url.isspace():
-                    context = lines[max(0, i-2):min(len(lines), i+1)]
-                    errors.append({
-                        "section": section_id,
-                        "error": f"Empty link URL for text '{text}'",
-                        "line": i,
-                        "context": "\n".join(context)
-                    })
-        
-        # Enhanced table validation
-        in_table = False
-        header_cols = 0
-        separator_line = None
-        fixed_lines = []
-        
-        for i, line in enumerate(lines, 1):
-            if line.strip().startswith('|'):
-                if not in_table:
-                    # Start of new table
-                    in_table = True
-                    header_cols = len(line.split('|')) - 1
-                    if header_cols < 2:
-                        context = lines[max(0, i-1):min(len(lines), i+2)]
-                        errors.append({
-                            "section": section_id,
-                            "error": f"Table has too few columns (minimum 2 required)",
-                            "line": i,
-                            "context": "\n".join(context)
-                        })
-                    fixed_lines.append(line)
-                    continue
-                
-                # Validate separator row
-                if line.strip().replace('|', '').replace('-', '').replace(':', '').strip() == '':
-                    separator_line = i
-                    if not re.match(r'\|(\s*:?-+:?\s*\|)+$', line):
-                        context = lines[max(0, i-2):min(len(lines), i+1)]
-                        errors.append({
-                            "section": section_id,
-                            "error": "Invalid table separator format",
-                            "line": i,
-                            "context": "\n".join(context)
-                        })
-                    if len(line.split('|')) - 1 != header_cols:
-                        # Fix separator row
-                        fixed_line = '|' + '|'.join([' --- ' for _ in range(header_cols)]) + '|'
-                        fixed_lines.append(fixed_line)
-                        continue
-                
-                # Handle data rows
-                cells = line.split('|')[1:-1]
-                if len(cells) != header_cols:
-                    context = lines[max(0, i-2):min(len(lines), i+1)]
-                    errors.append({
-                        "section": section_id,
-                        "error": f"Table row has {len(cells)} cells, expected {header_cols}",
-                        "line": i,
-                        "context": "\n".join(context)
-                    })
-                    # Pad or trim cells to match header
-                    if len(cells) < header_cols:
-                        cells.extend([''] * (header_cols - len(cells)))
-                    else:
-                        cells = cells[:header_cols]
-                    fixed_line = '|' + '|'.join(f" {cell.strip()} " for cell in cells) + '|'
-                    fixed_lines.append(fixed_line)
-                else:
-                    fixed_lines.append(line)
-            else:
-                if in_table and not line.strip():
-                    in_table = False
-                fixed_lines.append(line)
-        
-        fixed_content = '\n'.join(fixed_lines)
-        return errors, fixed_content
-
-    def validate_file(self, file_path: Path, section_id: str) -> Tuple[List[Dict], str]:
-        """Validate a markdown file for various issues and return both errors and potentially fixed content."""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        except Exception as e:
-            return [{
-                "section": section_id,
-                "error": f"Failed to read file: {str(e)}",
-                "line": 0,
-                "context": None
-            }], ""
-        
-        errors = []
-        fixed_content = content
-        
-        # Check basic file issues
-        if not content.strip():
-            errors.append({
-                "section": section_id,
-                "error": "File is empty",
-                "line": 0,
-                "context": None
-            })
-            return errors, fixed_content
-        
-        # Validate LaTeX
-        latex_errors = self.validate_latex(content, section_id)
-        errors.extend(latex_errors)
-        
-        # Validate markdown structure and get fixed content
-        structure_errors, fixed_content = self.validate_markdown_structure(content, section_id)
-        errors.extend(structure_errors)
-        
-        # Try parsing with mistune to catch general markdown issues
-        try:
-            self.markdown_parser(fixed_content)
-        except Exception as e:
-            errors.append({
-                "section": section_id,
-                "error": f"Markdown parsing error: {str(e)}",
-                "line": 0,
-                "context": content[:200] + "..." if len(content) > 200 else content
-            })
-        
-        # Try formatting with mdformat to catch formatting issues
-        try:
-            mdformat.text(fixed_content)
-        except Exception as e:
-            errors.append({
-                "section": section_id,
-                "error": f"Markdown formatting error: {str(e)}",
-                "line": 0,
-                "context": content[:200] + "..." if len(content) > 200 else content
-            })
-        
-        return errors, fixed_content
-
-class PDFGenerator:
-    """Generates a professionally formatted PDF from markdown files."""
-    
-    def __init__(self, output_dir: Path):
-        self.output_dir = output_dir
+    def __init__(self, base_dir: Path):
+        self.base_dir = Path(base_dir)
+        self.markdown_dir = self.base_dir / "markdown"
+        self.pdf_dir = self.base_dir / "pdf"
         self.template_dir = Path(__file__).parent / "templates"
         self.template_dir.mkdir(exist_ok=True)
         self._create_templates()
         self.env = Environment(loader=FileSystemLoader(str(self.template_dir)))
-        # Configure WeasyPrint logging
-        from weasyprint.logger import LOGGER as weasyprint_logger
-        import logging
-        weasyprint_logger.setLevel(logging.WARNING)
-        # Compile regex patterns once
-        self.latex_pattern = re.compile(r'\$\$([^$]+)\$\$|\$([^$\n]+)\$')
-        self.currency_pattern = re.compile(
-            r'(?:USD|¥|₹|€|£|\$)\s*\d{1,3}(?:(?:,\d{3})*|(?:\d*))(?:\.\d+)?(?:\s*(?:billion|million|thousand|lakh|crore))?',
-            re.IGNORECASE
-        )
-        # Define allowed HTML tags and attributes for sanitization
-        self.allowed_tags = [
-            'html', 'head', 'body', 'meta', 'style',
-            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-            'p', 'br', 'hr', 'pre', 'code', 'blockquote',
-            'ul', 'ol', 'li', 'table', 'thead', 'tbody',
-            'tr', 'th', 'td', 'strong', 'em', 'a', 'img',
-            'div', 'span', 'nav', 'section',
-            # MathML tags
-            'math', 'mi', 'mo', 'mn', 'msup', 'msub',
-            'mfrac', 'msqrt', 'mrow'
-        ]
-        self.allowed_attributes = {
-            'meta': ['charset'],
-            'a': ['href', 'title', 'id', 'target', 'rel'],  # Added rel for external links
-            'img': ['src', 'alt', 'title', 'width', 'height'],
-            'code': ['class'],
-            'div': ['class', 'id'],
-            'span': ['class', 'id'],
-            'section': ['class', 'id'],
-            'th': ['colspan', 'rowspan', 'scope'],
-            'td': ['colspan', 'rowspan'],
-            'nav': ['class', 'aria-label']  # Added aria-label for accessibility
-        }
-    
+        
+        # Initialize markdown with all extensions
+        self.md = markdown.Markdown(extensions=[
+            'markdown.extensions.fenced_code',
+            'markdown.extensions.tables',
+            'markdown.extensions.toc',
+            'markdown.extensions.attr_list',
+            'markdown.extensions.def_list',
+            'markdown.extensions.footnotes',
+            'markdown.extensions.meta',
+            'markdown.extensions.admonition',
+            CodeHiliteExtension(css_class='highlight', guess_lang=False)
+        ])
+
     def _create_templates(self):
-        """Create necessary template files if they don't exist."""
-        # Main template with CSS
+        """Create necessary template files."""
         main_template = """
 <!DOCTYPE html>
 <html>
@@ -592,31 +359,30 @@ class PDFGenerator:
         /* Base page settings */
         @page {
             size: A4;
-            margin: 0.9cm;
+            margin: 2cm;
             @top-center {
                 content: string(chapter);
                 font-size: 9pt;
-                color: #666;
+                color: #444;
                 padding-top: 0.5cm;
                 font-family: "Noto Sans", Arial, sans-serif;
             }
             @bottom-center {
                 content: counter(page);
                 font-size: 9pt;
-                color: #666;
+                color: #444;
                 padding-bottom: 0.5cm;
                 font-family: "Noto Sans", Arial, sans-serif;
             }
         }
         
-        /* Cover page */
-        @page cover {
+        /* Special pages */
+        @page cover, @page section-cover {
             margin: 0;
             @top-center { content: none; }
             @bottom-center { content: none; }
         }
         
-        /* TOC page */
         @page toc {
             @top-center { content: none; }
         }
@@ -626,27 +392,28 @@ class PDFGenerator:
             font-family: "Noto Sans", Arial, sans-serif;
             line-height: 1.6;
             color: #333;
-            font-size: 10pt;
+            font-size: 10.5pt;
             margin: 0;
             padding: 0;
+            counter-reset: section subsection;
         }
         
         /* Cover page styles */
         .cover {
             page: cover;
-            height: 100vh;
+            min-height: 297mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             padding: 2cm;
             box-sizing: border-box;
         }
         .cover h1 {
-            font-size: 32pt;
-            margin-bottom: 0.5em;
+            font-size: 36pt;
+            margin-bottom: 1em;
             color: #1a1a1a;
         }
         .cover h2 {
@@ -660,192 +427,323 @@ class PDFGenerator:
             margin: 0.5em 0;
         }
         
+        /* Section cover page */
+        .section-cover {
+            page: section-cover;
+            min-height: 297mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 3cm;
+            box-sizing: border-box;
+            page-break-before: always;
+            page-break-after: always;
+        }
+        .section-cover h2 {
+            font-size: 32pt;
+            margin-bottom: 1em;
+            color: #1a1a1a;
+            border-bottom: 4px solid #444;
+            padding-bottom: 0.2em;
+            width: 100%;
+        }
+        .section-cover .section-intro {
+            font-size: 12pt;
+            color: #444;
+            margin: 2em 0;
+            max-width: 80%;
+            line-height: 1.8;
+        }
+        .section-cover .section-meta {
+            margin-top: 3em;
+            padding: 1em;
+            background: #f8f9fa;
+            border-radius: 8px;
+            width: 100%;
+        }
+        .section-cover .meta-item {
+            margin: 0.5em 0;
+            color: #666;
+            font-size: 11pt;
+        }
+        .section-cover .meta-item strong {
+            color: #444;
+        }
+        
         /* TOC styles */
         .toc {
             page: toc;
             page-break-after: always;
-            padding-top: 1cm;
+            padding-top: 2cm;
         }
         .toc h1 {
             font-size: 24pt;
-            margin-bottom: 1.5em;
+            margin-bottom: 2em;
             color: #1a1a1a;
-            string-set: none;
+            text-align: center;
         }
-        .toc nav {
-            margin-left: 1em;
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
         }
-        .toc nav p {
-            margin: 0.4em 0;
+        .toc ul ul {
+            padding-left: 2em;
+        }
+        .toc li {
+            margin: 0.8em 0;
             padding-left: 1em;
-            text-indent: -1em;
-            line-height: 1.4;
         }
-        .toc nav a {
+        .toc a {
             color: #333;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .toc nav a::after {
-            content: leader('.') target-counter(attr(href), page);
+        .toc a::after {
+            content: target-counter(attr(href), page);
             color: #666;
             margin-left: 0.5em;
         }
+        .toc .section-number {
+            color: #666;
+            margin-right: 0.5em;
+        }
         
-        /* Section styles */
-        .report-section {
-            page-break-before: always;
-            margin-top: 1cm;
+        /* Content section styles */
+        .content-section {
+            margin-top: 2cm;
         }
-        .report-section:first-of-type {
-            page-break-before: avoid;
-        }
-        .report-section h2 {
-            font-size: 18pt;
-            margin-top: 0;
-            margin-bottom: 1.2em;
-            padding-bottom: 0.2em;
-            border-bottom: 2px solid #444;
-            string-set: chapter content();
+        .content-section h3 {
+            font-size: 16pt;
             color: #1a1a1a;
+            margin-top: 2em;
+            margin-bottom: 1em;
+            counter-increment: subsection;
         }
-        .report-section h3 {
-            font-size: 14pt;
-            margin-top: 1.5em;
-            margin-bottom: 0.8em;
-            color: #333;
-        }
-        
-        /* Content elements */
-        p {
-            margin: 0.8em 0;
-            text-align: justify;
-            hyphens: auto;
-        }
-        ul, ol {
-            margin: 0.8em 0;
-            padding-left: 1.5em;
-        }
-        li {
-            margin: 0.4em 0;
-            text-align: justify;
-            hyphens: auto;
+        .content-section h3::before {
+            content: counter(section) "." counter(subsection) " ";
+            color: #666;
         }
         
         /* Table styles */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1.2em 0;
+            margin: 1.5em 0;
             page-break-inside: avoid;
-            font-size: 9pt;
+            font-size: 9.5pt;
+        }
+        thead {
+            display: table-header-group;
         }
         th, td {
-            border: 1px solid #ccc;
-            padding: 6px 8px;
+            border: 1px solid #ddd;
+            padding: 10px 12px;
             text-align: left;
             vertical-align: top;
         }
         th {
-            background-color: #f0f0f0;
+            background-color: #f5f5f5;
             font-weight: bold;
             color: #333;
         }
-        tbody tr:nth-child(even) {
+        tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        tr {
-            page-break-inside: avoid;
+        caption {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 0.5em;
+            text-align: left;
         }
         
         /* Code blocks */
-        pre, code {
-            font-family: "Courier New", monospace;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-        }
         pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
             padding: 1em;
-            margin: 1em 0;
-            overflow-x: auto;
+            margin: 1.5em 0;
+            font-family: "Courier New", monospace;
+            font-size: 9pt;
             white-space: pre-wrap;
             page-break-inside: avoid;
-            font-size: 9pt;
-            border: 1px solid #e0e0e0;
+            position: relative;
+        }
+        pre::before {
+            content: attr(data-language);
+            position: absolute;
+            top: -0.7em;
+            right: 1em;
+            background: #fff;
+            padding: 0 0.5em;
+            color: #666;
+            font-size: 0.8em;
+            border: 1px solid #e9ecef;
+            border-radius: 2px;
         }
         code {
-            padding: 2px 4px;
+            font-family: "Courier New", monospace;
             font-size: 0.9em;
-            color: #333;
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+        li {
+            margin: 0.5em 0;
+        }
+        li > ul, li > ol {
+            margin: 0.3em 0;
         }
         
         /* Blockquotes */
         blockquote {
             border-left: 4px solid #ddd;
-            padding: 0.5em 0 0.5em 1em;
-            margin: 1em 0;
-            color: #666;
+            padding: 0.5em 0 0.5em 1.5em;
+            margin: 1.5em 0;
+            color: #555;
             font-style: italic;
             background-color: #f9f9f9;
         }
         
-        /* Images */
-        img {
-            max-width: 100%;
-            height: auto;
-            margin: 1em auto;
-            display: block;
-        }
-        
-        /* Error placeholders */
-        .error-placeholder {
-            color: #721c24;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 0.5em;
-            margin: 0.5em 0;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-        
-        /* Source list styles */
+        /* Sources section */
         .sources {
-            margin-top: 2em;
-            padding-top: 1em;
+            margin-top: 3em;
+            padding-top: 1.5em;
             border-top: 2px solid #eee;
         }
-        .sources h2, .sources h3 {
-            color: #666;
-            font-size: 14pt;
-            margin-bottom: 1em;
+        .sources h2 {
+            font-size: 16pt;
+            color: #444;
+            margin-bottom: 1.5em;
             border-bottom: none;
-            string-set: none;
         }
         .sources ul {
-            list-style-type: none;
+            list-style: none;
             padding-left: 0;
         }
         .sources li {
-            margin-bottom: 0.8em;
-            font-size: 9pt;
+            margin: 1em 0;
+            padding-left: 1.5em;
+            position: relative;
+        }
+        .sources li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
             color: #666;
-            text-align: left;
         }
         .sources a {
             color: #0066cc;
             text-decoration: none;
         }
-        .sources a:hover {
-            text-decoration: underline;
+        
+        /* Key takeaways */
+        .key-takeaways {
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 1.5em;
+            margin: 2em 0;
+            border-radius: 4px;
+        }
+        .key-takeaways h4 {
+            color: #28a745;
+            margin-top: 0;
+            margin-bottom: 1em;
+        }
+        .key-takeaways ul {
+            margin: 0;
+            padding-left: 1.5em;
         }
         
-        /* Links */
-        a {
-            color: #0066cc;
-            text-decoration: none;
+        /* End page */
+        .end-page {
+            page-break-before: always;
+            min-height: 297mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 2cm;
+            box-sizing: border-box;
         }
-        a:hover {
-            text-decoration: underline;
+        .end-page h2 {
+            font-size: 24pt;
+            color: #444;
+            margin-bottom: 1em;
         }
+        .end-page p {
+            font-size: 12pt;
+            color: #666;
+        }
+        
+        /* Highlight syntax */
+        .highlight { background-color: #f8f9fa; }
+        .highlight .c { color: #998; font-style: italic; }
+        .highlight .k { color: #000; font-weight: bold; }
+        .highlight .o { color: #000; font-weight: bold; }
+        .highlight .cm { color: #998; font-style: italic; }
+        .highlight .cp { color: #999; font-weight: bold; }
+        .highlight .c1 { color: #998; font-style: italic; }
+        .highlight .cs { color: #999; font-weight: bold; font-style: italic; }
+        .highlight .gd { color: #000; background-color: #fdd; }
+        .highlight .gd .x { color: #000; background-color: #faa; }
+        .highlight .ge { font-style: italic; }
+        .highlight .gr { color: #a00; }
+        .highlight .gh { color: #999; }
+        .highlight .gi { color: #000; background-color: #dfd; }
+        .highlight .gi .x { color: #000; background-color: #afa; }
+        .highlight .go { color: #888; }
+        .highlight .gp { color: #555; }
+        .highlight .gs { font-weight: bold; }
+        .highlight .gu { color: #aaa; }
+        .highlight .gt { color: #a00; }
+        .highlight .kt { color: #458; font-weight: bold; }
+        .highlight .m { color: #099; }
+        .highlight .s { color: #d14; }
+        .highlight .n { color: #333; }
+        .highlight .na { color: #008080; }
+        .highlight .nb { color: #0086B3; }
+        .highlight .nc { color: #458; font-weight: bold; }
+        .highlight .no { color: #008080; }
+        .highlight .ni { color: #800080; }
+        .highlight .ne { color: #900; font-weight: bold; }
+        .highlight .nf { color: #900; font-weight: bold; }
+        .highlight .nn { color: #555; }
+        .highlight .nt { color: #000080; }
+        .highlight .nv { color: #008080; }
+        .highlight .w { color: #bbb; }
+        .highlight .mf { color: #099; }
+        .highlight .mh { color: #099; }
+        .highlight .mi { color: #099; }
+        .highlight .mo { color: #099; }
+        .highlight .sb { color: #d14; }
+        .highlight .sc { color: #d14; }
+        .highlight .sd { color: #d14; }
+        .highlight .s2 { color: #d14; }
+        .highlight .se { color: #d14; }
+        .highlight .sh { color: #d14; }
+        .highlight .si { color: #d14; }
+        .highlight .sx { color: #d14; }
+        .highlight .sr { color: #009926; }
+        .highlight .s1 { color: #d14; }
+        .highlight .ss { color: #990073; }
+        .highlight .bp { color: #999; }
+        .highlight .vc { color: #008080; }
+        .highlight .vg { color: #008080; }
+        .highlight .vi { color: #008080; }
+        .highlight .il { color: #099; }
     </style>
 </head>
 <body>
@@ -862,268 +760,211 @@ class PDFGenerator:
     </div>
     
     {% for section in sections %}
-    <div class="report-section" id="{{ section.id }}">
+    <div class="section-cover">
         <h2>{{ section.title }}</h2>
+        <div class="section-intro">
+            {{ section.intro }}
+        </div>
+        <div class="section-meta">
+            <div class="meta-item">
+                <strong>Estimated Reading Time:</strong> {{ section.reading_time }} minutes
+            </div>
+            <div class="meta-item">
+                <strong>Key Topics:</strong> {{ section.key_topics }}
+            </div>
+            {% if section.key_takeaways %}
+            <div class="meta-item">
+                <strong>Key Takeaways:</strong>
+                <ul>
+                {% for takeaway in section.key_takeaways %}
+                    <li>{{ takeaway }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="content-section" id="{{ section.id }}">
         {{ section.content }}
     </div>
     {% endfor %}
+    
+    <div class="end-page">
+        <h2>End of Report</h2>
+        <p>Generated by Supervity Analysis System</p>
+        <p>{{ generation_date }}</p>
+    </div>
 </body>
 </html>
 """
-        template_path = self.template_dir / "report_template.html"
+        template_path = self.template_dir / "enhanced_report_template.html"
         if not template_path.exists():
             template_path.write_text(main_template)
-    
-    def _generate_toc(self, sections: List[Dict]) -> str:
+
+    def _estimate_reading_time(self, content: str) -> int:
+        """Estimate reading time in minutes based on word count."""
+        words = len(content.split())
+        # Average reading speed: 250 words per minute
+        return max(1, round(words / 250))
+
+    def _extract_key_topics(self, content: str) -> str:
+        """Extract key topics from the content."""
+        # Look for headers and important terms
+        headers = re.findall(r'#{2,3}\s+(.+)', content)
+        # Join unique headers with commas
+        return ', '.join(sorted(set(headers)))[:100] + '...'
+
+    def _extract_key_takeaways(self, content: str) -> list:
+        """Extract key takeaways from the content."""
+        # Look for key takeaways section or important bullet points
+        takeaways = []
+        takeaway_section = re.search(r'(?:Key Takeaways?|Summary):\s*\n((?:\*\s+[^\n]+\n?)+)', content)
+        if takeaway_section:
+            takeaways = re.findall(r'\*\s+([^\n]+)', takeaway_section.group(1))
+        if not takeaways:
+            # Extract first few bullet points as takeaways
+            takeaways = re.findall(r'\*\s+([^\n]+)', content)[:3]
+        return takeaways[:5]  # Limit to 5 takeaways
+
+    def _convert_markdown_to_html(self, content: str) -> str:
+        """Convert markdown to HTML with enhanced features."""
+        # Reset markdown instance
+        self.md.reset()
+        
+        # Convert markdown to HTML
+        html = self.md.convert(content)
+        
+        # Clean up the HTML using BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Process tables
+        for table in soup.find_all('table'):
+            table['class'] = table.get('class', []) + ['data-table']
+            # Add thead if not present
+            if not table.find('thead') and table.find('tr'):
+                first_row = table.find('tr')
+                thead = soup.new_tag('thead')
+                thead.append(first_row.extract())
+                table.insert(0, thead)
+            # Add caption if table has a preceding paragraph that ends with ':'
+            prev_elem = table.find_previous_sibling('p')
+            if prev_elem and prev_elem.string and prev_elem.string.strip().endswith(':'):
+                caption = soup.new_tag('caption')
+                caption.string = prev_elem.string.strip().rstrip(':')
+                table.insert(0, caption)
+                prev_elem.decompose()
+        
+        # Process code blocks
+        for pre in soup.find_all('pre'):
+            # Try to detect language from class
+            classes = pre.get('class', [])
+            language = next((c.replace('language-', '') for c in classes if c.startswith('language-')), 'text')
+            pre['data-language'] = language
+        
+        # Fix duplicate anchors
+        used_ids = set()
+        for tag in soup.find_all(id=True):
+            original_id = tag['id']
+            if original_id in used_ids:
+                counter = 1
+                while f"{original_id}-{counter}" in used_ids:
+                    counter += 1
+                tag['id'] = f"{original_id}-{counter}"
+            used_ids.add(tag['id'])
+        
+        # Process source sections
+        sources = soup.find_all(['h2', 'h3'], string='Sources')
+        for source_heading in sources:
+            source_section = source_heading.find_next_sibling()
+            if source_section:
+                source_section['class'] = source_section.get('class', []) + ['sources']
+        
+        return str(soup)
+
+    def _generate_toc(self, sections: list) -> str:
         """Generate Table of Contents HTML."""
-        toc = ['<nav class="toc">']
+        toc = ['<ul class="toc-list">']
         for i, section in enumerate(sections, 1):
-            toc.append(f'<p><strong>{i}.</strong> <a href="#{section["id"]}">{section["title"]}</a></p>')
-        toc.append('</nav>')
+            toc.append(f'<li><span class="section-number">{i}.</span> <a href="#{section["id"]}">{section["title"]}</a></li>')
+        toc.append('</ul>')
         return '\n'.join(toc)
-    
-    def _convert_markdown_to_html(self, content: str, section_id: str) -> str:
-        """Convert markdown to HTML with special handling for LaTeX and sanitization."""
-        import bleach
-        
-        # First, identify currency amounts to preserve
-        currency_matches = {}
-        for match in self.currency_pattern.finditer(content):
-            placeholder = f"CURRENCY_PLACEHOLDER_{len(currency_matches)}"
-            currency_matches[placeholder] = match.group(0)
-            content = content[:match.start()] + placeholder + content[match.end():]
-        
-        # Convert LaTeX to MathML with error handling
-        def latex_replacer(match):
-            latex = match.group(1) or match.group(2)
-            if not latex:  # Skip empty matches
-                return match.group(0)
-            try:
-                return latex2mathml.converter.convert(latex)
-            except Exception as e:
-                return f'<div class="error-placeholder">LaTeX Error: {latex[:50]}{"..." if len(latex) > 50 else ""}</div>'
-        
-        # Process LaTeX
-        content = self.latex_pattern.sub(latex_replacer, content)
-        
-        # Restore currency amounts
-        for placeholder, original in currency_matches.items():
-            content = content.replace(placeholder, original)
-        
+
+    def generate_pdf(self, company_name: str, language: str, sections: list) -> Path:
+        """Generate a single PDF from all markdown sections."""
         try:
-            # Convert to HTML using mistune
-            html = mistune.html(content)
-            
-            # Sanitize HTML
-            html = bleach.clean(
-                html,
-                tags=self.allowed_tags,
-                attributes=self.allowed_attributes,
-                strip=True
-            )
-            
-            # Process source lists
-            if "## Sources" in content or "### Sources" in content:
-                # Find the sources section
-                sources_start = html.find("<h2>Sources</h2>")
-                if sources_start == -1:
-                    sources_start = html.find("<h3>Sources</h3>")
+            # Process each section's markdown content to HTML
+            processed_sections = []
+            for section in sections:
+                content = section['content']
+                html_content = self._convert_markdown_to_html(content)
                 
-                if sources_start != -1:
-                    # Split the HTML at the sources section
-                    main_content = html[:sources_start]
-                    sources_content = html[sources_start:]
-                    
-                    # Process source links to ensure proper formatting
-                    soup = BeautifulSoup(sources_content, 'html.parser')
-                    source_links = soup.find_all('a')
-                    for link in source_links:
-                        # Check if this is a Supervity Source link
-                        if link.string and link.string.startswith('Supervity Source'):
-                            # Get the annotation text that follows
-                            next_text = link.next_sibling
-                            if next_text and ' - ' in str(next_text):
-                                # Format is correct, continue
-                                continue
-                            elif next_text:
-                                # Add proper formatting
-                                link.insert_after(' - ')
-                    
-                    # Convert back to string
-                    sources_content = str(soup)
-                    
-                    # Wrap sources in a div with proper class
-                    html = f"{main_content}<div class='sources'>{sources_content}</div>"
+                # Add section metadata
+                processed_sections.append({
+                    'id': section['id'],
+                    'title': section['title'],
+                    'content': html_content,
+                    'intro': self._extract_intro(content),
+                    'reading_time': self._estimate_reading_time(content),
+                    'key_topics': self._extract_key_topics(content),
+                    'key_takeaways': self._extract_key_takeaways(content)
+                })
             
-            return html
-        except Exception as e:
-            error_html = f'<div class="error-placeholder">Error converting section {section_id} to HTML: {str(e)}</div>'
-            return error_html
-    
-    def generate_pdf(self, company_name: str, language: str) -> Tuple[Path, List[str]]:
-        """Generate a single PDF from all markdown files in the correct order."""
-        sections = []
-        warnings = []
-        
-        # Process each section in order
-        for section_id, section_title in SECTION_ORDER:
-            file_path = self.output_dir / f"{section_id}.md"
-            if file_path.exists():
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        content = f.read().strip()
-                    
-                    # Skip empty sections
-                    if not content:
-                        warnings.append(f"Skipping empty section: {section_id}")
-                        continue
-                    
-                    # Process the entire content, including sources
-                    html_content = self._convert_markdown_to_html(content, section_id)
-                    sections.append({
-                        "id": section_id,
-                        "title": section_title,
-                        "content": html_content
-                    })
-                except Exception as e:
-                    warnings.append(f"Error processing section {section_id}: {str(e)}")
-                    # Add error placeholder for this section
-                    sections.append({
-                        "id": section_id,
-                        "title": section_title,
-                        "content": f'<div class="error-placeholder">Failed to process section: {str(e)}</div>'
-                    })
-        
-        try:
             # Generate HTML using template
-            template = self.env.get_template("report_template.html")
-            toc = self._generate_toc(sections)
+            template = self.env.get_template("enhanced_report_template.html")
+            toc = self._generate_toc(processed_sections)
             
             html_content = template.render(
                 company_name=company_name,
                 generation_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 language=language,
                 toc=toc,
-                sections=sections
+                sections=processed_sections
             )
             
-            # Save intermediate HTML for debugging
-            html_debug_path = self.output_dir / f"{company_name}_{language}_report_debug.html"
-            with open(html_debug_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
+            # Configure fonts and styles
+            font_config = FontConfiguration()
             
-            # Generate PDF
-            pdf_path = self.output_dir / f"{company_name}_{language}_report.pdf"
-            try:
-                HTML(string=html_content, base_url=str(self.output_dir)).write_pdf(
-                    pdf_path,
-                    stylesheets=[CSS(string='@page { size: A4; margin: 1.5cm; }')]
-                )
-                return pdf_path, warnings
-            except Exception as e:
-                warnings.append(f"PDF generation failed: {str(e)}")
-                warnings.append(f"Debug HTML saved to: {html_debug_path}")
-                return None, warnings
-                
+            # Generate PDF in the pdf directory
+            pdf_path = self.pdf_dir / f"{company_name}_{language}_enhanced_report.pdf"
+            HTML(string=html_content).write_pdf(
+                pdf_path,
+                font_config=font_config,
+                presentational_hints=True
+            )
+            
+            return pdf_path
+            
         except Exception as e:
-            warnings.append(f"Template rendering failed: {str(e)}")
-            return None, warnings
+            raise Exception(f"PDF generation failed: {str(e)}")
 
-def validate_and_generate_pdf(company_name: str, language: str, output_dir: Path):
-    """Validate markdown files and generate PDF if validation passes."""
-    validator = MarkdownValidator()
-    all_errors = {}
-    fixed_files = {}
+    def _extract_intro(self, content: str) -> str:
+        """Extract introduction text from the content."""
+        # Try to find the first paragraph after any headers
+        intro_match = re.search(r'^(?:#+[^\n]+\n+)?((?:[^\n]+\n){1,3})', content)
+        if intro_match:
+            return intro_match.group(1).strip()
+        return "This section provides detailed analysis and insights."
+
+def process_markdown_files(base_dir: Path, company_name: str, language: str) -> Path:
+    """Process all markdown files in the markdown directory and generate a PDF."""
+    sections = []
+    markdown_dir = base_dir / "markdown"
     
-    # Validate each markdown file
+    # Read and process each markdown file
     for section_id, section_title in SECTION_ORDER:
-        file_path = output_dir / f"{section_id}.md"
+        file_path = markdown_dir / f"{section_id}.md"
         if file_path.exists():
-            errors, fixed_content = validator.validate_file(file_path, section_id)
-            if errors:
-                all_errors[section_id] = errors
-            if fixed_content != file_path.read_text(encoding='utf-8'):
-                fixed_files[section_id] = fixed_content
-    
-    # If there are files to fix, save the fixed versions
-    if fixed_files:
-        print("\n--- Auto-fixing Markdown Formatting Issues ---")
-        for section_id, content in fixed_files.items():
-            file_path = output_dir / f"{section_id}.md"
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            print(f"✓ Fixed formatting in {file_path}")
-        print("------------------------------------------")
-    
-    # If there are validation errors that couldn't be auto-fixed, save them and report
-    remaining_errors = {k: v for k, v in all_errors.items() if k not in fixed_files}
-    if remaining_errors:
-        error_path = output_dir / "validation_errors.json"
-        with open(error_path, 'w', encoding='utf-8') as f:
-            json.dump(remaining_errors, f, indent=2, ensure_ascii=False)
-        
-        print(f"\n--- Markdown Validation Issues ---")
-        print(f"Found {sum(len(v) for v in remaining_errors.values())} issues that could not be auto-fixed.")
-        
-        # Print a summary grouped by error type and section
-        error_summary = {}
-        for section_id, errors in remaining_errors.items():
-            for error in errors:
-                error_type = error['error'].split(':')[0]  # Get the main error type
-                if error_type not in error_summary:
-                    error_summary[error_type] = {'count': 0, 'sections': set()}
-                error_summary[error_type]['count'] += 1
-                error_summary[error_type]['sections'].add(section_id)
-        
-        print("\nIssues by type:")
-        for error_type, info in error_summary.items():
-            sections_str = ", ".join(sorted(info['sections']))
-            print(f"• {error_type}: {info['count']} occurrences in sections: {sections_str}")
-        
-        print("\nDetailed issues by section:")
-        for section_id, errors in remaining_errors.items():
-            print(f"\n  In {section_id}.md:")
-            for error in errors[:3]:  # Show first 3 errors per section
-                line_info = f" (line {error['line']})" if error.get('line', 0) > 0 else ""
-                print(f"    - {error['error']}{line_info}")
-                if error.get('context'):
-                    context_lines = error['context'].split('\n')
-                    for ctx_line in context_lines[:2]:  # Show up to 2 lines of context
-                        print(f"      | {ctx_line}")
-            if len(errors) > 3:
-                print(f"    - ... and {len(errors) - 3} more issues")
-        
-        print(f"\nFull validation report saved to: {error_path}")
-        print("----------------------------")
-        
-        # Ask user if they want to proceed with PDF generation despite errors
-        while True:
-            response = input("\nDo you want to attempt PDF generation despite validation issues? (yes/no): ").lower()
-            if response in ['yes', 'y']:
-                print("\nProceeding with PDF generation (errors will be visually marked in the output)...")
-                break
-            elif response in ['no', 'n']:
-                print("\nPDF generation skipped. Please fix the validation issues and try again.")
-                return None
-            else:
-                print("Please answer 'yes' or 'no'")
+            content = file_path.read_text(encoding='utf-8')
+            if content.strip():  # Only include non-empty sections
+                sections.append({
+                    'id': section_id,
+                    'title': section_title,
+                    'content': content
+                })
     
     # Generate PDF
-    print("\nGenerating PDF...")
-    pdf_generator = PDFGenerator(output_dir)
-    pdf_path, warnings = pdf_generator.generate_pdf(company_name, language)
-    
-    if pdf_path:
-        print(f"\n✓ PDF generated successfully: {pdf_path}")
-        if warnings:
-            print("\nWarnings during PDF generation:")
-            for warning in warnings:
-                print(f"• {warning}")
-        return pdf_path
-    else:
-        print("\n❌ PDF generation failed!")
-        print("Please check the warnings above and the debug HTML file for more information.")
-        return None
+    pdf_generator = EnhancedPDFGenerator(base_dir)
+    return pdf_generator.generate_pdf(company_name, language, sections)
 
 def get_user_input() -> tuple[str, str]:
     """Get company name and language from user input."""
@@ -1153,7 +994,7 @@ def main():
         console.print("Output will be saved in the 'output' directory.\n")
 
         # Run the generation process
-        token_stats = generate_all_prompts(company_name, language)
+        token_stats, base_dir = generate_all_prompts(company_name, language)
 
         if shutdown_requested:
             console.print("\n[yellow]Generation process interrupted.[/yellow]")
@@ -1176,13 +1017,12 @@ def main():
             # Generate PDF if there were successful prompts
             if token_stats['summary']['successful_prompts'] > 0:
                 console.print("\n[bold cyan]Generating PDF report...[/bold cyan]")
-                output_dir = Path("output") / f"{company_name}_{language}"
-                pdf_path = validate_and_generate_pdf(company_name, language, output_dir)
+                pdf_path = process_markdown_files(base_dir, company_name, language)
                 
                 if pdf_path:
                     console.print(f"\n[green]PDF report generated: {pdf_path}[/green]")
                 else:
-                    console.print("\n[yellow]PDF generation failed or was skipped.[/yellow]")
+                    console.print("\n[yellow]PDF generation failed.[/yellow]")
         
     except KeyboardInterrupt:
         console.print("\n[yellow]Process interrupted by user.[/yellow]")

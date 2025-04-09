@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Base page settings */
+        @page {
+            size: A4;
+            margin: 1cm;
+            @top-center {
+                content: string(chapter);
+                font-size: 9pt;
+                color: #444;
+                padding-top: 0.5cm;
+                font-family: "Noto Sans", Arial, sans-serif;
+            }
+            @bottom-center {
+                content: counter(page);
+                font-size: 9pt;
+                color: #444;
+                padding-bottom: 0.5cm;
+                font-family: "Noto Sans", Arial, sans-serif;
+            }
+        }
+        
+        /* Cover page */
+        @page cover {
+            margin: 0;
+            @top-center { content: none; }
+            @bottom-center { content: none; }
+        }
+        
+        /* TOC page */
+        @page toc {
+            @top-center { content: none; }
+        }
+        
+        /* Base styles */
+        body {
+            font-family: "Noto Sans", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            font-size: 10pt;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Cover page styles */
+        .cover {
+            page: cover;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 2cm;
+            box-sizing: border-box;
+        }
+        .cover h1 {
+            font-size: 32pt;
+            margin-bottom: 0.5em;
+            color: #1a1a1a;
+        }
+        .cover h2 {
+            font-size: 24pt;
+            margin-bottom: 2em;
+            color: #444;
+        }
+        .cover p {
+            font-size: 12pt;
+            color: #666;
+            margin: 0.5em 0;
+        }
+        
+        /* TOC styles */
+        .toc {
+            page: toc;
+            page-break-after: always;
+            padding-top: 1cm;
+        }
+        .toc h1 {
+            font-size: 24pt;
+            margin-bottom: 1.5em;
+            color: #1a1a1a;
+        }
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .toc ul ul {
+            padding-left: 2em;
+        }
+        .toc li {
+            margin: 0.4em 0;
+            padding-left: 1em;
+        }
+        .toc a {
+            color: #333;
+            text-decoration: none;
+        }
+        .toc a::after {
+            content: leader('.') target-counter(attr(href), page);
+            color: #666;
+            margin-left: 0.5em;
+        }
+        
+        /* Section styles */
+        .report-section {
+            page-break-before: always;
+            margin-top: 1cm;
+        }
+        .report-section:first-of-type {
+            page-break-before: avoid;
+        }
+        .report-section h2 {
+            font-size: 18pt;
+            margin-top: 0;
+            margin-bottom: 1.2em;
+            padding-bottom: 0.2em;
+            border-bottom: 2px solid #444;
+            string-set: chapter content();
+            color: #1a1a1a;
+        }
+        
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.2em 0;
+            page-break-inside: avoid;
+            font-size: 9pt;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* Code blocks */
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1em;
+            margin: 1em 0;
+            font-family: "Courier New", monospace;
+            font-size: 9pt;
+            overflow-x: auto;
+            page-break-inside: avoid;
+        }
+        code {
+            font-family: "Courier New", monospace;
+            font-size: 0.9em;
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        /* Links */
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid #ddd;
+            padding: 0.5em 0 0.5em 1em;
+            margin: 1em 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 1em auto;
+            display: block;
+        }
+        
+        /* End page */
+        .end-page {
+            page-break-before: always;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+        .end-page h2 {
+            font-size: 24pt;
+            color: #444;
+            margin-bottom: 1em;
+        }
+        .end-page p {
+            font-size: 12pt;
+            color: #666;
+        }
+        
+        /* Highlight syntax */
+        .highlight { background-color: #f8f9fa; }
+        .highlight .c { color: #998; font-style: italic; }
+        .highlight .k { color: #000; font-weight: bold; }
+        .highlight .o { color: #000; font-weight: bold; }
+        .highlight .cm { color: #998; font-style: italic; }
+        .highlight .cp { color: #999; font-weight: bold; }
+        .highlight .c1 { color: #998; font-style: italic; }
+        .highlight .cs { color: #999; font-weight: bold; font-style: italic; }
+        .highlight .gd { color: #000; background-color: #fdd; }
+        .highlight .gd .x { color: #000; background-color: #faa; }
+        .highlight .ge { font-style: italic; }
+        .highlight .gr { color: #a00; }
+        .highlight .gh { color: #999; }
+        .highlight .gi { color: #000; background-color: #dfd; }
+        .highlight .gi .x { color: #000; background-color: #afa; }
+        .highlight .go { color: #888; }
+        .highlight .gp { color: #555; }
+        .highlight .gs { font-weight: bold; }
+        .highlight .gu { color: #aaa; }
+        .highlight .gt { color: #a00; }
+        .highlight .kt { color: #458; font-weight: bold; }
+        .highlight .m { color: #099; }
+        .highlight .s { color: #d14; }
+        .highlight .n { color: #333; }
+        .highlight .na { color: #008080; }
+        .highlight .nb { color: #0086B3; }
+        .highlight .nc { color: #458; font-weight: bold; }
+        .highlight .no { color: #008080; }
+        .highlight .ni { color: #800080; }
+        .highlight .ne { color: #900; font-weight: bold; }
+        .highlight .nf { color: #900; font-weight: bold; }
+        .highlight .nn { color: #555; }
+        .highlight .nt { color: #000080; }
+        .highlight .nv { color: #008080; }
+        .highlight .w { color: #bbb; }
+        .highlight .mf { color: #099; }
+        .highlight .mh { color: #099; }
+        .highlight .mi { color: #099; }
+        .highlight .mo { color: #099; }
+        .highlight .sb { color: #d14; }
+        .highlight .sc { color: #d14; }
+        .highlight .sd { color: #d14; }
+        .highlight .s2 { color: #d14; }
+        .highlight .se { color: #d14; }
+        .highlight .sh { color: #d14; }
+        .highlight .si { color: #d14; }
+        .highlight .sx { color: #d14; }
+        .highlight .sr { color: #009926; }
+        .highlight .s1 { color: #d14; }
+        .highlight .ss { color: #990073; }
+        .highlight .bp { color: #999; }
+        .highlight .vc { color: #008080; }
+        .highlight .vg { color: #008080; }
+        .highlight .vi { color: #008080; }
+        .highlight .il { color: #099; }
+    </style>
+</head>
+<body>
+    <div class="cover">
+        <h1>{{ company_name }}</h1>
+        <h2>Company Analysis Report</h2>
+        <p>Generated on: {{ generation_date }}</p>
+        <p>Language: {{ language }}</p>
+    </div>
+    
+    <div class="toc">
+        <h1>Table of Contents</h1>
+        {{ toc }}
+    </div>
+    
+    {% for section in sections %}
+    <div class="report-section" id="{{ section.id }}">
+        <h2>{{ section.title }}</h2>
+        {{ section.content }}
+    </div>
+    {% endfor %}
+    
+    <div class="end-page">
+        <h2>End of Report</h2>
+        <p>Generated by Supervity Analysis System</p>
+        <p>{{ generation_date }}</p>
+    </div>
+</body>
+</html>
