@@ -4,7 +4,7 @@ import textwrap
 
 # --- Standard Instruction Blocks ---
 
-# REVISED Standardized Final Source List instructions block (v4.1 - Integrated formatting emphasis)
+# REVISED Standardized Final Source List instructions block (v4.2 - Added Placement Reminder)
 FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     **Final Source List Requirements:**
 
@@ -52,6 +52,7 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
         *   Correct hyperlink format `[Text](URL) - Annotation`.
         *   Content in the report body is supported by the listed sources.
         *   No fabricated sources are present.
+        *   **Placement Reminder:** The '**Sources**' section should appear only **once**, at the **absolute end** of your entire response for this specific prompt request, listing all verifiable grounding URLs used throughout the preceding sections of your response.
     """)
 
 # REVISED Standardized Handling Missing Information instruction block (v3 - Explicit Grounding Link)
@@ -105,7 +106,7 @@ AUDIENCE_CONTEXT_REMINDER = textwrap.dedent("""\
 def get_language_instruction(language: str) -> str:
     return f"Output Language: The final research output must be presented entirely in **{language}**."
 
-# REVISED Standardized Formatting instruction block (v3 - Table emphasis)
+# REVISED Standardized Formatting instruction block (v3.1 - Added table readability hint)
 BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Output Format & Quality Requirements:
 
@@ -123,6 +124,7 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
                 | Segment A     |    1,234 |      56.7 %     | Some details  |
                 | Segment B     |      890 |      43.3 %     | More details  |
                 ```
+            *   Keep table structures clear and avoid excessively wide tables if possible. Prioritize readability.
 
     *   **Optimal Structure & Readability:**
         *   Present information using the most effective format for clarity, following prompt suggestions:
@@ -212,7 +214,9 @@ Conduct in-depth research primarily utilizing {company_name}'s official sources.
 
 ## 8. General Discussion:
     *   Provide a concluding **single paragraph** (approx. **300-500 words**).
-    *   Synthesize the key findings from Sections 1-7. **Analyze** the coherence between the company's profile, stated strategy, organizational structure, leadership focus, and the business environment. Offer a holistic overview discussing apparent strengths, weaknesses, **key strategic risks, and primary opportunities**. Critically evaluate the company's strategic posture. **Tailor insights specifically for the Japanese audience**, highlighting aspects most relevant for strategic decision-making. Focus on analysis and connections. **Do not introduce new factual claims.**
+    *   **Synthesize** the key findings **exclusively from the information presented in the preceding sections (Sections 1-7) of *this specific response***.
+    *   **Analyze** the coherence between the company's profile, stated strategy, organizational structure, leadership focus, and the business environment. Offer a holistic overview discussing apparent strengths, weaknesses, **key strategic risks, and primary opportunities**. Critically evaluate the company's strategic posture.
+    *   **Tailor insights specifically for the Japanese audience**, highlighting aspects most relevant for strategic decision-making. Focus on analysis and connections. **Do not introduce new factual claims** not derived from the synthesis of the preceding sections of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Ensure all information is factually correct, current, and verifiable against grounded sources. Specify currency and reporting periods for ALL monetary and headcount data.
@@ -224,31 +228,12 @@ Source and Accuracy Requirements:
 {formatting_instructions}
 """
 
-# Note: Apply similar integration of ANALYSIS_SYNTHESIS_INSTRUCTION, AUDIENCE_CONTEXT_REMINDER,
-# and refined section details to ALL other `get_..._prompt` functions.
-# The examples for get_basic_prompt, get_financial_prompt, get_management_strategy_prompt,
-# get_competitive_landscape_prompt, get_regulatory_prompt, get_crisis_prompt,
-# get_digital_transformation_prompt, get_business_structure_prompt, get_vision_prompt,
-# and get_management_message_prompt provided in the previous response already incorporate these.
-
-# Ensure ALL get_..._prompt functions below follow the pattern shown above:
-# - Define language_instruction, final_source_instructions, formatting_instructions
-# - Include HANDLING_MISSING_INFO_INSTRUCTION, RESEARCH_DEPTH_INSTRUCTION, ANALYSIS_SYNTHESIS_INSTRUCTION, AUDIENCE_CONTEXT_REMINDER
-# - Include refined details/analytical prompts within section bullet points
-# - Include enhanced General Discussion instructions
-# - Include final_source_instructions and formatting_instructions at the end.
-
-# (The remaining prompt functions from the previous response are pasted below,
-# assuming they already contain the enhancements)
-
-
 def get_financial_prompt(company_name: str, language: str = "Japanese"):
     """Generates a prompt for a detailed financial analysis with all enhancements."""
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
-    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language) # Use base for consistency here too
+    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
 
-    # Enhanced instructions for financial research depth and calculation
     enhanced_financial_research_instructions = textwrap.dedent("""\
     *   **Mandatory Deep Search & Calculation:** Conduct an **exhaustive search** within {company_name}'s official financial disclosures for the last 3 fiscal years, including **Annual Reports, Financial Statements (Income Statement, Balance Sheet, Cash Flow Statement), Crucially: Footnotes to Financial Statements, Supplementary Data Packs, official Filings (e.g., EDINET/SEC), and Investor Relations presentations/transcripts.** Do not rely solely on summary tables; examine detailed statements and notes for definitions and components.
     *   **Calculation Obligation:** For metrics like Margins, ROE, ROA, Equity Ratio, Debt-to-Equity, and ROIC: if the metric itself is not explicitly reported, you **MUST attempt to calculate it** using standard financial formulas **IF the necessary base data components** (e.g., Net Income, Revenue, Total Equity, Total Assets, Total Debt, Operating Income, Invested Capital proxies like Total Equity + Total Debt - Cash) **are clearly available and defined** within the verified, sourced official documents for *all relevant years*. Clearly state the formula used and the components sourced for any calculated metric. Specify if average balance sheet figures were used (e.g., for ROE/ROA).
@@ -337,9 +322,9 @@ For each section below, provide data and analysis covering the **last three full
 
 ## General Discussion:
     *   Provide a concluding **single paragraph** (approx. **300–500 words**).
-    *   **Synthesize** key findings on financial health, performance trends (revenue, profitability, cash flow), investment strategy, cost management, and contextual influences *based solely on the data presented in sections 1-9*.
+    *   **Synthesize** key findings **exclusively from the information presented in the preceding sections (Sections 1-9) of *this specific response*** on financial health, performance trends (revenue, profitability, cash flow), investment strategy, cost management, and contextual influences.
     *   **Assess** financial management effectiveness, identifying key financial strengths and risks/vulnerabilities. Evaluate the company's financial trajectory and capacity for future strategic investments or M&A.
-    *   **Tailor insights specifically for the Japanese audience**, focusing on financial stability, growth potential, and relevant benchmarks. **Do not introduce new factual claims.**
+    *   **Tailor insights specifically for the Japanese audience**, focusing on financial stability, growth potential, and relevant benchmarks. **Do not introduce new factual claims** not derived from the synthesis of the preceding sections of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Data, ratios, context must be correct, verified. **Crucially, specify the currency AND reporting period (e.g., FY2023) for ALL monetary values presented.**
@@ -357,7 +342,6 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
 
-    # --- Special Research Instructions for Competitive Analysis ---
     competitive_research_instructions = textwrap.dedent("""\
     **Research & Grounding Strategy for Competitive Analysis:**
 
@@ -371,7 +355,6 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
     4.  **Focus on Verifiable:** Aim for accuracy. Avoid speculation. If competitor details or market shares are from dubious/unnamed sources or cannot be reasonably verified, omit them.
     5.  **Final Source List Integrity:** Remember, the final "Sources" list at the very end MUST still adhere strictly to the `FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE` (only *provided* Vertex AI grounding URLs *for this query*). The allowance in Point 2 applies only to the *content within the report body* and requires clear in-text attribution for non-Vertex-grounded info.
     """)
-    # --- End Special Instructions ---
 
     return f"""
 Detailed Competitive Analysis and Strategic Positioning of {company_name}
@@ -408,10 +391,10 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 *   Describe how competitive success is **measured or defined** by the company, if explicitly stated in grounded sources (e.g., market share goals, customer satisfaction targets).
 
 ## 4. General Discussion:
-*   Provide a concluding **single paragraph** (approx. **300-500 words**).
-*   **Synthesize** findings on Major Competitors, {company_name}'s Advantages/Positioning, and its Competitive Strategy *based only on the information presented above*.
-*   Offer a holistic overview discussing {company_name}'s **overall competitive standing**, strategic direction, key competitive strengths, vulnerabilities/risks, and future outlook in the competitive landscape.
-*   Focus on analysis and strategic takeaways relevant to the **Japanese audience** (e.g., potential impact on Japanese market, partnership opportunities, competitive threats to Japanese firms). **Do not introduce new factual claims.**
+    *   Provide a concluding **single paragraph** (approx. **300-500 words**).
+    *   **Synthesize** findings **exclusively from the information presented in the preceding sections (Sections 1-3) of *this specific response*** on Major Competitors, {company_name}'s Advantages/Positioning, and its Competitive Strategy.
+    *   Offer a holistic overview discussing {company_name}'s **overall competitive standing**, strategic direction, key competitive strengths, vulnerabilities/risks, and future outlook in the competitive landscape.
+    *   Focus on analysis and strategic takeaways relevant to the **Japanese audience** (e.g., potential impact on Japanese market, partnership opportunities, competitive threats to Japanese firms). **Do not introduce new factual claims** not derived from the synthesis of the preceding sections of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be factually correct or clearly attributed as analysis/estimate/secondary source.
@@ -427,8 +410,7 @@ Source and Accuracy Requirements:
 def get_management_strategy_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
-    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language) # Use base
-
+    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
     return f"""
 Comprehensive Analysis of {company_name}'s Management Strategy and Mid-Term Business Plan: Focus, Execution, and Progress
 
@@ -474,10 +456,10 @@ Conduct in-depth research, prioritizing official sources (IR materials on MTP/St
 
 ## 5. General Discussion:
     *   Provide a concluding **single paragraph** (approx. **300-500 words**).
-    *   **Synthesize** the findings regarding the company's strategy, MTP specifics, execution progress, challenges faced, and adaptations made.
+    *   **Synthesize** the findings **exclusively from the information presented in the preceding sections (Sections 1-4) of *this specific response*** regarding the company's strategy, MTP specifics, execution progress, challenges faced, and adaptations made.
     *   **Evaluate** the coherence between the company's vision, stated strategy, MTP actions, and reported progress. Analyze the strategy's alignment with the external market context and industry trends.
     *   **Assess** the plan's ambition versus realism, the effectiveness of execution based on progress against KPIs, and the company's responsiveness to challenges. Highlight key successes and persistent difficulties.
-    *   Focus on strategic takeaways relevant to the **Japanese audience**, such as strategic clarity, execution capability, potential risks, and long-term direction. **Do not introduce new factual claims.**
+    *   Focus on strategic takeaways relevant to the **Japanese audience**, such as strategic clarity, execution capability, potential risks, and long-term direction. **Do not introduce new factual claims** not derived from the synthesis of the preceding sections of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** All information must be factually correct and accurately reflect official company communications. **Ensure currency is specified for ALL monetary targets/values.** State reporting periods clearly.
@@ -525,11 +507,11 @@ Conduct deep research on {company_name}'s operating environment related to its D
 *   ***Identify any known significant **regulatory enforcement actions, fines, investigations, or major public controversies** related to data privacy, cybersecurity, or digital practices levied against or involving {company_name} within the last 3-5 years, based on credible public reports. Specify dates, regulatory body involved, nature of the issue, outcome (e.g., fines - specify currency if reported, required remediation), and company response, if available.***
 
 ## 2. General Discussion:
-*   Provide a concluding **single paragraph** (approx. **300-500 words**).
-*   **Synthesize** the findings on the key regulatory pressures impacting {company_name}'s DX and its stated compliance approach and track record.
-*   Offer a holistic **assessment** of how regulations appear to shape {company_name}'s digital strategy, risk posture, and operational constraints.
-*   **Evaluate** the apparent maturity, proactiveness, and potential gaps in its compliance efforts based *only* on the findings related to stated approaches, certifications, and reported enforcement actions/controversies (if any).
-*   **Tailor the perspective for the Japanese audience**, highlighting potential regulatory risks or compliance strengths relevant for business interactions with {company_name}. **Do not introduce new factual claims.**
+    *   Provide a concluding **single paragraph** (approx. **300-500 words**).
+    *   **Synthesize** the findings **exclusively from the information presented in the preceding section (Section 1) of *this specific response*** on the key regulatory pressures impacting {company_name}'s DX and its stated compliance approach and track record.
+    *   Offer a holistic **assessment** of how regulations appear to shape {company_name}'s digital strategy, risk posture, and operational constraints.
+    *   **Evaluate** the apparent maturity, proactiveness, and potential gaps in its compliance efforts based *only* on the findings related to stated approaches, certifications, and reported enforcement actions/controversies (if any).
+    *   **Tailor the perspective for the Japanese audience**, highlighting potential regulatory risks or compliance strengths relevant for business interactions with {company_name}. **Do not introduce new factual claims** not derived from the synthesis of the preceding section of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** All information (regulatory details, company policies, incident specifics) must be factually correct and verified against grounded sources.
@@ -546,7 +528,6 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
-
     return f'''
 In-Depth Analysis of {company_name}'s Digital Crisis Management and Business Continuity
 
@@ -575,11 +556,11 @@ Conduct deep research on {company_name}'s experiences and approach to digital cr
 *   Mention described **roles, responsibilities, or governance structures** for overseeing and managing digital crises and business continuity, if publicly disclosed (e.g., specific executive oversight, dedicated risk committees).
 
 ## 2. General Discussion:
-*   Provide a concluding **single paragraph** (approx. **300-500 words**).
-*   **Synthesize** the findings on {company_name}'s past crisis experiences (if any were publicly documented), its stated crisis management/BCP approach, governance structures, and any reported lessons learned or adaptations.
-*   Offer a holistic **assessment** of {company_name}'s apparent preparedness, responsiveness, and resilience regarding digital crises, based *only* on the findings presented above.
-*   **Discuss** perceived strengths (e.g., dedicated teams, proactive measures) and potential weaknesses or areas lacking public transparency (e.g., recurring incident types, lack of detail on BCP specifics, limited disclosure on lessons learned).
-*   **Tailor the perspective for the Japanese audience**, focusing on digital risk mitigation effectiveness, incident response capability, and overall operational resilience relevant for business partnerships or competitive evaluation. **Do not introduce new factual claims.**
+    *   Provide a concluding **single paragraph** (approx. **300-500 words**).
+    *   **Synthesize** the findings **exclusively from the information presented in the preceding section (Section 1) of *this specific response*** on {company_name}'s past crisis experiences (if any were publicly documented), its stated crisis management/BCP approach, governance structures, and any reported lessons learned or adaptations.
+    *   Offer a holistic **assessment** of {company_name}'s apparent preparedness, responsiveness, and resilience regarding digital crises, based *only* on the findings presented above.
+    *   **Discuss** perceived strengths (e.g., dedicated teams, proactive measures) and potential weaknesses or areas lacking public transparency (e.g., recurring incident types, lack of detail on BCP specifics, limited disclosure on lessons learned).
+    *   **Tailor the perspective for the Japanese audience**, focusing on digital risk mitigation effectiveness, incident response capability, and overall operational resilience relevant for business partnerships or competitive evaluation. **Do not introduce new factual claims** not derived from the synthesis of the preceding section of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be factually correct and verified against grounded sources. Incident details must rely on credible reports; clearly distinguish alleged vs. confirmed information if necessary. Specify currency for any reported financial impacts.
@@ -595,8 +576,7 @@ def get_digital_transformation_prompt(company_name: str, language: str = "Japane
     """Generates a prompt for analyzing DX strategy with all enhancements."""
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
-    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language) # Use base
-
+    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
     return f"""
 In-Depth Analysis of {company_name}'s Digital Transformation (DX) Strategy and Execution
 
@@ -642,10 +622,10 @@ Conduct deep research into {company_name}'s DX journey using official sources (r
 
 ## 5. General Discussion:
     *   Provide a concluding **single paragraph** (approx. **300-500 words**).
-    *   **Synthesize** the findings on {company_name}'s DX strategy (vision, priorities), investment patterns, execution examples (case studies), and the influence of regulatory/risk management considerations.
+    *   **Synthesize** the findings **exclusively from the information presented in the preceding sections (Sections 1-4) of *this specific response*** on {company_name}'s DX strategy (vision, priorities), investment patterns, execution examples (case studies), and the influence of regulatory/risk management considerations.
     *   Offer a holistic **assessment** of the company's DX maturity, strategic focus, and apparent effectiveness based on reported outcomes and initiatives.
     *   **Discuss** perceived strengths (e.g., clear vision, successful implementations, integrated approach) and potential challenges or weaknesses (e.g., investment scale vs. ambition, managing complexity, ensuring ROI, adapting to regulation) in its DX journey. Note any significant recent shifts in strategy or focus.
-    *   **Tailor the perspective for the Japanese audience**, highlighting aspects of {company_name}'s DX approach (e.g., technology choices, integration strategies, risk management) that are most relevant for benchmarking or potential collaboration/competition. **Do not introduce new factual claims.**
+    *   **Tailor the perspective for the Japanese audience**, highlighting aspects of {company_name}'s DX approach (e.g., technology choices, integration strategies, risk management) that are most relevant for benchmarking or potential collaboration/competition. **Do not introduce new factual claims** not derived from the synthesis of the preceding sections of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be correct, current, and verified against grounded sources. **Specify currency and period for ALL monetary values (investments, outcomes).**
@@ -662,8 +642,7 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese")
     """Generates a prompt for analyzing business structure with all enhancements."""
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
-    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language) # Use base
-
+    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
     return f"""
 In-Depth Analysis of {company_name}'s Business Structure, Geographic Footprint, Ownership, and Strategic Vision Linkages
 
@@ -707,10 +686,10 @@ Conduct **critical analysis** interrogating official sources (Annual/Integrated 
 
 ## 5. General Discussion:
     *   Provide a concluding **single paragraph** (approx. **300-500 words**).
-    *   **Critically synthesize** the findings from *all* sections above (Business Segments, Geography, Ownership, Leadership Vision).
+    *   **Critically synthesize** the findings **exclusively from the information presented in the preceding sections (Sections 1-4) of *this specific response*** (Business Segments, Geography, Ownership, Leadership Vision).
     *   **Analyze and interlink** how the company's structure (business/geographic focus) and ownership model appear to support or potentially conflict with its stated strategic vision and leadership commentary.
     *   **Evaluate the overall coherence** between the company's operational footprint, performance trends, ownership influences, and strategic direction.
-    *   Discuss resultant strategic strengths, potential vulnerabilities, or key strategic questions arising from this analysis. Tailor insights for the **Japanese audience's** strategic perspective. **Do not introduce new factual claims.**
+    *   Discuss resultant strategic strengths, potential vulnerabilities, or key strategic questions arising from this analysis. Tailor insights for the **Japanese audience's** strategic perspective. **Do not introduce new factual claims** not derived from the synthesis of the preceding sections of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be correct, current, and verified. **State currency clearly and specify the Fiscal Year (FY) for ALL segment sales/profit figures.**
@@ -726,8 +705,7 @@ def get_vision_prompt(company_name: str, language: str = "Japanese"):
     """Generates a prompt focused on company vision with all enhancements."""
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
-    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language) # Use base
-
+    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
     return f"""
 Analysis of {company_name}'s Strategic Vision and Purpose
 
@@ -751,9 +729,9 @@ Conduct in-depth research, primarily using official sources such as the company 
 
 ## 2. General Discussion:
     *   Provide concluding **single paragraph** (approx. **300-500 words**).
-    *   **Synthesize** the findings regarding the company's stated vision, its core components/pillars, how it measures progress (KPIs), and its explicit stakeholder focus.
+    *   **Synthesize** the findings **exclusively from the information presented in the preceding section (Section 1) of *this specific response*** regarding the company's stated vision, its core components/pillars, how it measures progress (KPIs), and its explicit stakeholder focus.
     *   **Analyze** the clarity, ambition, and internal coherence of the vision and its components. How well do the identified measures and KPIs seem aligned with tracking progress towards the stated vision and pillars?
-    *   Offer insights relevant to the **Japanese audience** regarding the strategic direction, priorities, and values implied by {company_name}'s vision. How does it compare to typical corporate visions in relevant sectors? **Do not introduce new factual claims.**
+    *   Offer insights relevant to the **Japanese audience** regarding the strategic direction, priorities, and values implied by {company_name}'s vision. How does it compare to typical corporate visions in relevant sectors? **Do not introduce new factual claims** not derived from the synthesis of the preceding section of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information (statements, pillars, measures) must be factually correct, current, and accurately reflect official company communications. Verify against official sources. **Specify currency for any financial KPIs.**
@@ -769,8 +747,7 @@ def get_management_message_prompt(company_name: str, language: str = "Japanese")
     """Generates a prompt for collecting strategic quotes with all enhancements."""
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
-    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language) # Use base
-
+    formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
     return f"""
 Detailed Leadership Strategic Outlook (Verbatim Quotes) for {company_name}
 
@@ -814,10 +791,10 @@ Conduct focused research to locate and extract direct, impactful, and strategica
 **Source Attribution:** A specific, verifiable source must be cited *immediately* adjacent to/following *each individual quote* using parentheses `(Source: ...)`. Be precise (Report name/date/page, Transcript date/section, Interview source/date).
 
 ## 2. General Discussion:
-*   Provide concluding **single paragraph** (approx. **300-500 words**).
-*   **Synthesize** the key strategic messages and priorities presented *solely* through the collected quotes from leadership.
-*   **Analyze** recurring themes, the overall strategic tone (e.g., confident, cautious, transformative), any apparent consistency or potential divergence in messaging between leaders (if multiple leaders quoted), and how the articulated vision/strategy relates to broader understanding of the company and its market context (drawing *only* from info within this quote section).
-*   Offer insights relevant to the **Japanese audience** regarding leadership's focus, strategic intent, and communication style. **Do not introduce new factual claims.**
+    *   Provide concluding **single paragraph** (approx. **300-500 words**).
+    *   **Synthesize** the key strategic messages and priorities presented **solely through the collected quotes from leadership in the preceding section (Section 1) of *this specific response***.
+    *   **Analyze** recurring themes, the overall strategic tone (e.g., confident, cautious, transformative), any apparent consistency or potential divergence in messaging between leaders (if multiple leaders quoted), and how the articulated vision/strategy relates to broader understanding of the company and its market context (drawing *only* from info within this quote section).
+    *   Offer insights relevant to the **Japanese audience** regarding leadership's focus, strategic intent, and communication style. **Do not introduce new factual claims** not derived from the synthesis of the preceding section of this response.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Quotes must be verbatim and correctly attributed to the speaker and source. Ensure speaker roles/titles are current as of the quote date, or note if they have changed.
@@ -828,5 +805,6 @@ Source and Accuracy Requirements:
 
 {formatting_instructions}
 """
+
 
 # --- End of Prompt Generating Functions ---
