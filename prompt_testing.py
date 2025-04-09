@@ -4,11 +4,11 @@ import textwrap
 
 # --- Standard Instruction Blocks ---
 
-# REVISED Standardized Final Source List instructions block (v4 - Enhanced Grounding Integrity)
+# REVISED Standardized Final Source List instructions block (v4.1 - Integrated formatting emphasis)
 FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     **Final Source List Requirements:**
 
-    Conclude the *entire* research output, following the 'General Discussion' paragraph, with a clearly marked section titled "**Sources**". This section is critical for verifying the information grounding process.
+    Conclude the *entire* research output, following the 'General Discussion' paragraph, with a clearly marked section titled "**Sources**". This section is critical for verifying the information grounding process AND for document generation.
 
     **1. Content - MANDATORY URL Type & Source Integrity:**
     *   **Exclusive Source Type:** This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
@@ -17,11 +17,19 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     *   **CRITICAL - No Hallucination:** **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/...` URLs** from previous queries or general knowledge if they were not explicitly provided as grounding results *for the current query*. If a fact was identified but lacks a corresponding *provided* Vertex AI grounding URL, it cannot be sourced here and likely should not be included in the report (see Point 4).
     *   **Purpose:** This list verifies the specific grounding data provided *by Vertex AI Search for this request*, not external knowledge or other URLs.
 
-    **2. Formatting and Annotation:**
-    *   **Source Line Format:** Present each source on a new line using the following Markdown hyperlink format, immediately followed by its annotation:
-        *   Format: `[Supervity Source X](Full_Vertex_AI_Grounding_URL) - Annotation text explaining supported information.`
-        *   Example: `[Supervity Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/EXAMPLE_URL_1...) - Supports CEO name and headquarters address details in Section 1.`
-    *   **Sequential Labeling:** The visible hyperlink text **MUST** be labeled sequentially "Supervity Source 1", "Supervity Source 2", etc.
+    **2. Formatting and Annotation (CRITICAL FOR PARSING):**
+    *   **Source Line Format:** Present **each source** on a **completely new line**. Each line **MUST** start with a Markdown list indicator (`* ` or `- ` followed by a space) and then the hyperlink format, immediately followed by its annotation. **DO NOT** run sources together in a single paragraph or separate them only with commas or spaces.
+    *   **REQUIRED Format:** `* [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Annotation text explaining supported information.`
+    *   **Example:**
+        ```markdown
+        ## Sources
+        * [Supervity Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/EXAMPLE_URL_1...) - Supports CEO name and headquarters address details in Section 1.
+        * [Supervity Source 2](https://vertexaisearch.cloud.google.com/grounding-api-redirect/EXAMPLE_URL_2...) - Provides details on 2023 revenue figures and digital sales share.
+        * [Supervity Source 3](https://vertexaisearch.cloud.google.com/grounding-api-redirect/EXAMPLE_URL_3...) - Details the shift in brand strategy and the 'North Star' purpose.
+        ```
+    *   **INCORRECT Format (DO NOT USE):** `[Source 1](...) - Info. [Source 2](...) - Info.`
+    *   **INCORRECT Format (DO NOT USE):** `[Source 1](...), [Source 2](...), ...`
+    *   **Sequential Labeling:** The visible hyperlink text **MUST** be labeled sequentially "Supervity Source 1", "Supervity Source 2", etc. Do not skip numbers.
     *   **Annotation Requirement:** The annotation **MUST** be:
         *   Included immediately after the hyperlink on the same line, separated by " - ".
         *   Brief and specific, explaining *exactly* what information in the main body that *specific* grounding URL supports.
@@ -29,8 +37,8 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
 
     **3. Quantity and Linkage:**
     *   **Target Quantity:** Aim for a minimum of 5 and a maximum of 18 *distinct, verifiable* Vertex AI grounding URLs that directly support content in the report.
-    *   **Accuracy Over Quantity:** However, the **absolute requirement is accuracy and adherence to the grounding rules (Points 1 & 4)**. If, after exhaustive research and following the omission rules (Point 4), fewer than 5 *verifiable* grounding URLs supporting included report content can be found in the provided results, list only those that *are* verifiable. **Do NOT invent sources to meet the minimum count.**
-    *   **Fact Linkage:** Every Vertex AI grounding URL listed **MUST** directly correspond to grounding data used for specific facts/figures/statements *present* in the final report body.
+    *   **Accuracy Over Quantity:** However, the **absolute requirement is accuracy and adherence to the grounding rules (Points 1, 2 & 4)**. If, after exhaustive research and following the omission rules (Point 4), fewer than 5 *verifiable* grounding URLs supporting included report content can be found in the provided results, list only those that *are* verifiable. **Do NOT invent sources to meet the minimum count.**
+    *   **Fact Linkage:** Every Vertex AI grounding URL listed **MUST** directly correspond to grounding data used for specific facts/figures/statements *present* in the final report body. The annotation should make this link clear.
 
     **4. Content Selection Based on Verifiable Grounding:**
     *   **Prerequisite for Inclusion:** Information (facts, figures, details, quotes) should only be included in the main report body *if* it can be supported by a **verifiable Vertex AI grounding URL provided in the search results for this query**.
@@ -40,7 +48,8 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     **5. Final Check:**
     *   Before concluding the entire response, perform a final review of the "Sources" list AND the main report body. Ensure **strict adherence** to all rules, especially:
         *   Exclusive use of valid, *provided* Vertex AI grounding URLs in the "Sources" list.
-        *   Correct hyperlink format in the "Sources" list.
+        *   **CRITICAL:** Each source on a new line starting with `* ` or `- `.
+        *   Correct hyperlink format `[Text](URL) - Annotation`.
         *   Content in the report body is supported by the listed sources.
         *   No fabricated sources are present.
     """)
@@ -59,7 +68,7 @@ HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
         *   **Cross-Language Search (If Necessary):** If information cannot be found *with grounding* in {language}, you may check other languages *within the provided grounding results*. If found *with grounding*, accurately translate *only the necessary specific information* to {language} and list the corresponding grounding source.
     """)
 
-# REVISED Standardized Research Depth & Calculation instruction block
+# REVISED Standardized Research Depth & Calculation instruction block (v2)
 RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
     *   **Research Depth & Source Prioritization:**
         *   **Exhaustive Search:** Conduct **thorough and exhaustive research** for *all* requested information points. Dig beyond surface-level summaries in sources.
@@ -96,7 +105,7 @@ AUDIENCE_CONTEXT_REMINDER = textwrap.dedent("""\
 def get_language_instruction(language: str) -> str:
     return f"Output Language: The final research output must be presented entirely in **{language}**."
 
-# REVISED Standardized Formatting instruction block (Emphasis on Tables/Clarity)
+# REVISED Standardized Formatting instruction block (v3 - Table emphasis)
 BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Output Format & Quality Requirements:
 
@@ -104,16 +113,23 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
 
     *   **Valid and Consistent Markdown:**
         *   Structure the entire output using **syntactically correct and well-formed Markdown**.
-        *   Use Markdown elements appropriately: `##` for main sections (use the exact numbering and titles from the prompt), `###` for sub-sections if logical, `*` or `-` for bullet points (use consistent indentation for nested lists), `**text**` for bolding key terms or labels as shown in the prompt structure.
+        *   Use Markdown elements appropriately: `##` for main sections (use the exact numbering and titles from the prompt), `###` for sub-sections if logical, `* ` or `- ` for bullet points (use consistent indentation for nested lists), `**text**` for bolding key terms or labels as shown in the prompt structure.
         *   Format code blocks (```) correctly if technical details are included.
-        *   **CRITICAL - Table Formatting:** Pay *extreme attention* to table formatting. Ensure correct header rows (`| Header 1 | Header 2 |`), separator lines (`|---|---|`), and **consistent column counts** in all data rows. Use pipes `|` correctly to delimit cells. Ensure text within cells is concise and readable. Tables should be used where requested or where they significantly improve clarity for comparisons (e.g., multi-year financials, competitor summaries).
+        *   **CRITICAL - Table Formatting:** Pay *extreme attention* to table formatting. Ensure correct header rows (`| Header 1 | Header 2 |`), separator lines (`|---|---|` or `|:---|---:|` for alignment), and **consistent column counts** in all data rows. Use pipes `|` correctly to delimit cells. Ensure text within cells is concise and readable. Tables should be used where requested or where they significantly improve clarity for comparisons (e.g., multi-year financials, competitor summaries). Use alignment hints in the separator row where appropriate (e.g., `:---` for left, `---:` for right, `:---:` for center).
+            *   **Example Table Structure:**
+                ```markdown
+                | Category      | Metric 1 | Metric 2 (Unit) | Notes         |
+                |:--------------|---------:|:---------------:|:--------------|
+                | Segment A     |    1,234 |      56.7 %     | Some details  |
+                | Segment B     |      890 |      43.3 %     | More details  |
+                ```
 
     *   **Optimal Structure & Readability:**
         *   Present information using the most effective format for clarity, following prompt suggestions:
             *   **Use Tables for:** Multi-year numerical data, personnel lists, subsidiary lists, direct side-by-side comparisons. Ensure tables are well-organized and easy to interpret.
-            *   **Use Bullet Points for:** Lists of features, factors, initiatives, non-comparative items. Use clear and concise phrasing for each point.
+            *   **Use Bullet Points for:** Lists of features, factors, initiatives, non-comparative items. Use clear and concise phrasing for each point. Start each list item on a new line with `* ` or `- `.
             *   **Use Paragraphs for:** Narrative descriptions, analysis, summaries, context. Ensure paragraphs are focused and well-structured.
-        *   Maintain clear visual separation between sections, sub-sections, the General Discussion, and the Sources list using appropriate heading levels and spacing.
+        *   Maintain clear visual separation between sections, sub-sections, the General Discussion, and the Sources list using appropriate heading levels and spacing. Use exactly `##` for main sections as numbered in prompts.
 
     *   **Data Formatting Consistency:**
         *   Use appropriate thousands separators for the target language: **{language}**.
@@ -127,7 +143,7 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
 
     *   **Completeness and Verification:**
         *   Address *all* points requested within each section.
-        *   Verify that all sections, the General Discussion, and the Sources list are present and correctly formatted.
+        *   Verify that all sections, the General Discussion, and the Sources list are present and correctly formatted according to ALL instructions.
         *   **Do not submit partial or truncated responses.** Stop cleanly if limits are approached.
         *   Perform a final internal review against these instructions.
     """)
@@ -151,22 +167,22 @@ Target Audience Context: The final research output is intended for review, strat
 
 Research Requirements:
 Conduct in-depth research primarily utilizing {company_name}'s official sources. Ensure all factual claims, data points, structural descriptions, personnel details, responsibilities, and quotes in the sections below are supported by specific, verifiable grounding URLs referenced back to the final source list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {RESEARCH_DEPTH_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
 ## 1. Core Corporate Information:
-    *   Stock Ticker Symbol / Security Code (if publicly traded)
-    *   Primary Industry Classification (e.g., GICS, SIC, or local standard - Specify which standard)
-    *   Full Name and Title of the current Chief Executive Officer (CEO)
-    *   Full Registered Headquarters Address
-    *   Main Corporate Telephone Number
-    *   Official Corporate Website URL
-    *   Date of Establishment/Incorporation
-    *   Date of Initial Public Offering (IPO)/Listing (if applicable)
-    *   Primary Stock Exchange/Market where listed (if applicable)
-    *   Most Recently Reported Official Capital Figure **(Specify currency and reporting date/period)**
-    *   Most Recently Reported Total Number of Employees **(Specify reporting date/period and source)**. *Briefly comment on the significance of the employee count or recent changes, if notable.*
+    *   **Stock Ticker Symbol / Security Code:** (if publicly traded)
+    *   **Primary Industry Classification:** (e.g., GICS, SIC, or local standard - Specify which standard)
+    *   **Full Name and Title of Current CEO:**
+    *   **Full Registered Headquarters Address:**
+    *   **Main Corporate Telephone Number:**
+    *   **Official Corporate Website URL:**
+    *   **Date of Establishment/Incorporation:**
+    *   **Date of Initial Public Offering (IPO)/Listing:** (if applicable)
+    *   **Primary Stock Exchange/Market where listed:** (if applicable)
+    *   **Most Recently Reported Official Capital Figure:** **(Specify currency and reporting date/period)**
+    *   **Most Recently Reported Total Number of Employees:** **(Specify reporting date/period and source)**. *Briefly comment on the significance of the employee count or recent changes, if notable.*
 
 ## 2. Recent Business Overview:
     *   Provide a detailed summary of {company_name}'s core business operations and primary revenue streams based on the *most recent* official reports. Describe the main products/services offered.
@@ -182,17 +198,17 @@ Conduct in-depth research primarily utilizing {company_name}'s official sources.
     *   *If clearly stated, comment briefly on the rationale behind the structure or its potential implications for agility, decision-making, or integration.*
 
 ## 5. Key Management Personnel & Responsibilities:
-    *   **Board of Directors:** List members, titles, *specify committee memberships (e.g., Audit, Compensation), and detail key areas of expertise/focus or specific responsibilities if stated*. Indicate if directors are classified as independent or internal.
+    *   **Board of Directors:** List members, titles, *specify committee memberships (e.g., Audit, Compensation), and detail key areas of expertise/focus or specific responsibilities if stated*. Indicate if directors are classified as independent or internal. Use a table if the list is long.
     *   **Corporate Auditors / Audit & Supervisory Board Members (or equivalent oversight body):** List members, titles, *and describe their primary oversight role or focus area*.
-    *   **Executive Officers (Management Team):** List key members (beyond CEO), titles, *and describe their precise area(s) of operational or strategic responsibility (e.g., CFO, CTO, Head of Region X, Head of Division Y)*. ***Note any recent significant changes (within the last 1-2 years) in key executive roles and explain the potential impact or reasons for these changes, if reported.***
+    *   **Executive Officers (Management Team):** List key members (beyond CEO), titles, *and describe their precise area(s) of operational or strategic responsibility (e.g., CFO, CTO, Head of Region X, Head of Division Y)*. Use a table if the list is long. ***Note any recent significant changes (within the last 1-2 years) in key executive roles and explain the potential impact or reasons for these changes, if reported.***
 
 ## 6. Subsidiaries List:
-    *   List major direct subsidiaries (global where applicable), based *only* on official documentation (e.g., annual report appendices, group structure charts). *Indicate primary business activity and country of operation for each subsidiary listed.*
+    *   List major direct subsidiaries (global where applicable), based *only* on official documentation (e.g., annual report appendices, group structure charts). *Indicate primary business activity and country of operation for each subsidiary listed.* Use a table for clarity.
 
 ## 7. Leadership Strategic Outlook (Verbatim Quotes):
     *   **CEO & Chairman:** Provide at least four (4) direct, meaningful quotes *focusing on long-term vision, key challenges, growth strategies, and market outlook*. Include a brief 1-2 sentence summary noting key themes and the approximate date range of these quotes.
     *   **Other Key Executives (e.g., CFO, CSO, CTO, Regional Heads):** Provide at least three (3) direct quotes *each* from other relevant senior executives or board members, focusing on strategy relevant to their specific functional area or region. Include a brief summary... *(Substitute roles if specific titles unavailable, clearly identifying name/title.)*
-    *   **Source Attribution:** Clearly cite the specific source (e.g., Report Name/Date, Interview Source/Date, Transcript Date) immediately adjacent to *each* quote.
+    *   **Source Attribution:** Clearly cite the specific source (e.g., Report Name/Date, Interview Source/Date, Transcript Date) immediately adjacent to *each* quote using parentheses `(Source: ...)`.
 
 ## 8. General Discussion:
     *   Provide a concluding **single paragraph** (approx. **300-500 words**).
@@ -200,13 +216,31 @@ Conduct in-depth research primarily utilizing {company_name}'s official sources.
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Ensure all information is factually correct, current, and verifiable against grounded sources. Specify currency and reporting periods for ALL monetary and headcount data.
-*   **Source Specificity (In-line):** Explicitly link every factual claim, data point, detail, and quote in Sections 1-7 to a specific source in the final list using inline citations where clarity demands it, or ensure traceability via the final list annotation.
-*   **Source Quality:** Mandatory primary reliance on official company sources. Use secondary sources sparingly only for context (like market share, if not in primary) or verification, citing clearly.
+*   **Source Specificity (Traceability):** Every factual claim, data point, detail, and quote in Sections 1-7 must be traceable to a specific source in the final list via the annotation. Use inline parenthetical citations `(Source:...)` for direct quotes as specified in Section 7.
+*   **Source Quality:** Mandatory primary reliance on official company sources. Use secondary sources sparingly only for context (like market share, if not in primary) or verification, citing clearly in-text (as per competitive prompt rules if applicable) or ensuring traceability via final list annotation.
 
 {final_source_instructions}
 
 {formatting_instructions}
 """
+
+# Note: Apply similar integration of ANALYSIS_SYNTHESIS_INSTRUCTION, AUDIENCE_CONTEXT_REMINDER,
+# and refined section details to ALL other `get_..._prompt` functions.
+# The examples for get_basic_prompt, get_financial_prompt, get_management_strategy_prompt,
+# get_competitive_landscape_prompt, get_regulatory_prompt, get_crisis_prompt,
+# get_digital_transformation_prompt, get_business_structure_prompt, get_vision_prompt,
+# and get_management_message_prompt provided in the previous response already incorporate these.
+
+# Ensure ALL get_..._prompt functions below follow the pattern shown above:
+# - Define language_instruction, final_source_instructions, formatting_instructions
+# - Include HANDLING_MISSING_INFO_INSTRUCTION, RESEARCH_DEPTH_INSTRUCTION, ANALYSIS_SYNTHESIS_INSTRUCTION, AUDIENCE_CONTEXT_REMINDER
+# - Include refined details/analytical prompts within section bullet points
+# - Include enhanced General Discussion instructions
+# - Include final_source_instructions and formatting_instructions at the end.
+
+# (The remaining prompt functions from the previous response are pasted below,
+# assuming they already contain the enhancements)
+
 
 def get_financial_prompt(company_name: str, language: str = "Japanese"):
     """Generates a prompt for a detailed financial analysis with all enhancements."""
@@ -232,7 +266,7 @@ Target Audience Context: The report is designed for a **Japanese corporate strat
 
 Research Requirements:
 For each section below, provide data and analysis covering the **last three full fiscal years**. Information must be **verifiable**, **clearly sourced** (traceable to final list, specifying report/page/note), and **analytically explained** regarding trends, drivers, and implications. **Interpret the trends and provide explanations based on sourced information or management commentary.**
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {enhanced_financial_research_instructions.format(company_name=company_name)}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
@@ -309,12 +343,12 @@ For each section below, provide data and analysis covering the **last three full
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Data, ratios, context must be correct, verified. **Crucially, specify the currency AND reporting period (e.g., FY2023) for ALL monetary values presented.**
-*   **Source Specificity (In-line/Traceability):** Every data point, ratio, calculation, and analytical insight must be precisely traceable to a specific source in the final list (cite Report Name, Year, Page number, Table/Note number, Filing Date, Transcript Section). Explicitly state if a metric was calculated and show the formula/components.
+*   **Source Specificity (Traceability):** Every data point, ratio, calculation, and analytical insight must be precisely traceable to a specific source in the final list via the annotation (cite Report Name, Year, Page number, Table/Note number, Filing Date, Transcript Section). Explicitly state if a metric was calculated and show the formula/components.
 *   **Source Quality:** Mandatory primary reliance on official company sources (Annual Reports, Financial Statements, Footnotes, Filings, IR Presentations, Transcripts, Press Releases). Use secondary sources only for context (e.g., ratings agency reports) and cite clearly.
 
 {final_source_instructions}
 
-{formatting_instructions} # Use base formatting unless finance_formatting_instructions had unique elements
+{formatting_instructions}
 """
 
 def get_competitive_landscape_prompt(company_name: str, language: str = "Japanese"):
@@ -352,7 +386,7 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 {competitive_research_instructions.format(company_name=company_name)} # Add the specific competitive research strategy
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
-## Major Competitors Identification & Profiling:
+## 1. Major Competitors Identification & Profiling:
 *   Identify **primary global and key regional competitors** in {company_name}'s main markets/segments (Prioritize competitors explicitly mentioned in grounded official {company_name} sources or highly reputable secondary sources).
 *   For *each* major competitor identified (provide available information, clearly indicating source type/basis as per `competitive_research_instructions`):
     *   **Full Name & Brief Description:** Outline their relevant business operations and scale.
@@ -363,17 +397,17 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
     *   **Analysis of Relative Market Positioning:** Compare vs. {company_name} on key dimensions like price range, product quality focus, innovation emphasis, brand image, target customer segments (State basis for analysis explicitly, e.g., "Based on public product descriptions and pricing tiers...").
     *   ***Known or Perceived Strategic Weaknesses (Relative to {company_name}):*** Identify potential vulnerabilities based on grounded facts or attributed analysis (e.g., "Slower adoption of digital channels reported by [Source]...", "Higher cost structure implied by pricing strategy..."). Attribute source/basis clearly.
 
-## {company_name}'s Competitive Advantages & Positioning:
+## 2. {company_name}'s Competitive Advantages & Positioning:
 *   Detail {company_name}'s key sources of **sustainable competitive advantage** (Prioritize examples with grounded evidence): Unique Selling Proposition (USP), Technology/Patents, Brand Reputation/Loyalty, Economies of Scale, Cost Structure Advantages, Distribution Network, Customer Relationships, etc. (Cite source/basis for each).
 *   Provide a balanced assessment of {company_name}'s perceived **Competitive Strengths and Weaknesses** *relative to* its key competitors identified above. (State basis for assessment clearly, linking back to facts/analysis).
 
-## {company_name}'s Competitive Strategy:
+## 3. {company_name}'s Competitive Strategy:
 *   Describe {company_name}'s apparent **competitive strategic approach** (Based on grounded statements, observed actions, or reliable analysis - cite source/basis clearly): How does it aim to compete? (e.g., Cost leadership, differentiation, focus/niche strategy). How does it maintain/defend its position, expand market share, respond to competitive threats, exploit competitor weaknesses, or adapt to market changes?
 *   ***Identify and describe the company's primary **value discipline** (e.g., operational excellence, customer intimacy, product leadership) based on its observable strategy and actions (State basis/evidence).***
 *   Identify specific **initiatives, programs, or investments** aimed at enhancing its competitive position (Prioritize grounded information, e.g., specific R&D projects, marketing campaigns, supply chain improvements).
 *   Describe how competitive success is **measured or defined** by the company, if explicitly stated in grounded sources (e.g., market share goals, customer satisfaction targets).
 
-## General Discussion:
+## 4. General Discussion:
 *   Provide a concluding **single paragraph** (approx. **300-500 words**).
 *   **Synthesize** findings on Major Competitors, {company_name}'s Advantages/Positioning, and its Competitive Strategy *based only on the information presented above*.
 *   Offer a holistic overview discussing {company_name}'s **overall competitive standing**, strategic direction, key competitive strengths, vulnerabilities/risks, and future outlook in the competitive landscape.
@@ -381,7 +415,7 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be factually correct or clearly attributed as analysis/estimate/secondary source.
-*   **Source Specificity (In-line):** Strictly follow rules in `competitive_research_instructions` for citing grounded vs. synthesized/secondary info within the text. Attribute ALL non-Vertex-grounded info clearly.
+*   **Source Specificity (In-line/Traceability):** Strictly follow rules in `competitive_research_instructions` for citing grounded vs. synthesized/secondary info within the text. Attribute ALL non-Vertex-grounded info clearly. Ensure traceability via final source list annotations.
 *   **Source Quality:** Prioritize Vertex AI grounding results. Supplement ONLY as allowed by `competitive_research_instructions` using official disclosures, reputable/named industry reports, major institutional analyses, or credible/named business news.
 
 {final_source_instructions} # Strict rules apply ONLY to this final list
@@ -389,7 +423,6 @@ Source and Accuracy Requirements:
 {formatting_instructions}
 """
 
-# --- Add similar structured improvements for the remaining prompts ---
 
 def get_management_strategy_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
@@ -407,7 +440,7 @@ Target Audience Context: Output is for detailed strategic review by a **Japanese
 
 Research Requirements:
 Conduct in-depth research, prioritizing official sources (IR materials on MTP/Strategy, Annual/Integrated Reports, Website strategy sections, Earnings call transcripts/presentations, Investor Day materials, Official Announcements). Supplement sparingly only for context. Ensure all claims regarding strategy, MTP elements, execution, KPIs, etc., are supported by specific, verifiable sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {RESEARCH_DEPTH_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
@@ -448,7 +481,7 @@ Conduct in-depth research, prioritizing official sources (IR materials on MTP/St
 
 Source and Accuracy Requirements:
 *   **Accuracy:** All information must be factually correct and accurately reflect official company communications. **Ensure currency is specified for ALL monetary targets/values.** State reporting periods clearly.
-*   **Source Specificity (In-line/Traceability):** Every claim, target, KPI, initiative, and progress update in Sections 1-4 must be traceable to a specific source in the final list (cite MTP presentation slide #, report name/page, transcript section/date, press release date).
+*   **Source Specificity (Traceability):** Every claim, target, KPI, initiative, and progress update in Sections 1-4 must be traceable to a specific source in the final list via the annotation (cite MTP presentation slide #, report name/page, transcript section/date, press release date).
 *   **Source Quality:** Strongly prioritize official company sources (MTP documents, Annual/Integrated Reports, earnings materials, Investor Day materials, website strategy sections, relevant official press releases/announcements).
 
 {final_source_instructions}
@@ -474,11 +507,11 @@ Target Audience Context: The final research output is intended for strategic rev
 
 Research Requirements:
 Conduct deep research on {company_name}'s operating environment related to its DX journey, focusing on regulatory aspects. Look for specifics on applicable regulations in key operating regions, stated compliance approaches, certifications, and any reported regulatory issues, using reliable grounded sources. Ensure all factual claims, regulatory descriptions, and company approaches below are supported by specific, verifiable sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
-{RESEARCH_DEPTH_INSTRUCTION} # Use revised depth instruction
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
+{RESEARCH_DEPTH_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
-## Regulatory Environment and Compliance:
+## 1. Regulatory Environment and Compliance:
 *   Describe the **key regulatory environment aspects and policy trends** impacting {company_name}'s DX. Focus on:
     *   **Data Privacy Laws:** Identify major applicable laws (e.g., GDPR in Europe, CCPA/CPRA in California, APPI in Japan, PIPL in China, LGPD in Brazil) in key geographies where {company_name} operates. Explain their core requirements regarding data collection, consent, processing, user rights, and cross-border transfers.
     *   **Cybersecurity Mandates:** Describe relevant cybersecurity regulations or standards impacting the company (e.g., NIS2 Directive in EU, sector-specific requirements if applicable).
@@ -491,7 +524,7 @@ Conduct deep research on {company_name}'s operating environment related to its D
     *   Describe how compliance considerations are reportedly **integrated into DX project planning and execution** (e.g., privacy-by-design principles, security reviews), if specific information is available.
 *   ***Identify any known significant **regulatory enforcement actions, fines, investigations, or major public controversies** related to data privacy, cybersecurity, or digital practices levied against or involving {company_name} within the last 3-5 years, based on credible public reports. Specify dates, regulatory body involved, nature of the issue, outcome (e.g., fines - specify currency if reported, required remediation), and company response, if available.***
 
-## General Discussion:
+## 2. General Discussion:
 *   Provide a concluding **single paragraph** (approx. **300-500 words**).
 *   **Synthesize** the findings on the key regulatory pressures impacting {company_name}'s DX and its stated compliance approach and track record.
 *   Offer a holistic **assessment** of how regulations appear to shape {company_name}'s digital strategy, risk posture, and operational constraints.
@@ -500,7 +533,7 @@ Conduct deep research on {company_name}'s operating environment related to its D
 
 Source and Accuracy Requirements:
 *   **Accuracy:** All information (regulatory details, company policies, incident specifics) must be factually correct and verified against grounded sources.
-*   **Source Specificity (In-line/Traceability):** Every claim, detail, policy description, and incident report must be traceable to a specific source in the final list (cite report name/page, official publication, news source/date).
+*   **Source Specificity (Traceability):** Every claim, detail, policy description, and incident report must be traceable to a specific source in the final list via the annotation (cite report name/page, official publication, news source/date).
 *   **Source Quality:** Prioritize official company disclosures (Annual/Sustainability/Governance Reports, Privacy Policies, Compliance statements), official government/regulatory body publications, reputable legal/consulting analyses on regulatory impacts, and credible news reports regarding enforcement actions.
 
 {final_source_instructions}
@@ -525,10 +558,11 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 
 Research Requirements:
 Conduct deep research on {company_name}'s experiences and approach to digital crises. Look for specifics on past incidents (if public), stated response mechanisms, preparedness strategies, and BCP plans from reliable grounded sources. Ensure all claims and descriptions below are supported by specific, verifiable sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 *   **Research Depth:** Diligently search credible news archives (major outlets), cybersecurity incident databases (where applicable), security research blogs, and official company disclosures (press releases, annual/sustainability reports sections on risk management/incidents) for information on past events and stated plans. Acknowledge that details of internal plans and non-public incidents may be unavailable. Focus on verifiable information.
+{ANALYSIS_SYNTHESIS_INSTRUCTION}
 
-## Crisis Management and Business Continuity:
+## 1. Crisis Management and Business Continuity:
 *   **Handling of Past Digital Crises (Last 5 Years):** Based *only* on publicly available information (news reports, security databases, company statements):
     *   Describe any significant publicly reported digital crises {company_name} has faced in the last 5 years (e.g., major cyberattacks like ransomware, significant data breaches impacting customers/employees, prolonged critical system outages, major online reputational crises linked to digital platforms).
     *   For each documented incident: Detail the approximate date(s), the nature of the incident, the reported impact (e.g., systems affected, data types exposed, estimated number of individuals impacted, reported financial impact - **Specify currency if available**), and the source of the information.
@@ -540,7 +574,7 @@ Conduct deep research on {company_name}'s experiences and approach to digital cr
     *   Are specific BCP goals, testing procedures, or recovery time objectives (RTOs)/recovery point objectives (RPOs) mentioned in relation to digital assets?
 *   Mention described **roles, responsibilities, or governance structures** for overseeing and managing digital crises and business continuity, if publicly disclosed (e.g., specific executive oversight, dedicated risk committees).
 
-## General Discussion:
+## 2. General Discussion:
 *   Provide a concluding **single paragraph** (approx. **300-500 words**).
 *   **Synthesize** the findings on {company_name}'s past crisis experiences (if any were publicly documented), its stated crisis management/BCP approach, governance structures, and any reported lessons learned or adaptations.
 *   Offer a holistic **assessment** of {company_name}'s apparent preparedness, responsiveness, and resilience regarding digital crises, based *only* on the findings presented above.
@@ -549,7 +583,7 @@ Conduct deep research on {company_name}'s experiences and approach to digital cr
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be factually correct and verified against grounded sources. Incident details must rely on credible reports; clearly distinguish alleged vs. confirmed information if necessary. Specify currency for any reported financial impacts.
-*   **Source Specificity (In-line/Traceability):** Every claim, incident detail, strategic description, and policy mention must be traceable to a specific source in the final list (cite news source/date, report name/page, official statement date).
+*   **Source Specificity (Traceability):** Every claim, incident detail, strategic description, and policy mention must be traceable to a specific source in the final list via the annotation (cite news source/date, report name/page, official statement date).
 *   **Source Quality:** Prioritize official company statements/disclosures on incidents/risk management. Use reputable news reports, cybersecurity research firm reports, and official documents on BCP/crisis management carefully, verifying where possible. Acknowledge limitations in public information.
 
 {final_source_instructions}
@@ -574,7 +608,7 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 
 Research Requirements:
 Conduct deep research into {company_name}'s DX journey using official sources (reports, website, press releases) and reputable secondary analysis. Look for specifics on strategy articulation, financial commitments, concrete implementation examples with outcomes, and how DX interacts with compliance and risk management. Ensure all claims/data/descriptions below are supported by specific, verifiable sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {RESEARCH_DEPTH_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
@@ -615,7 +649,7 @@ Conduct deep research into {company_name}'s DX journey using official sources (r
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be correct, current, and verified against grounded sources. **Specify currency and period for ALL monetary values (investments, outcomes).**
-*   **Source Specificity (In-line/Traceability):** Every claim, data point, strategic description, and case study detail must be traceable to a specific source in the final list (cite report name/page, press release date, specific secondary source/date).
+*   **Source Specificity (Traceability):** Every claim, data point, strategic description, and case study detail must be traceable to a specific source in the final list via the annotation (cite report name/page, press release date, specific secondary source/date).
 *   **Source Quality:** Prioritize official company disclosures (Annual/Sustainability/Digital Reports, IR presentations, dedicated DX documentation, press releases). Use reputable technology research firm reports (cite specific report/date) and credible tech/business news analyses where appropriate for context or specific examples, citing clearly.
 
 {final_source_instructions}
@@ -641,7 +675,7 @@ Target Audience Context: Output is for strategic assessment by a **Japanese comp
 
 Research Requirements:
 Conduct **critical analysis** interrogating official sources (Annual/Integrated Reports, IR materials, Filings, Corporate Governance sections of website). Supplement sparingly ONLY for verification (e.g., shareholder identification if not in primary sources, using reputable financial databases). Ensure all claims, figures, analyses, and quotes below are supported by specific, verifiable sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {RESEARCH_DEPTH_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
@@ -668,7 +702,7 @@ Conduct **critical analysis** interrogating official sources (Annual/Integrated 
         *   The company's long-term strategic vision or core priorities.
         *   Future growth plans (specific initiatives, target markets, key investments).
         *   Perspectives on key market opportunities or challenges faced by the company.
-    *   Ensure the specific **source and context** (e.g., report name/page, interview source/date, transcript date, presentation slide #) is documented *immediately following each quote*. Aim for recent quotes (last 1-2 years).
+    *   Ensure the specific **source and context** (e.g., report name/page, interview source/date, transcript date, presentation slide #) is documented *immediately following each quote* using parentheses `(Source: ...)`. Aim for recent quotes (last 1-2 years).
     *   ***Crucially, where possible, explicitly link these strategic quotes to the business or geographic segments analyzed in Sections 1 & 2, or the ownership structure discussed in Section 3. (e.g., "Reflecting the focus on Asia noted in Section 2, the CEO stated '[Quote about Asian expansion]' (Source)...").***
 
 ## 5. General Discussion:
@@ -680,7 +714,7 @@ Conduct **critical analysis** interrogating official sources (Annual/Integrated 
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information must be correct, current, and verified. **State currency clearly and specify the Fiscal Year (FY) for ALL segment sales/profit figures.**
-*   **Source Specificity (In-line/Traceability):** Every claim, data point, quote, and element of analysis in Sections 1-4 must be traceable to a *precise* source in the final list (cite report name/page, filing/date, database source/date, transcript section/date).
+*   **Source Specificity (Traceability):** Every claim, data point, quote, and element of analysis in Sections 1-4 must be traceable to a *precise* source in the final list via the annotation (cite report name/page, filing/date, database source/date, transcript section/date). Use inline parenthetical citations `(Source:...)` for direct quotes as specified in Section 4.
 *   **Source Quality:** Mandatory primary reliance on official company sources (Annual/Integrated Reports, Filings, IR presentations, official Corporate Governance statements, transcripts). Use high-caliber secondary sources (reputable financial databases, major news outlets) ONLY as supplementary clarification for ownership details if not in primary sources, and cite meticulously.
 
 {final_source_instructions}
@@ -705,7 +739,7 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 
 Research Requirements:
 Conduct in-depth research, primarily using official sources such as the company website (Strategy, About Us, IR, Sustainability sections), Annual Reports, Integrated Reports, Mid-Term Plan documents, official filings, and press releases detailing strategy or vision. Ensure claims regarding the vision, its components, and associated measures/KPIs below are supported by specific, verifiable sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION}
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {RESEARCH_DEPTH_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 
@@ -723,7 +757,7 @@ Conduct in-depth research, primarily using official sources such as the company 
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Information (statements, pillars, measures) must be factually correct, current, and accurately reflect official company communications. Verify against official sources. **Specify currency for any financial KPIs.**
-*   **Source Specificity (In-line/Traceability):** Every claim, quote, pillar description, and KPI listed in Section 1 must be traceable to a *precise* source in the final list (cite report name/page, MTP document/page, specific website URL section, press release date).
+*   **Source Specificity (Traceability):** Every claim, quote, pillar description, and KPI listed in Section 1 must be traceable to a *precise* source in the final list via the annotation (cite report name/page, MTP document/page, specific website URL section, press release date).
 *   **Source Quality:** Mandatory primary reliance on official company sources (Website strategy/about/IR/sustainability pages, Annual/Integrated/Governance Reports, official strategy documents, MTP presentations, relevant press releases).
 
 {final_source_instructions}
@@ -748,11 +782,11 @@ Target Audience Context: Output is for strategic review by a **Japanese company*
 
 Research Requirements:
 Conduct focused research to locate and extract direct, impactful, and strategically relevant verbatim quotes based on the criteria below. Prioritize official sources and recent statements (last 1-2 years). Ensure quotes are accurately transcribed and attributed with specific sources referenced back to the final list.
-{HANDLING_MISSING_INFO_INSTRUCTION} # Applies if specific roles or sufficient strategic quotes cannot be found despite diligent search.
+{HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)} # Applies if specific roles or sufficient strategic quotes cannot be found despite diligent search.
 {RESEARCH_DEPTH_INSTRUCTION} # Especially focus on Earnings Call Transcripts, IR Presentations, Annual Report Letters.
 {ANALYSIS_SYNTHESIS_INSTRUCTION} # Apply mainly to the summaries and General Discussion.
 
-## Leadership Strategic Outlook (Verbatim Quotes):
+## 1. Leadership Strategic Outlook (Verbatim Quotes):
 
 ### [CEO Name], CEO (Specify Name)
 *   *(Brief 1-2 sentence summary distilling the key strategic themes, priorities, and overall tone reflected in the CEO's recent quotes below. **Note the approximate date range of these quotes (e.g., 2023-2024).**)*
@@ -777,9 +811,9 @@ Conduct focused research to locate and extract direct, impactful, and strategica
 
 **Note on Quote Selection:** Quotes MUST be **verbatim** and focus on **strategic** topics: direction, future plans, priorities, growth initiatives, market outlook, vision, response to major challenges/opportunities. Avoid purely operational or backward-looking descriptive quotes unless they have clear strategic context.
 
-**Source Attribution:** A specific, verifiable source must be cited *immediately* adjacent to/following *each individual quote*. Be precise (Report name/date/page, Transcript date/section, Interview source/date).
+**Source Attribution:** A specific, verifiable source must be cited *immediately* adjacent to/following *each individual quote* using parentheses `(Source: ...)`. Be precise (Report name/date/page, Transcript date/section, Interview source/date).
 
-## General Discussion:
+## 2. General Discussion:
 *   Provide concluding **single paragraph** (approx. **300-500 words**).
 *   **Synthesize** the key strategic messages and priorities presented *solely* through the collected quotes from leadership.
 *   **Analyze** recurring themes, the overall strategic tone (e.g., confident, cautious, transformative), any apparent consistency or potential divergence in messaging between leaders (if multiple leaders quoted), and how the articulated vision/strategy relates to broader understanding of the company and its market context (drawing *only* from info within this quote section).
@@ -787,7 +821,7 @@ Conduct focused research to locate and extract direct, impactful, and strategica
 
 Source and Accuracy Requirements:
 *   **Accuracy:** Quotes must be verbatim and correctly attributed to the speaker and source. Ensure speaker roles/titles are current as of the quote date, or note if they have changed.
-*   **Source Specificity (In-line):** Every individual quote MUST have its specific source cited immediately adjacent, with enough detail to locate it (e.g., document name, date, page/section).
+*   **Source Specificity (Traceability):** Every individual quote MUST have its specific source cited immediately adjacent using parentheses `(Source: ...)`. Ensure traceability via the final source list annotations.
 *   **Source Quality:** Prioritize official company sources: Letters to Shareholders in Annual/Integrated Reports, transcripts/recordings of Earnings Calls or Investor Days, official speeches published by the company, strategic sections of the corporate website, relevant official press releases announcing strategy. Use reliable third-party interviews (e.g., from major financial news outlets) sparingly and cite clearly.
 
 {final_source_instructions}

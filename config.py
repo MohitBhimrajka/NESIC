@@ -9,7 +9,25 @@ load_dotenv()
 
 # LLM Configuration - Can be overridden with environment variables
 LLM_MODEL = os.getenv('LLM_MODEL', 'gemini-2.5-pro-preview-03-25')
-LLM_TEMPERATURE = float(os.getenv('LLM_TEMPERATURE', '0.8'))
+LLM_TEMPERATURE = float(os.getenv('LLM_TEMPERATURE', '0.72'))  # Lower temperature for more factual output
+
+# PDF Generation Configuration
+PDF_CONFIG = {
+    # Sources section processing options
+    'SOURCES': {
+        'AUTO_CONVERT_PARAGRAPH_TO_LIST': True,  # Try to convert paragraph-style sources to lists
+        'SOURCE_HEADING_PATTERNS': ['Sources', 'References', 'Bibliography'],  # Headings to identify source sections
+        'MAX_URL_DISPLAY_LENGTH': 60,  # Maximum characters to display for long URLs
+    },
+    
+    # Visual styling options
+    'STYLING': {
+        'TABLE_CLASS': 'enhanced-table',
+        'SOURCES_LIST_CLASS': 'sources-list',
+        'LONG_URL_CLASS': 'long-url',
+        'AVOID_PAGE_BREAK_ELEMENTS': ['table', 'figure', 'pre', 'blockquote'],
+    }
+}
 
 # Section order and titles for the final report
 SECTION_ORDER = [
