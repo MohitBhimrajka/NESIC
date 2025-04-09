@@ -53,7 +53,7 @@ def main():
                 output_dir,
                 args.company_name,
                 args.language,
-                template_path=args.template if args.template else None
+                template_path=args.template
             )
             progress.update(task, completed=True)
             

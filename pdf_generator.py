@@ -11,6 +11,7 @@ import yaml
 from bs4 import BeautifulSoup
 import re
 from typing import Optional, Dict, List, Tuple
+from config import SECTION_ORDER
 
 class EnhancedPDFGenerator:
     """Enhanced PDF Generator with better markdown support and styling."""
@@ -105,14 +106,16 @@ class EnhancedPDFGenerator:
         
         for section in sections:
             title = section.get('title', '')
-            anchor = f"section-{hash(title) & 0xFFFFFFFF}"
+            section_id = section.get('id', '')
+            anchor = f"section-{section_id}"
             toc.append(f'<li><a href="#{anchor}">{title}</a>')
             
             if section.get('subsections'):
                 toc.append('<ul>')
                 for subsection in section['subsections']:
                     sub_title = subsection.get('title', '')
-                    sub_anchor = f"subsection-{hash(sub_title) & 0xFFFFFFFF}"
+                    sub_id = subsection.get('id', f"sub-{hash(sub_title) & 0xFFFFFFFF}")
+                    sub_anchor = f"subsection-{sub_id}"
                     toc.append(f'<li><a href="#{sub_anchor}">{sub_title}</a></li>')
                 toc.append('</ul>')
             
@@ -122,7 +125,15 @@ class EnhancedPDFGenerator:
         toc.append('</nav>')
         return '\n'.join(toc)
 
-    def generate_pdf(self, sections: List[Dict], output_path: str, metadata: Dict = None) -> None:
+    def _extract_intro(self, content: str) -> str:
+        """Extract the introduction paragraph from a content section."""
+        soup = BeautifulSoup(self._convert_markdown_to_html(content), 'html.parser')
+        first_p = soup.find('p')
+        if first_p:
+            return str(first_p)
+        return "<p>This section provides detailed analysis and insights.</p>"
+
+    def generate_pdf(self, sections: List[Dict], output_path: str, metadata: Dict = None) -> Path:
         """Generate a PDF report from the provided sections and metadata."""
         processed_sections = []
         
@@ -131,12 +142,14 @@ class EnhancedPDFGenerator:
             section_metadata, content = self._extract_section_metadata(content)
             
             processed_section = {
+                'id': section.get('id', ''),
                 'title': section.get('title', ''),
                 'content': self._convert_markdown_to_html(content),
                 'metadata': section_metadata,
                 'reading_time': self._estimate_reading_time(content),
                 'key_topics': self._extract_key_topics(content),
-                'anchor': f"section-{hash(section.get('title', '')) & 0xFFFFFFFF}"
+                'intro': self._extract_intro(content),
+                'anchor': f"section-{section.get('id', '')}"
             }
             
             if section.get('subsections'):
@@ -146,12 +159,13 @@ class EnhancedPDFGenerator:
                     sub_metadata, sub_content = self._extract_section_metadata(sub_content)
                     
                     processed_subsection = {
+                        'id': subsection.get('id', ''),
                         'title': subsection.get('title', ''),
                         'content': self._convert_markdown_to_html(sub_content),
                         'metadata': sub_metadata,
                         'reading_time': self._estimate_reading_time(sub_content),
                         'key_topics': self._extract_key_topics(sub_content),
-                        'anchor': f"subsection-{hash(subsection.get('title', '')) & 0xFFFFFFFF}"
+                        'anchor': f"subsection-{subsection.get('id', '')}"
                     }
                     processed_section['subsections'].append(processed_subsection)
             
@@ -160,9 +174,9 @@ class EnhancedPDFGenerator:
         # Prepare template context
         context = {
             'title': metadata.get('title', 'Enhanced Report'),
-            'company': metadata.get('company', ''),
+            'company_name': metadata.get('company', ''),
             'language': metadata.get('language', ''),
-            'date': datetime.now().strftime('%Y-%m-%d'),
+            'generation_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'sections': processed_sections,
             'toc': self._generate_toc(processed_sections),
             'metadata': metadata or {}
@@ -174,40 +188,42 @@ class EnhancedPDFGenerator:
             output_path,
             presentational_hints=True
         )
+        
+        return Path(output_path)
 
-def process_markdown_files(base_dir: str, template_path: Optional[str] = None) -> None:
-    """Process markdown files and generate PDF report."""
-    markdown_dir = os.path.join(base_dir, 'markdown')
-    pdf_dir = os.path.join(base_dir, 'pdf')
+def process_markdown_files(base_dir: Path, company_name: str, language: str, template_path: Optional[str] = None) -> Path:
+    """Process all markdown files in the markdown directory and generate a PDF."""
+    markdown_dir = base_dir / 'markdown'
+    pdf_dir = base_dir / 'pdf'
     os.makedirs(pdf_dir, exist_ok=True)
-    
-    # Get company name and language from directory name
-    dir_parts = os.path.basename(base_dir).split('_')
-    company_name = ' '.join(dir_parts[:-3])  # Exclude timestamp parts
-    language = dir_parts[-3]
     
     # Collect sections from markdown files
     sections = []
-    for filename in sorted(os.listdir(markdown_dir)):
-        if filename.endswith('.md'):
-            with open(os.path.join(markdown_dir, filename), 'r', encoding='utf-8') as f:
+    
+    # Use SECTION_ORDER to determine the correct order of sections
+    for section_id, section_title in SECTION_ORDER:
+        file_path = markdown_dir / f"{section_id}.md"
+        if file_path.exists():
+            with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # Extract section ID and title from filename
-            section_id = filename[:-3]  # Remove .md extension
-            title = ' '.join(word.capitalize() for word in section_id.split('_'))
-            
-            sections.append({
-                'id': section_id,
-                'title': title,
-                'content': content
-            })
+            if content.strip():  # Only include non-empty sections
+                sections.append({
+                    'id': section_id,
+                    'title': section_title,
+                    'content': content
+                })
     
     # Generate PDF
     pdf_generator = EnhancedPDFGenerator(template_path)
-    output_path = os.path.join(pdf_dir, f"{company_name}_{language}_Report.pdf")
-    pdf_generator.generate_pdf(sections, output_path, {
-        'title': f"{company_name} {language} Report",
-        'company': company_name,
-        'language': language
-    }) 
+    output_path = pdf_dir / f"{company_name}_{language}_Report.pdf"
+    
+    return pdf_generator.generate_pdf(
+        sections, 
+        str(output_path), 
+        {
+            'title': f"{company_name} {language} Report",
+            'company': company_name,
+            'language': language
+        }
+    ) 

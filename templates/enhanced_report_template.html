@@ -366,7 +366,7 @@
                 <strong>Estimated Reading Time:</strong> {{ section.reading_time }} minutes
             </div>
             <div class="meta-item">
-                <strong>Key Topics:</strong> {{ section.key_topics }}
+                <strong>Key Topics:</strong> {{ section.key_topics|join(', ') }}
             </div>
             {% if section.key_takeaways %}
             <div class="meta-item">
