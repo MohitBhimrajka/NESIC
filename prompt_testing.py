@@ -128,40 +128,94 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Output Format & Quality Requirements:
 
     *   **Direct Start & No Conversational Text:** Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
-    *   **Valid and Consistent Markdown:**
-        *   Use syntactically correct and well-formed Markdown throughout.
-        *   Use `##` for main sections with exact numbering and titles, `###` for sub-sections, and bullet points for lists. Maintain consistent indentation.
-        *   Format code blocks (```) correctly when technical details are included.
-        *   **Table Formatting:** Ensure tables have correct header rows, separator lines, and a consistent number of columns. Use pipes (`|`) to delimit cells.
+    
+    *   **Strict Markdown Formatting Requirements:**
+        *   Use valid and consistent Markdown throughout the entire document.
+        *   **Section Formatting:** Sections MUST be numbered exactly as specified in the prompt (e.g., `## 1. Core Corporate Information`).
+        *   **Subsection Formatting:** Use `###` for subsections and maintain hierarchical structure (e.g., `### CEO Name, Title`).
+        *   **List Formatting:** Use asterisks (`*`) or hyphens (`-`) for bullets with consistent indentation (4 spaces for sub-bullets).
+        *   **Tables:** Format all tables with proper Markdown table syntax:
+            ```markdown
+            | Header 1 | Header 2 | Header 3 |
+            |----------|----------|----------|
+            | Data 1   | Data 2   | Data 3   |
+            | Data 4   | Data 5   | Data 6   |
+            ```
+        *   **Code Blocks:** Use triple backticks (```) for code blocks when presenting technical details.
+        *   **Quotes:** Use Markdown quote syntax (>) for direct quotations from executives when appropriate.
+    
     *   **Optimal Structure & Readability:**
-        *   Use tables for numerical data comparisons, bullet points for lists, and paragraphs for narrative descriptions.
+        *   Present numerical data in tables with proper alignment and headers.
+        *   Use bullet points for lists of items or characteristics.
+        *   Use paragraphs for narrative descriptions and analysis.
+        *   Maintain consistent formatting across similar elements throughout the document.
         *   **Content Organization:** Ensure a logical sequence within each section (e.g., chronological order for trends, priority order for lists).
         *   **Conciseness:** Provide detailed yet concise language—be specific without unnecessary verbosity.
+    
     *   **Data Formatting Consistency:**
         *   Use appropriate thousands separators for numbers per the target language: **{language}**.
         *   **Currency Specification:** Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period.
         *   Format dates in a consistent style (e.g., YYYY-MM-DD).
+        *   Use consistent percentage formatting (e.g., 12.5%).
+    
+    *   **Table Consistency Requirements:**
+        *   All tables must have header rows with clear column titles.
+        *   Include a separator row (|---|---|) between headers and data.
+        *   Align column content appropriately (left for text, right for numbers).
+        *   Maintain the same number of columns throughout each table.
+        *   Include units in column headers where applicable (e.g., "Revenue (JPY millions)").
+    
+    *   **Section Completion Verification:**
+        *   Every section requested in the prompt MUST be included in the output.
+        *   Sections must appear in the exact order specified in the prompt.
+        *   Each section must be properly labeled with the exact heading from the prompt.
+        *   Incomplete sections should be explicitly marked as having partial data rather than omitted entirely.
+    
     *   **Tone and Detail Level:**
         *   Maintain a professional, objective, and analytical tone suited for a Japanese corporate strategy audience.
         *   Provide granular detail (e.g., figures, dates, metrics) while avoiding promotional language.
+    
     *   **Completeness and Verification:**
         *   Address all requested points in each section.
         *   Verify that every section, the General Discussion, and the Sources list are present and adhere to the instructions.
         *   Perform a final internal review before output.
+    
     *   **Inline Citation & Specificity:** Incorporate the inline citation [SSX] for every factual claim (see Inline Citation Requirement) and include specific dates/definitions (see Specificity and Granularity).
     """)
 
 # FINAL REVIEW INSTRUCTION
 FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
     *   **Internal Final Review:** Before generating the 'Sources' list, review your generated response for:
-        *   All sections being addressed.
-        *   Direct start with no conversational text.
-        *   Correct Markdown formatting (especially in tables).
-        *   Every data point being sourced and grounded with inline citation [SSX].
-        *   Currency and dates specified.
-        *   A professional tone with no placeholders.
-        *   Adherence to missing info handling instructions.
-    Proceed to generate the final 'Sources' list only after these conditions are met.
+    
+        *   **Completeness Check:**
+            * Every numbered section requested in the prompt is present
+            * Each section contains all requested subsections and information points
+            * The "General Discussion" paragraph is included
+            * No sections have been accidentally omitted or truncated
+        
+        *   **Formatting Verification:**
+            * All section headings use correct Markdown format (`## Number. Title`)
+            * All subsections use proper hierarchical format (`###` or indented bullets)
+            * Tables have proper headers, separators, and consistent columns
+            * Lists use consistent formatting and indentation
+        
+        *   **Citation Integrity:**
+            * Every factual claim has an inline citation [SSX]
+            * Citations are placed immediately after the supported claim
+            * All citations will correspond to entries in the final Sources list
+        
+        *   **Data Precision:**
+            * All monetary values specify currency and reporting period
+            * All dates are in consistent format
+            * Numerical data is presented with appropriate precision and units
+        
+        *   **Content Quality:**
+            * Direct start with no conversational text
+            * Professional tone with no placeholders or ambiguous statements
+            * Adherence to missing info handling instructions
+            * Logical flow within and between sections
+        
+        Proceed to generate the final 'Sources' list only after confirming these conditions are met.
     """)
 
 # --- Prompt Generating Functions ---
@@ -309,7 +363,7 @@ For each section, provide verifiable data with inline citations [SSX] and specif
 ## 6. Cash Flow Statement Analysis (3-Year Trend):
     *   Analyze trends in Operating Cash Flow (OCF) and their drivers (e.g., profit changes versus working capital adjustments).
     *   Detail major Investing and Financing Cash Flow activities with currency and context.
-    *   Calculate and analyze Free Cash Flow (FCF = OCF - CapEx) and comment on the company’s capacity to fund operations and investments [SSX].
+    *   Calculate and analyze Free Cash Flow (FCF = OCF - CapEx) and comment on the company's capacity to fund operations and investments [SSX].
 
 ## 7. Investment Activities (Last 3 Years):
     *   Describe major M&A deals, capital expenditure patterns, and any corporate venture or R&D investments with specific amounts (specify currency and reporting period) [SSX].
@@ -477,7 +531,7 @@ def get_regulatory_prompt(company_name: str, language: str = "Japanese"):
     return f'''
 In-Depth Analysis of the Regulatory Environment and Compliance for {company_name}'s Digital Transformation (DX)
 
-Objective: To analyze the regulatory environment impacting **{company_name}**'s DX initiatives, including data privacy, cybersecurity, AI governance, and sector-specific digital rules. Evaluate the company’s compliance approaches and any enforcement actions with precise dates and references [SSX].
+Objective: To analyze the regulatory environment impacting **{company_name}**'s DX initiatives, including data privacy, cybersecurity, AI governance, and sector-specific digital rules. Evaluate the company's compliance approaches and any enforcement actions with precise dates and references [SSX].
 
 Target Audience Context: The output is for a **Japanese company** reviewing regulatory risks for potential partnership, investment, or competitive evaluation. Provide exact dates, reporting periods, and detailed official source references [SSX]. {AUDIENCE_CONTEXT_REMINDER}
 
@@ -523,7 +577,7 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese"):
     return f'''
 In-Depth Analysis of {company_name}'s Digital Crisis Management and Business Continuity
 
-Objective: To analyze how **{company_name}** prepares for and manages digital crises (e.g., cyberattacks, system outages) and its business continuity plans. Include details on past incidents with exact dates, impacts (including financial figures with specified currency), and the company’s response strategies, all supported by inline citations [SSX].
+Objective: To analyze how **{company_name}** prepares for and manages digital crises (e.g., cyberattacks, system outages) and its business continuity plans. Include details on past incidents with exact dates, impacts (including financial figures with specified currency), and the company's response strategies, all supported by inline citations [SSX].
 
 Target Audience Context: This output is for a **Japanese company** assessing digital risk resilience for strategic decision-making. Provide precise data (with dates and reporting periods) and official source references [SSX]. {AUDIENCE_CONTEXT_REMINDER}
 
@@ -622,6 +676,29 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese")
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
     
+    # Added enhanced completion guidance for business structure
+    business_structure_completion_guidance = textwrap.dedent(f"""\
+    **Critical Completeness Requirements:**
+    
+    *   **Priority Information:** If time or data are limited, prioritize completing:
+        1. The business segment breakdown with at least the most recent fiscal year data
+        2. The geographic segment breakdown with at least the most recent fiscal year data
+        3. The top 3-5 major shareholders
+        
+    *   **Progressive Completion:** For each section, provide at least basic information before attempting more detailed analysis:
+        * For segments: At minimum, list main segments and their % of revenue for the most recent year
+        * For geography: At minimum, list main regions and their % of revenue for the most recent year
+        * For shareholders: At minimum, list the largest institutional/individual shareholders
+        
+    *   **Partial Data Handling:** If 3-year data is unavailable, clearly state the available timeframe (e.g., "Data available for FY2022-2023 only [SSX]") and proceed with analysis of available data rather than omitting the entire section.
+    
+    *   **Final Verification:** Before completing each section, verify:
+        * All priority information points are addressed
+        * At least one full fiscal year of data is provided for segments
+        * All available ownership information is included
+        * Each data point includes proper citation [SSX]
+    """)
+    
     return f"""
 In-Depth Analysis of {company_name}'s Business Structure, Geographic Footprint, Ownership, and Strategic Vision Linkages
 
@@ -638,26 +715,69 @@ Perform a critical analysis using official sources (Annual/Integrated Reports, I
 {SPECIFICITY_INSTRUCTION}
 {INLINE_CITATION_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
+{business_structure_completion_guidance}
 
 ## 1. Business Segment Analysis (Last 3 Fiscal Years):
     *   List the reported business segments (or main business lines) using official descriptions. Include a table with consolidated sales figures (specify currency and fiscal year) and composition ratios, with each data point referenced [SSX].
+    *   For each segment, provide:
+        * Official segment name as reported by the company [SSX]
+        * Brief description of products/services in that segment (1-2 sentences) [SSX]
+        * Revenue figures (with currency and fiscal year) for the last 3 years or maximum available [SSX]
+        * Year-over-year growth/decline rates (%) with specific calculations [SSX]
+        * Profit margins (if available) with exact reporting period [SSX]
     *   Analyze significant trends (e.g., growth/decline, margin changes) with specific percentages and dates [SSX].
+    *   Identify the fastest growing and most profitable segments with supporting data [SSX].
 
 ## 2. Geographic Segment Analysis (Last 3 Fiscal Years):
     *   List the geographic regions or segments with corresponding sales figures and composition ratios in a table, including the fiscal year and currency [SSX].
+    *   For each geographic region, provide:
+        * Region name as officially reported by the company [SSX]
+        * Revenue figures (with currency and fiscal year) for last 3 years or maximum available [SSX]
+        * Year-over-year growth/decline rates (%) with specific calculations [SSX]
+        * Percentage of total revenue for each year reported [SSX]
     *   Analyze regional trends with specific supporting data and inline citations [SSX].
+    *   Identify key growth markets and declining markets with specific figures [SSX].
+    *   Note any stated plans for geographic expansion or contraction with dates and details [SSX].
 
 ## 3. Major Shareholders & Ownership Structure:
     *   Describe the overall ownership type (e.g., publicly traded, privately held) with specific details.
-    *   List the top 5-10 major shareholders with approximate percentages, exact as-of dates, and source references [SSX].
+    *   List the top 5-10 major shareholders with:
+        * Exact shareholder names as officially reported [SSX]
+        * Precise ownership percentages (as of the most recent reporting date) [SSX]
+        * Shareholder type (institutional, individual, government, etc.) [SSX]
+        * Any changes in major shareholders over the past year, if reported [SSX]
+    *   Include information on:
+        * Total shares outstanding (with exact as-of date) [SSX]
+        * Free float percentage (if available) [SSX]
+        * Presence of controlling shareholders or parent companies [SSX]
+        * Cross-shareholdings with business partners (if applicable) [SSX]
     *   Include any details regarding different classes of shares, if applicable, and provide an analytical comment on ownership concentration [SSX].
 
-## 4. Leadership Strategic Outlook & Vision (Verbatim Quotes - Linkages):
-    *   Provide verbatim quotes from key executives (CEO, Chairman, and optionally CFO/CSO) that address long-term strategic vision and growth plans. Each quote must have its source cited immediately after it (e.g., "(Source: Annual Report 2023, p. 5)") and must be linked to relevant findings in previous sections with inline citations [SSX].
-    *   Where possible, explicitly connect a quote to a specific finding in Sections 1-3 (e.g., "Reflecting the focus on Asia in Section 2, the CEO stated... [SSX]").
+## 4. Corporate Group Structure:
+    *   Describe the parent-subsidiary relationships and overall corporate group structure [SSX].
+    *   List key subsidiaries with:
+        * Official subsidiary names [SSX]
+        * Ownership percentage by the parent company [SSX]
+        * Primary business functions of each subsidiary [SSX]
+        * Country/region of incorporation [SSX]
+    *   Note any recent restructuring, mergers, or acquisitions with specific dates and transaction details (if available) [SSX].
 
-## 5. General Discussion:
-    *   Provide a single concluding paragraph (300-500 words) synthesizing the findings from Sections 1-4. Clearly link analytical insights and comparisons using inline citations (e.g., "the shift in segment sales [SSX] suggests...").
+## 5. Leadership Strategic Outlook & Vision (Verbatim Quotes - Linkages):
+    *   Provide verbatim quotes from key executives (CEO, Chairman, and optionally CFO/CSO) that address:
+        * Long-term strategic vision for the company structure [SSX]
+        * Plans for business segment growth/rationalization [SSX]
+        * Geographic expansion or focus strategies [SSX]
+        * Comments on ownership structure or major shareholder relations (if any) [SSX]
+    *   Each quote must have its source cited immediately after it (e.g., "(Source: Annual Report 2023, p. 5)") and must be linked to relevant findings in previous sections with inline citations [SSX].
+    *   Where possible, explicitly connect a quote to a specific finding in Sections 1-4 (e.g., "Reflecting the focus on Asia in Section 2, the CEO stated... [SSX]").
+
+## 6. General Discussion:
+    *   Provide a single concluding paragraph (300-500 words) synthesizing the findings from Sections 1-5. Clearly link analytical insights and comparisons using inline citations (e.g., "the shift in segment sales [SSX] suggests...").
+    *   Address specifically:
+        * The alignment between business structure and stated strategic vision [SSX]
+        * How ownership structure may influence business decisions [SSX]
+        * Geographic expansion strategies and their business segment implications [SSX]
+        * Potential future developments based on current structure and leadership comments [SSX]
     *   Structure your discussion logically, starting with a summary of business and geographic drivers, assessing ownership influence and leadership vision, and concluding with strategic implications for a Japanese audience.
     *   Do not introduce new unsupported claims.
 
@@ -726,7 +846,7 @@ Detailed Leadership Strategic Outlook (Verbatim Quotes) for {company_name}
 
 Objective: To compile a collection of direct, verbatim strategic quotes from {company_name}'s senior leadership (CEO, Chairman, and optionally CFO/CSO) that illustrate the company's strategic direction, future plans, and responses to challenges. Each quote must be accurately transcribed with an immediate source citation in parentheses and an inline citation [SSX] if it supports further analytical claims.
 
-Target Audience Context: This information is for a **Japanese company** that requires a clear understanding of leadership’s strategic communication. Ensure that every quote includes exact dates and precise source references [SSX]. {AUDIENCE_CONTEXT_REMINDER}
+Target Audience Context: This information is for a **Japanese company** that requires a clear understanding of leadership's strategic communication. Ensure that every quote includes exact dates and precise source references [SSX]. {AUDIENCE_CONTEXT_REMINDER}
 
 {language_instruction}
 

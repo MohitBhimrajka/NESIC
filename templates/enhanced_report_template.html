@@ -29,13 +29,6 @@
                 vertical-align: bottom;
                 padding-bottom: 1cm;
             }
-            @top-left {
-                content: url("{{ favicon_path }}");
-                width: 20px; /* Increased size for better visibility */
-                height: 20px;
-                vertical-align: middle;
-                padding-bottom: 0.8cm;
-            }
         }
 
         /* Define named pages for covers, TOC, end */
@@ -44,14 +37,12 @@
             @bottom-right { content: normal; }
             @bottom-left { content: normal; }
             @top-right { content: normal; }
-            @top-left { content: normal; }
         }
         @page section_cover {
             margin: 0;
             @bottom-right { content: normal; }
             @bottom-left { content: normal; }
             @top-right { content: normal; }
-            @top-left { content: normal; }
         }
         @page toc {
             @bottom-right {
@@ -74,14 +65,6 @@
                 color: #666;
                 vertical-align: bottom;
                 padding-bottom: 1cm;
-            }
-            @top-left {
-                content: url("{{ favicon_path }}");
-                width: 16px;
-                height: 16px;
-                vertical-align: bottom;
-                padding-bottom: 1cm;
-                padding-left: 0;
             }
         }
         @page end {
@@ -237,13 +220,117 @@
 
         /* Table of Contents Styles */
         .table-of-contents {
-            padding: 3cm 2cm;
+            padding: 1.5cm 2cm; /* Reduced top/bottom padding */
             page: toc;
         }
-        .toc-header {
-            font-size: 24pt;
+
+        /* New TOC styles */
+        .toc-container {
+            margin: 1em 0 2em 0;
+        }
+        
+        .toc-title {
+            font-size: 18pt;
             color: var(--navy-blue);
-            margin-bottom: 2cm;
+            margin-bottom: 1.5em;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            border-bottom: none;
+        }
+        
+        .toc-entries {
+            padding: 0 1em;
+        }
+        
+        .toc-entry {
+            margin: 0.8em 0;
+            position: relative;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        
+        .toc-entry::after {
+            content: "";
+            position: absolute;
+            bottom: 0.5em;
+            left: 0;
+            right: 0;
+            border-bottom: 1px dotted var(--light-gray);
+            z-index: 1;
+        }
+        
+        .toc-link {
+            font-weight: bold;
+            font-size: 12pt;
+            color: var(--navy-blue);
+            text-decoration: none;
+            background: white;
+            padding-right: 0.5em;
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+            width: auto;
+            max-width: calc(100% - 4em);
+        }
+        
+        .toc-link::after {
+            content: target-counter(attr(href), page);
+            position: absolute;
+            right: -4em;
+            background: white;
+            padding: 0 0.5em;
+            color: var(--dark-gray);
+            z-index: 2;
+            font-weight: normal;
+        }
+        
+        .toc-subsections {
+            margin-left: 2em;
+            margin-top: 0.5em;
+        }
+        
+        .toc-subsection {
+            margin: 0.4em 0;
+            position: relative;
+        }
+        
+        .toc-subsection::after {
+            content: "";
+            position: absolute;
+            bottom: 0.3em;
+            left: 0;
+            right: 0;
+            border-bottom: 1px dotted var(--light-gray);
+            z-index: 1;
+        }
+        
+        .toc-sublink {
+            font-size: 10pt;
+            color: var(--dark-gray);
+            text-decoration: none;
+            background: white;
+            padding-right: 0.5em;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .toc-sublink::after {
+            content: target-counter(attr(href), page);
+            position: absolute;
+            right: -3em;
+            background: white;
+            padding-left: 0.5em;
+            color: var(--dark-gray);
+            z-index: 2;
+        }
+
+        /* Legacy styles - keep for compatibility */
+        .toc-header {
+            font-size: 18pt; /* Smaller font size */
+            color: var(--navy-blue);
+            margin-bottom: 1cm; /* Reduced margin */
             text-align: center;
             font-weight: bold;
             text-transform: uppercase;
@@ -265,7 +352,7 @@
             display: flex;
             align-items: baseline;
             width: 100%;
-            margin: 8px 0;
+            margin: 4px 0; /* Reduced spacing between items */
             position: relative;
         }
         .toc-line::after {
@@ -304,9 +391,9 @@
             z-index: 2;
         }
         .toc-item.level-1 {
-            margin-top: 1.2em;
+            margin-top: 0.8em; /* Reduced top margin */
             font-weight: 600;
-            font-size: 12pt;
+            font-size: 11pt; /* Slightly smaller */
         }
         .toc-item.level-1:first-child {
             margin-top: 0;
@@ -314,12 +401,13 @@
         .toc-sublist {
             list-style: none;
             padding: 0;
-            margin: 0.3em 0 0.8em 2cm;
+            margin: 0.2em 0 0.5em 1.5cm; /* Reduced margins and indentation */
         }
         .toc-item.level-2 {
             font-weight: normal;
-            font-size: 10.5pt;
+            font-size: 10pt; /* Smaller font size */
             color: #34495e;
+            margin: 2px 0; /* Tighter spacing between subsections */
         }
         .toc-item.level-2 .toc-number {
             color: var(--soft-blue);
@@ -439,12 +527,16 @@
             text-align: left;
             font-weight: 600;
             color: var(--navy-blue);
+            white-space: normal;
+            overflow-wrap: break-word;
         }
 
         .enhanced-table td {
             border-bottom: 1px solid #dee2e6;
             padding: 4px 8px;
             vertical-align: top;
+            white-space: normal;
+            overflow-wrap: break-word;
         }
 
         .enhanced-table .text-right {
@@ -546,6 +638,9 @@
             margin-bottom: 0.8em;
             font-size: 9pt;
             color: #666;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
         .sources-section a {
             color: var(--soft-blue);
@@ -554,6 +649,21 @@
         }
         .sources-section a:hover {
             text-decoration: underline;
+        }
+        
+        /* Citation links */
+        .citation-link {
+            color: var(--navy-blue);
+            text-decoration: none;
+            font-weight: 600;
+            background-color: rgba(130, 137, 236, 0.1);
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        .citation-link:hover {
+            text-decoration: underline;
+            background-color: rgba(130, 137, 236, 0.2);
         }
         
         /* --- Section Headings --- */
@@ -617,12 +727,53 @@
         img.debug-border {
             border: 1px solid red;
         }
+
+        /* Favicon styling */
+        .favicon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        .header-icons {
+            position: absolute;
+            top: 2cm;
+            left: 2cm;
+        }
+
+        /* Debug elements - always hidden */
+        .header-debug {
+            display: none !important;
+        }
+
+        /* Sources list styling improvements */
+        .sources-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.5em 0;
+        }
+        .sources-list li {
+            position: relative;
+            padding: 0.4em 0;
+            margin-bottom: 0.6em;
+            padding-left: 1em;
+            border-left: 2px solid rgba(133, 194, 11, 0.3);
+        }
+        .sources-list li:target {
+            background-color: rgba(130, 137, 236, 0.1);
+            border-left-color: var(--soft-blue);
+            padding: 0.6em 0.6em 0.6em 1em;
+            border-radius: 0 3px 3px 0;
+        }
     </style>
 </head>
 <body>
     <!-- Cover Page -->
     <div class="cover">
         <div class="cover-wrapper">
+            <div class="header-icons">
+                <img src="{{ favicon_path }}" alt="Favicon" class="favicon">
+            </div>
             <img src="{{ logo_path }}" alt="Company Logo" class="cover-logo">
             <!-- Debug info - remove in production -->
             <div style="display:none">Logo path: {{ logo_path }}</div>
@@ -641,7 +792,6 @@
 
     <!-- Table of Contents -->
     <div class="table-of-contents">
-        <h2>Table of Contents</h2>
         {{ toc | safe }}
     </div>
 
@@ -669,7 +819,7 @@
             {{ section.html_content | safe }}
             
             {% if section.source_list_html %}
-            <div class="sources-section">
+            <div class="sources-section" id="sources-{{ section.id }}">
                 <h3>Sources & References</h3>
                 {{ section.source_list_html | safe }}
             </div>

@@ -25,6 +25,7 @@ class PDFSection(BaseModel):
     key_topics: List[str] = []
     metadata: Dict = {} # YAML frontmatter metadata
     reading_time: int = 0 # Estimated reading time in minutes
+    subsections: List[Any] = [] # Subsections of this section
 
 class EnhancedPDFGenerator:
     """Enhanced PDF Generator with better markdown support and styling."""
@@ -91,19 +92,46 @@ class EnhancedPDFGenerator:
         return estimated_time
 
     def _extract_key_topics(self, content: str, max_topics: int = None) -> List[str]:
-        """Extract key topics from the content based on headings."""
-        soup = BeautifulSoup(self._convert_markdown_to_html(content), 'html.parser')
+        """Extract key topics from the content based on headings.
+        
+        This extracts the subsection headings (h2, h3) from the content to build
+        a table of contents. It skips any headings related to sources/references.
+        
+        Args:
+            content: The markdown content to extract topics from
+            max_topics: Optional maximum number of topics to extract
+            
+        Returns:
+            List of topic strings
+        """
+        # First convert the markdown to HTML to get proper heading structure
+        temp_html = self._convert_markdown_to_html(content)
+        soup = BeautifulSoup(temp_html, 'html.parser')
         
         # Only consider h2 and h3 headings for key topics
+        # First h2 is usually the section title, so skip it
         headings = soup.find_all(['h2', 'h3'])
         topics = []
         
-        for heading in headings:
+        # Skip the first h2 which is the section title
+        starting_index = 0
+        if headings and headings[0].name == 'h2':
+            starting_index = 1
+        
+        for heading in headings[starting_index:]:
             # Skip sources/references sections
             text = heading.get_text().strip()
-            if 'sources' in text.lower() or 'references' in text.lower():
+            if ('sources' in text.lower() or 'references' in text.lower() or 
+                'source list' in text.lower()):
                 continue
+            
+            # Remove any debug spans we added
+            for debug_span in heading.find_all(class_='header-debug'):
+                debug_span.extract()
+                
+            # Get the clean text
             topics.append(text)
+            
             # Only limit if max_topics is specified
             if max_topics and len(topics) >= max_topics:
                 break
@@ -162,41 +190,94 @@ class EnhancedPDFGenerator:
 
         return str(soup)
 
-    def _generate_toc(self, sections: List[PDFSection]) -> str:
-        """Generate a structured table of contents with nested subsections."""
-        toc_items = []
-        toc_items.append('<nav class="toc-navigation">')
-        toc_items.append('<div class="toc-header">Contents</div>')
-        toc_items.append('<ul class="toc-list">')
+    def _generate_toc(self, sections):
+        """Generate a properly formatted and hyperlinked table of contents."""
+        if not sections:
+            return ""
+            
+        toc_html = '<div class="toc-container">\n'
+        toc_html += '<h2 class="toc-title">Table of Contents</h2>\n'
+        toc_html += '<div class="toc-entries">\n'
         
-        for section_idx, section in enumerate(sections, 1):
-            # Add main section
+        for idx, section in enumerate(sections, 1):
+            # Create section entry with proper hyperlink
+            # Use section-{idx} as the anchor, which matches the IDs in the template
             section_id = f"section-{section.id}"
-            toc_items.append('<li class="toc-item level-1">')
-            toc_items.append('<div class="toc-line">')
-            toc_items.append(f'<span class="toc-number">{section_idx}</span>')
-            toc_items.append(f'<a href="#{section_id}">{section.title}</a>')
-            toc_items.append('</div>')
+            section_title = section.title.strip()
             
-            # Process all subsections without limiting
-            subsections = self._extract_key_topics(section.content)
-            if subsections:
-                toc_items.append('<ul class="toc-sublist">')
-                for topic_idx, topic in enumerate(subsections, 1):
-                    topic_id = f"{section.id}-h-{topic_idx-1}"
-                    toc_items.append('<li class="toc-item level-2">')
-                    toc_items.append('<div class="toc-line">')
-                    toc_items.append(f'<span class="toc-number">{section_idx}.{topic_idx}</span>')
-                    toc_items.append(f'<a href="#{topic_id}">{topic}</a>')
-                    toc_items.append('</div>')
-                    toc_items.append('</li>')
-                toc_items.append('</ul>')
+            toc_html += f'<div class="toc-entry">\n'
+            toc_html += f'  <a href="#{section_id}" class="toc-link">{section_title}</a>\n'
             
-            toc_items.append('</li>')
+            # Handle subsections if they exist (using hasattr to check)
+            if hasattr(section, 'subsections') and section.subsections:
+                toc_html += '  <div class="toc-subsections">\n'
+                
+                for sub_idx, subsection in enumerate(section.subsections, 1):
+                    subsection_id = f"{section_id}-sub-{sub_idx}"
+                    subsection_title = subsection.title.strip()
+                    
+                    toc_html += f'    <div class="toc-subsection">\n'
+                    toc_html += f'      <a href="#{subsection_id}" class="toc-sublink">{subsection_title}</a>\n'
+                    toc_html += f'    </div>\n'
+                
+                toc_html += '  </div>\n'
+            
+            toc_html += '</div>\n'
         
-        toc_items.append('</ul>')
-        toc_items.append('</nav>')
-        return '\n'.join(toc_items)
+        toc_html += '</div>\n</div>\n'
+        
+        return toc_html
+        
+    def _process_sections(self, sections):
+        """
+        Process sections for the report, adding IDs and handling subsections.
+        """
+        processed_sections = []
+        section_counter = 0
+        
+        for section in sections:
+            section_counter += 1
+            # Ensure the section ID is consistent with what the template expects
+            if not hasattr(section, "id") or not section.id:
+                section.id = f"section-{section_counter}"
+            
+            # Extract metadata, main content and sources separately
+            metadata, main_content, sources_content = self._extract_metadata_and_split_sources(section.content)
+            
+            # Update section with extracted metadata
+            section.metadata.update(metadata)
+            
+            # Process the main content of the section
+            if main_content:
+                # Extract key topics for the section cover
+                section.key_topics = self._extract_key_topics(main_content, max_topics=5)
+                
+                # Estimate reading time
+                section.reading_time = self._estimate_reading_time(main_content)
+                
+                # Extract introduction paragraph
+                section.intro = self._extract_intro(main_content)
+                
+                # Convert main content to HTML
+                main_html, _, _ = self._extract_html(section)
+                
+                # Add citation links to HTML
+                main_html = self.hyperlink_citations(main_html, section.id)
+                
+                # Set the HTML content for the section
+                section.html_content = main_html
+            
+            # Process sources content if available
+            if sources_content:
+                sources_html = self._convert_markdown_to_html(sources_content)
+                section.source_list_html = self.format_sources_html(sources_html, section.id)
+            
+            # Process subsections if they exist
+            # (Note: Current implementation doesn't handle subsections in PDFSection objects)
+            
+            processed_sections.append(section)
+        
+        return processed_sections
 
     def _extract_intro(self, content: str) -> str:
         """Extract the introduction paragraph from the content."""
@@ -232,9 +313,12 @@ class EnhancedPDFGenerator:
 
     def _extract_html(self, section: PDFSection) -> Tuple[str, Dict, str]:
         """Extract HTML and metadata from markdown content."""
+        # First extract metadata and content
+        content = section.content
+        
         # Convert Markdown to HTML with expanded extensions
         self.md.reset()  # Reset the markdown parser state
-        html = self.md.convert(section.content)
+        html = self.md.convert(content)
         
         # Extract metadata from markdown meta
         metadata = getattr(self.md, 'Meta', {})
@@ -249,23 +333,24 @@ class EnhancedPDFGenerator:
             # Enhanced table styling
             if table.find('thead'):
                 table['class'].append('has-header')
-            
+             
             # Add zebra striping class if more than 3 rows
             if len(table.find_all('tr')) > 3:
                 table['class'].append('zebra-stripe')
-            
+             
             # Add responsive wrapper
             wrapper = soup.new_tag('div')
             wrapper['class'] = ['table-responsive']
             table.wrap(wrapper)
-
+ 
         # Extract sources section
         sources_html = ""
         sources_header = soup.find(['h2', 'h3'], string=lambda s: s and ('sources' in s.lower() or 'references' in s.lower()))
         if sources_header:
             sources_div = soup.new_tag('div')
             sources_div['class'] = ['sources-section']
-            
+            sources_div['id'] = f"{section.id}-sources" # Add unique ID to sources section
+             
             # Collect all elements until next header of same level or higher
             current = sources_header
             while current:
@@ -278,62 +363,229 @@ class EnhancedPDFGenerator:
                     current.extract()
                     sources_div.append(current)
                 current = next_sibling
-            
+             
             # Remove the header from the main content
             sources_header.extract()
+            # Add the header back to the sources_div with a unique ID
+            sources_header['id'] = f"{section.id}-sources-header"
             sources_html = str(sources_div)
-        
-        # Update heading IDs and add to TOC
+         
+        # Update heading IDs and add to TOC with consistent pattern
         headers = soup.find_all(['h2', 'h3', 'h4'])
         for idx, header in enumerate(headers):
             # Skip sources/references headers
             if any(word in header.get_text().lower() for word in ['sources', 'references']):
                 continue
-                
+                 
             # Use section ID and header index for a unique, predictable ID
+            # Format: section-id-h-index (e.g., basic-h-0)
             header_id = f"{section.id}-h-{idx}"
             
             # Simply set the ID directly on the header element
             header['id'] = header_id
             
-            # Add section number for h2
-            if header.name == 'h2':
-                number_span = soup.new_tag('span')
-                number_span['class'] = ['section-number']
-                number_span.string = f"{idx + 1}. "
-                header.insert(0, number_span)
-        
+            # Remove any existing debug spans
+            for debug_span in header.find_all(class_='header-debug'):
+                debug_span.extract()
+            
+            # Remove any ID text that might be visible
+            header_text = header.get_text().strip()
+            if 'ID:' in header_text:
+                # Extract just the title part (before the ID info)
+                clean_title = re.sub(r'ID:.*$', '', header_text).strip()
+                # Clear the header content
+                header.clear()
+                
+                # Add section number for h2 if applicable
+                if header.name == 'h2':
+                    number_span = soup.new_tag('span')
+                    number_span['class'] = ['section-number']
+                    number_span.string = f"{idx + 1}. "
+                    header.append(number_span)
+                
+                # Add the clean title
+                header.append(clean_title)
+                continue
+            
+            # Handle existing numbering
+            # Remove any existing numbers at start of header text
+            if re.match(r'^\d+(\.\d+)*\.\s+', header_text):
+                # Extract just the title part (after the numbering)
+                clean_title = re.sub(r'^\d+(\.\d+)*\.\s+', '', header_text)
+                # Clear the header content
+                header.clear()
+                
+                # Add section number for h2 with a span
+                if header.name == 'h2':
+                    number_span = soup.new_tag('span')
+                    number_span['class'] = ['section-number']
+                    number_span.string = f"{idx + 1}. "
+                    header.append(number_span)
+                
+                # Add the clean title
+                header.append(clean_title)
+            else:
+                # If no existing numbering, add section numbers only for h2
+                if header.name == 'h2':
+                    # Need to clear and rebuild to insert at beginning
+                    header_content = header.get_text()
+                    header.clear()
+                    number_span = soup.new_tag('span')
+                    number_span['class'] = ['section-number']
+                    number_span.string = f"{idx + 1}. "
+                    header.append(number_span)
+                    header.append(header_content)
+         
         return str(soup), metadata, sources_html
+        
+    def hyperlink_citations(self, html: str, section_id: str) -> str:
+        """Hyperlink inline citations to their corresponding sources.
+        
+        This function finds citation markers [SSx] in the text and converts them
+        to links that point to the corresponding source in the sources section.
+        
+        Args:
+            html: The HTML content to process
+            section_id: The ID of the current section to scope citations
+            
+        Returns:
+            HTML content with citation markers converted to links
+        """
+        pattern = re.compile(r'\[SS(\d+)\]')
+        
+        # Use a custom replacement function to add debug info
+        def replace_citation(match):
+            citation_id = match.group(1)
+            target_id = f"{section_id}-source-SS{citation_id}"
+            return f'<a href="#{target_id}" class="citation-link" data-source="{section_id}-source-SS{citation_id}">[SS{citation_id}]</a>'
+            
+        # Apply the replacements
+        return pattern.sub(replace_citation, html)
+        
+    def format_sources_html(self, sources_html, section_id):
+        """Format sources as a proper list with IDs for each source."""
+        if not sources_html.strip():
+            return ""
+            
+        soup = BeautifulSoup(sources_html, 'html.parser')
+        
+        # Create a new sources container
+        sources_container = BeautifulSoup('<div class="sources-section"><div class="sources-list"></div></div>', 'html.parser')
+        sources_list = sources_container.find(class_="sources-list")
+        
+        # Process the source content to extract all possible source items
+        source_entries = []
+        
+        # Method 1: Try to find existing list items
+        li_elements = soup.find_all('li')
+        if li_elements:
+            for li in li_elements:
+                source_entries.append(li.get_text().strip())
+        
+        # Method 2: Try to parse sources from text with asterisks
+        if not source_entries:
+            text = soup.get_text()
+            if '*' in text:
+                source_entries = [s.strip() for s in text.split('*') if s.strip()]
+        
+        # Method 3: Try to parse sources from numbered lines
+        if not source_entries:
+            text = soup.get_text()
+            lines = text.split('\n')
+            in_source = False
+            current_source = []
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    if current_source:
+                        source_entries.append(' '.join(current_source))
+                        current_source = []
+                    continue
+                
+                # Check if line starts a new numbered source
+                if re.match(r'^\d+\.', line) or re.match(r'^\[\w+\]', line):
+                    # Save previous source if exists
+                    if current_source:
+                        source_entries.append(' '.join(current_source))
+                        current_source = []
+                    
+                    current_source.append(line)
+                    in_source = True
+                elif in_source:
+                    # Continue with the current source
+                    current_source.append(line)
+            
+            # Add the last source if there is one
+            if current_source:
+                source_entries.append(' '.join(current_source))
+        
+        # Method 4: Try plain text split by line breaks
+        if not source_entries:
+            text = soup.get_text()
+            lines = [line.strip() for line in text.split('\n') if line.strip()]
+            if lines:
+                source_entries = lines
+        
+        # Method 5: Just use the entire text as one source if nothing else worked
+        if not source_entries:
+            text = soup.get_text().strip()
+            if text:
+                source_entries = [text]
+        
+        # Create consistent formatted list items
+        for idx, entry in enumerate(source_entries, 1):
+            if not entry or entry.lower() in ['sources', 'references', 'source list']:
+                continue
+                
+            source_id = f"{section_id}-source-{idx}"
+            
+            # Check if this source contains a citation marker [SSx]
+            citation_match = re.search(r'\[SS(\d+)\]', entry)
+            if citation_match:
+                source_id = f"{section_id}-source-SS{citation_match.group(1)}"
+            
+            # Create the LI element
+            li_tag = soup.new_tag('li')
+            li_tag['id'] = source_id
+            li_tag['class'] = ['source-item']
+            
+            # If the entry starts with a number like "1. ", remove it
+            entry_text = re.sub(r'^\d+\.\s+', '', entry).strip()
+            
+            # Process any URLs in the text to make them clickable
+            url_pattern = r'https?://[^\s)"]+'
+            urls = re.findall(url_pattern, entry_text)
+            
+            if urls:
+                # Replace URLs with hyperlinks
+                for url in urls:
+                    hyperlink = soup.new_tag('a')
+                    hyperlink['href'] = url
+                    hyperlink['class'] = ['source-url']
+                    hyperlink['target'] = '_blank'  # Open in new tab
+                    hyperlink.string = url
+                    
+                    # Replace URL in the text with the hyperlink
+                    entry_text = entry_text.replace(url, str(hyperlink))
+                
+                # Set the content with hyperlinks
+                li_tag.append(BeautifulSoup(entry_text, 'html.parser'))
+            else:
+                # Just set the text content
+                li_tag.string = entry_text
+                
+            sources_list.append(li_tag)
+        
+        # Only return non-empty sources
+        if sources_list.find_all('li'):
+            return str(sources_container)
+        else:
+            return ""
 
     def generate_pdf(self, sections_data: List[PDFSection], output_path: str, metadata: Dict) -> Path:
         """Generate a PDF report from the provided section data and metadata."""
-        processed_sections = []
-
-        for section_data in sections_data:
-            section_id = section_data.id
-            raw_content = section_data.content
-
-            # Split raw content into metadata, main markdown, and sources markdown
-            section_metadata, main_markdown, sources_markdown = self._extract_metadata_and_split_sources(raw_content)
-
-            # Convert main markdown to HTML
-            main_html = self._convert_markdown_to_html(main_markdown, section_id)
-
-            # Convert sources markdown to HTML (if any)
-            sources_html = self._convert_markdown_to_html(sources_markdown, f"{section_id}-sources")
-
-            processed_section = PDFSection(
-                id=section_id,
-                title=section_data.title,
-                content=raw_content,  # Keep raw markdown if needed elsewhere
-                html_content=main_html,
-                source_list_html=sources_html,  # Store sources HTML separately for each section
-                intro=self._extract_intro(main_html),
-                key_topics=self._extract_key_topics(main_html),
-                metadata=section_metadata,
-                reading_time=self._estimate_reading_time(main_markdown)
-            )
-            processed_sections.append(processed_section)
+        processed_sections = self._process_sections(sections_data)
 
         # Get paths for logo and favicon
         template_dir = Path(self.template_dir)
@@ -381,6 +633,101 @@ class EnhancedPDFGenerator:
                 body { 
                     font-family: 'Noto Sans', 'Noto Sans JP', sans-serif;
                     line-height: 1.6;
+                }
+                
+                /* Table of contents styles */
+                .toc-container {
+                    margin: 1em 0 2em 0;
+                }
+                
+                .toc-title {
+                    font-size: 18pt;
+                    color: #000b37;
+                    margin-bottom: 1.5em;
+                    text-align: center;
+                    font-weight: bold;
+                    letter-spacing: 0.05em;
+                    border-bottom: none;
+                }
+                
+                .toc-entries {
+                    padding: 0 1em;
+                }
+                
+                .toc-entry {
+                    margin: 0.8em 0;
+                    position: relative;
+                }
+                
+                .toc-entry::after {
+                    content: "";
+                    position: absolute;
+                    bottom: 0.5em;
+                    left: 0;
+                    right: 0;
+                    border-bottom: 1px dotted #c7c7c7;
+                    z-index: 1;
+                }
+                
+                .toc-link {
+                    font-weight: bold;
+                    font-size: 12pt;
+                    color: #000b37;
+                    text-decoration: none;
+                    background: white;
+                    padding-right: 0.5em;
+                    position: relative;
+                    z-index: 2;
+                }
+                
+                .toc-link::after {
+                    content: target-counter(attr(href), page);
+                    position: absolute;
+                    right: -3em;
+                    background: white;
+                    padding-left: 0.5em;
+                    color: #474747;
+                    z-index: 2;
+                }
+                
+                .toc-subsections {
+                    margin-left: 2em;
+                    margin-top: 0.5em;
+                }
+                
+                .toc-subsection {
+                    margin: 0.4em 0;
+                    position: relative;
+                }
+                
+                .toc-subsection::after {
+                    content: "";
+                    position: absolute;
+                    bottom: 0.3em;
+                    left: 0;
+                    right: 0;
+                    border-bottom: 1px dotted #c7c7c7;
+                    z-index: 1;
+                }
+                
+                .toc-sublink {
+                    font-size: 10pt;
+                    color: #474747;
+                    text-decoration: none;
+                    background: white;
+                    padding-right: 0.5em;
+                    position: relative;
+                    z-index: 2;
+                }
+                
+                .toc-sublink::after {
+                    content: target-counter(attr(href), page);
+                    position: absolute;
+                    right: -3em;
+                    background: white;
+                    padding-left: 0.5em;
+                    color: #474747;
+                    z-index: 2;
                 }
                 
                 /* Enhanced table styles */
@@ -475,6 +822,50 @@ class EnhancedPDFGenerator:
                     text-decoration: underline;
                 }
                 
+                /* Sources list styling improvements */
+                .sources-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0.5em 0;
+                }
+                
+                .sources-list li {
+                    position: relative;
+                    padding: 0.4em 0;
+                    margin-bottom: 0.6em;
+                    padding-left: 1em;
+                    border-left: 2px solid rgba(133, 194, 11, 0.3);
+                }
+                
+                .sources-list li:target {
+                    background-color: rgba(130, 137, 236, 0.1);
+                    border-left-color: #8289ec;
+                    padding: 0.6em 0.6em 0.6em 1em;
+                    border-radius: 0 3px 3px 0;
+                    transition: background-color 0.3s ease;
+                }
+                
+                .source-url {
+                    color: #8289ec;
+                    text-decoration: none;
+                    border-bottom: 1px dotted #8289ec;
+                    transition: color 0.2s, border-bottom 0.2s;
+                    word-break: break-all;
+                }
+                
+                .source-url:hover {
+                    color: #000b37;
+                    border-bottom: 1px solid #000b37;
+                }
+                
+                .sources-section h3 {
+                    margin-top: 1.5em;
+                    color: #000b37;
+                    font-size: 14pt;
+                    padding-bottom: 0.3em;
+                    border-bottom: 1px solid rgba(133, 194, 11, 0.3);
+                }
+                
                 /* Permalink styles for TOC */
                 .headerlink {
                     font-size: 0.8em;
@@ -518,7 +909,15 @@ class EnhancedPDFGenerator:
         return content
 
     def _extract_metadata_and_split_sources(self, raw_content: str) -> Tuple[Dict, str, str]:
-        """Extract YAML frontmatter, main content, and source list from raw markdown."""
+        """Extract YAML frontmatter, main content, and source list from raw markdown.
+        
+        This function:
+        1. Extracts any YAML frontmatter at the beginning of the content
+        2. Splits the content into main section and sources section
+        3. Returns the metadata and both content parts
+        
+        Sources are identified by looking for a heading with "Sources" or "References"
+        """
         metadata = {}
         main_content = ""
         sources_content = ""
@@ -539,13 +938,19 @@ class EnhancedPDFGenerator:
                     print("Could not parse YAML frontmatter. Treating as content.")
                     content_to_process = cleaned_content # Process everything if YAML fails
 
-        # 2. Split content and sources
+        # 2. Split content and sources - more robust pattern matching
         # Find the last occurrence of a potential "Sources" heading
         source_heading_patterns = [
             r'\n## \s*Sources\s*\n',
             r'\n### \s*Sources\s*\n',
             r'\n## \s*References\s*\n',
-            r'\n### \s*References\s*\n'
+            r'\n### \s*References\s*\n',
+            r'\n## \s*Source List\s*\n',
+            r'\n### \s*Source List\s*\n',
+            r'\n## \s*Sources:\s*\n',
+            r'\n### \s*Sources:\s*\n',
+            r'\n## \s*References:\s*\n',
+            r'\n### \s*References:\s*\n'
         ]
         split_point = -1
         source_heading_marker = "## Sources" # Default marker
@@ -559,10 +964,20 @@ class EnhancedPDFGenerator:
                 source_heading_marker = last_match.group(0).strip() # Get the actual heading found
                 break # Found the last heading
 
+        # Fallback approach - look for a line just having "Sources" or "References"
+        if split_point == -1:
+            lines = content_to_process.split("\n")
+            for i, line in enumerate(lines):
+                if line.strip().lower() in ["sources", "references", "source list", "sources:", "references:"]:
+                    # Found a potential standalone sources marker
+                    split_point = content_to_process.find(line)
+                    source_heading_marker = "## Sources"  # Use a standard h2 heading
+                    break
+
         if split_point != -1:
             main_content = content_to_process[:split_point].strip()
-            # Include the heading marker in the sources content for rendering
-            sources_content = source_heading_marker + '\n' + content_to_process[split_point + len(source_heading_marker):].strip()
+            # Ensure source heading is properly formatted with consistent spacing
+            sources_content = source_heading_marker + '\n\n' + content_to_process[split_point + len(source_heading_marker):].strip()
         else:
             # If no Sources heading found, assume all is main content
             main_content = content_to_process.strip()
