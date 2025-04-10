@@ -562,26 +562,26 @@
             margin-right: 0.5em;
             font-weight: bold;
         }
+        
+        /* Fix header anchors */
+        h2[id], h3[id], h4[id] {
+            scroll-margin-top: 2em;
+            position: relative;
+        }
+        
+        /* Remove the old section anchor styling */
         .section-anchor {
-            display: none; /* Hide the anchor symbol completely */
-            font-size: 0.8em;
-            color: #bdc3c7;
-            text-decoration: none;
-            margin-left: 0.5em;
+            display: none;
         }
-        h2:hover .section-anchor,
-        h3:hover .section-anchor,
-        h4:hover .section-anchor {
-            display: none; /* Keep it hidden even on hover */
-        }
-
-        /* Update the header generation in PDF generator */
+        
+        /* Remove the old section title position styling */
         .section-title {
             position: relative;
         }
-        .section-title a[id] {
-            position: absolute;
-            top: -100px;
+        
+        /* Section content styling */
+        .section-content {
+            margin-bottom: 2cm;
         }
 
         /* --- End Page --- */
@@ -664,8 +664,8 @@
         </div>
 
         <!-- Section Content -->
-        <div id="section-{{ section.id }}" class="section section-anchor-point">
-            <h2>{{ section.title }}</h2>
+        <div class="section-content">
+            <h2 id="section-{{ section.id }}">{{ section.title }}</h2>
             {{ section.html_content | safe }}
             
             {% if section.source_list_html %}
@@ -676,13 +676,6 @@
             {% endif %}
         </div>
     {% endfor %}
-
-    <!-- Combined Sources Section -->
-    {% if sections %}
-    <div class="sources-section-wrapper page-break-before">
-        {{ sections[-1].source_list_html | safe }}
-    </div>
-    {% endif %}
 
     <!-- Attribution -->
     <div class="attribution">

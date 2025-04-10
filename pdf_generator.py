@@ -290,39 +290,24 @@ class EnhancedPDFGenerator:
             if any(word in header.get_text().lower() for word in ['sources', 'references']):
                 continue
                 
+            # Use section ID and header index for a unique, predictable ID
             header_id = f"{section.id}-h-{idx}"
             
-            # Create anchor tag for the ID
-            anchor = soup.new_tag('a')
-            anchor['id'] = header_id
-            anchor['class'] = ['section-anchor']
-            
-            # Wrap header content in a span
-            header_content = soup.new_tag('span')
-            header_content['class'] = ['section-title']
-            
-            # Move all content to the header_content span
-            for content in header.contents:
-                header_content.append(content)
-            
-            # Clear header and add our new structure
-            header.clear()
-            header.append(anchor)
-            header.append(header_content)
+            # Simply set the ID directly on the header element
+            header['id'] = header_id
             
             # Add section number for h2
             if header.name == 'h2':
                 number_span = soup.new_tag('span')
                 number_span['class'] = ['section-number']
                 number_span.string = f"{idx + 1}. "
-                header_content.insert(0, number_span)
+                header.insert(0, number_span)
         
         return str(soup), metadata, sources_html
 
     def generate_pdf(self, sections_data: List[PDFSection], output_path: str, metadata: Dict) -> Path:
         """Generate a PDF report from the provided section data and metadata."""
         processed_sections = []
-        all_sources_html = []
 
         for section_data in sections_data:
             section_id = section_data.id
@@ -336,15 +321,13 @@ class EnhancedPDFGenerator:
 
             # Convert sources markdown to HTML (if any)
             sources_html = self._convert_markdown_to_html(sources_markdown, f"{section_id}-sources")
-            if sources_html:
-                all_sources_html.append(sources_html)  # Collect sources for final section
 
             processed_section = PDFSection(
                 id=section_id,
                 title=section_data.title,
                 content=raw_content,  # Keep raw markdown if needed elsewhere
                 html_content=main_html,
-                source_list_html=sources_html,  # Store sources HTML separately
+                source_list_html=sources_html,  # Store sources HTML separately for each section
                 intro=self._extract_intro(main_html),
                 key_topics=self._extract_key_topics(main_html),
                 metadata=section_metadata,
@@ -352,80 +335,21 @@ class EnhancedPDFGenerator:
             )
             processed_sections.append(processed_section)
 
-        # If we have sources, add them to the last section for the template to handle
-        if all_sources_html and processed_sections:
-            combined_sources = "\n".join(all_sources_html)
-            processed_sections[-1].source_list_html = combined_sources
-
         # Get paths for logo and favicon
         template_dir = Path(self.template_dir)
         assets_dir = template_dir / 'assets'
         os.makedirs(assets_dir, exist_ok=True)
         
-        # Directly use the assets that already exist
+        # Directly use the assets in templates/assets
         logo_path = assets_dir / 'supervity_logo.png'
         favicon_path = assets_dir / 'supervity_favicon.png'
         
-        # If the files don't exist in assets, try to find them elsewhere
-        if not logo_path.exists() or not favicon_path.exists():
-            # Print debug information
-            print(f"Logo path {logo_path} exists: {logo_path.exists()}")
-            print(f"Favicon path {favicon_path} exists: {favicon_path.exists()}")
-            
-            # Check multiple potential locations
-            search_paths = [
-                Path('.'),  # Current directory
-                Path(os.getcwd()),  # Explicitly use current working directory
-                Path(os.path.dirname(os.path.dirname(self.template_dir))),  # Project root
-                Path('/Users/mohit/Desktop/everything/Supervity/NESIC-prompt-testing')  # Absolute workspace path
-            ]
-            
-            # Find logo
-            if not logo_path.exists():
-                for base_path in search_paths:
-                    search_logo = base_path / 'supervity_logo.png'
-                    if search_logo.exists():
-                        print(f"Found logo at: {search_logo}")
-                        import shutil
-                        shutil.copy2(search_logo, logo_path)
-                        break
-            
-            # Find favicon
-            if not favicon_path.exists():
-                for base_path in search_paths:
-                    search_favicon = base_path / 'supervity_favicon.png'
-                    if search_favicon.exists():
-                        print(f"Found favicon at: {search_favicon}")
-                        import shutil
-                        shutil.copy2(search_favicon, favicon_path)
-                        break
+        # Use proper URLs for WeasyPrint
+        logo_url = f"templates/assets/supervity_logo.png"
+        favicon_url = f"templates/assets/supervity_favicon.png"
         
-        # Create fallback SVG if files still don't exist
-        if not logo_path.exists():
-            print("No logo found, using SVG placeholder")
-            logo_path = assets_dir / 'supervity_logo.svg'
-            logo_svg = '''<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
-                <text x="10" y="40" font-family="Arial" font-size="40" fill="#3498db">Supervity</text>
-            </svg>'''
-            with open(logo_path, 'w') as f:
-                f.write(logo_svg)
-        
-        if not favicon_path.exists():
-            print("No favicon found, using SVG placeholder")
-            favicon_path = assets_dir / 'supervity_favicon.svg'
-            favicon_svg = '''<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="#3498db"/>
-                <text x="8" y="17" font-family="Arial" font-size="14" fill="white">S</text>
-            </svg>'''
-            with open(favicon_path, 'w') as f:
-                f.write(favicon_svg)
-        
-        # Use relative paths for better WeasyPrint compatibility
-        rel_logo_path = os.path.relpath(logo_path, template_dir)
-        rel_favicon_path = os.path.relpath(favicon_path, template_dir)
-        
-        print(f"Relative logo path: {rel_logo_path}")
-        print(f"Relative favicon path: {rel_favicon_path}")
+        print(f"Using logo URL: {logo_url}")
+        print(f"Using favicon URL: {favicon_url}")
 
         # Prepare template context
         context = {
@@ -435,8 +359,8 @@ class EnhancedPDFGenerator:
             'sections': processed_sections,
             'toc': self._generate_toc(processed_sections),
             'metadata': metadata,
-            'logo_path': rel_logo_path,
-            'favicon_path': rel_favicon_path
+            'logo_path': logo_url,
+            'favicon_path': favicon_url
         }
 
         # Render template and generate PDF
@@ -444,7 +368,7 @@ class EnhancedPDFGenerator:
 
         try:
             # Get the base directory for proper resource resolution
-            base_url = f"file://{os.path.abspath(self.template_dir)}"
+            base_url = os.path.dirname(os.path.abspath(__file__))
             print(f"Using base URL: {base_url}")
             
             html = HTML(string=final_html_content, base_url=base_url)

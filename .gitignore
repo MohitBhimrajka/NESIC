@@ -44,6 +44,7 @@ users.yaml
 credentials.yaml
 *.pdf
 *.log
+*.md
 
 # OS specific
 .DS_Store
