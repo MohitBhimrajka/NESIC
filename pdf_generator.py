@@ -187,6 +187,62 @@ class EnhancedPDFGenerator:
                 display_text = href[:max_url_len//2 - 2] + '...' + href[-(max_url_len//2 - 2):]
                 a_tag.string = display_text
                 a_tag['class'] = a_tag.get('class', []) + ['long-url']
+                
+        # Update heading IDs if section_id is provided
+        if section_id:
+            headers = soup.find_all(['h2', 'h3', 'h4'])
+            for idx, header in enumerate(headers):
+                # Skip sources/references headers
+                if any(word in header.get_text().lower() for word in ['sources', 'references']):
+                    continue
+                    
+                # Use section ID and header index for a unique, predictable ID
+                header_id = f"{section_id}-h-{idx}"
+                header['id'] = header_id
+                
+                # Clean header text - remove any existing debug spans
+                for debug_span in header.find_all(class_='header-debug'):
+                    debug_span.extract()
+                
+                # Handle existing numbering or add section numbering for h2
+                header_text = header.get_text().strip()
+                
+                # Remove any ID text that might be visible
+                if 'ID:' in header_text:
+                    clean_title = re.sub(r'ID:.*$', '', header_text).strip()
+                    header.clear()
+                    
+                    # Add section number for h2 if applicable
+                    if header.name == 'h2':
+                        number_span = soup.new_tag('span')
+                        number_span['class'] = ['section-number']
+                        number_span.string = f"{idx + 1}. "
+                        header.append(number_span)
+                    
+                    header.append(clean_title)
+                    continue
+                
+                # Handle existing numbering
+                if re.match(r'^\d+(\.\d+)*\.\s+', header_text):
+                    clean_title = re.sub(r'^\d+(\.\d+)*\.\s+', '', header_text)
+                    header.clear()
+                    
+                    if header.name == 'h2':
+                        number_span = soup.new_tag('span')
+                        number_span['class'] = ['section-number']
+                        number_span.string = f"{idx + 1}. "
+                        header.append(number_span)
+                    
+                    header.append(clean_title)
+                elif header.name == 'h2':
+                    # Add numbering only for h2 without existing numbering
+                    header_content = header.get_text()
+                    header.clear()
+                    number_span = soup.new_tag('span')
+                    number_span['class'] = ['section-number']
+                    number_span.string = f"{idx + 1}. "
+                    header.append(number_span)
+                    header.append(header_content)
 
         return str(soup)
 
@@ -259,7 +315,7 @@ class EnhancedPDFGenerator:
                 section.intro = self._extract_intro(main_content)
                 
                 # Convert main content to HTML
-                main_html, _, _ = self._extract_html(section)
+                main_html = self._convert_markdown_to_html(main_content, section.id)
                 
                 # Add citation links to HTML
                 main_html = self.hyperlink_citations(main_html, section.id)
@@ -269,8 +325,8 @@ class EnhancedPDFGenerator:
             
             # Process sources content if available
             if sources_content:
-                sources_html = self._convert_markdown_to_html(sources_content)
-                section.source_list_html = self.format_sources_html(sources_html, section.id)
+                sources_html_blob = self._convert_markdown_to_html(sources_content, section.id)
+                section.source_list_html = self.format_sources_html(sources_html_blob, section.id)
             
             # Process subsections if they exist
             # (Note: Current implementation doesn't handle subsections in PDFSection objects)
@@ -311,133 +367,6 @@ class EnhancedPDFGenerator:
         
         return intro_html
 
-    def _extract_html(self, section: PDFSection) -> Tuple[str, Dict, str]:
-        """Extract HTML and metadata from markdown content."""
-        # First extract metadata and content
-        content = section.content
-        
-        # Convert Markdown to HTML with expanded extensions
-        self.md.reset()  # Reset the markdown parser state
-        html = self.md.convert(content)
-        
-        # Extract metadata from markdown meta
-        metadata = getattr(self.md, 'Meta', {})
-        
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # Process tables with enhanced styling
-        tables = soup.find_all('table')
-        for table in tables:
-            table['class'] = table.get('class', []) + ['enhanced-table']
-            
-            # Enhanced table styling
-            if table.find('thead'):
-                table['class'].append('has-header')
-             
-            # Add zebra striping class if more than 3 rows
-            if len(table.find_all('tr')) > 3:
-                table['class'].append('zebra-stripe')
-             
-            # Add responsive wrapper
-            wrapper = soup.new_tag('div')
-            wrapper['class'] = ['table-responsive']
-            table.wrap(wrapper)
- 
-        # Extract sources section
-        sources_html = ""
-        sources_header = soup.find(['h2', 'h3'], string=lambda s: s and ('sources' in s.lower() or 'references' in s.lower()))
-        if sources_header:
-            sources_div = soup.new_tag('div')
-            sources_div['class'] = ['sources-section']
-            sources_div['id'] = f"{section.id}-sources" # Add unique ID to sources section
-             
-            # Collect all elements until next header of same level or higher
-            current = sources_header
-            while current:
-                next_sibling = current.next_sibling
-                if (next_sibling and next_sibling.name and 
-                    next_sibling.name[0] == 'h' and 
-                    int(next_sibling.name[1]) <= int(sources_header.name[1])):
-                    break
-                if current != sources_header:  # Don't extract the header itself yet
-                    current.extract()
-                    sources_div.append(current)
-                current = next_sibling
-             
-            # Remove the header from the main content
-            sources_header.extract()
-            # Add the header back to the sources_div with a unique ID
-            sources_header['id'] = f"{section.id}-sources-header"
-            sources_html = str(sources_div)
-         
-        # Update heading IDs and add to TOC with consistent pattern
-        headers = soup.find_all(['h2', 'h3', 'h4'])
-        for idx, header in enumerate(headers):
-            # Skip sources/references headers
-            if any(word in header.get_text().lower() for word in ['sources', 'references']):
-                continue
-                 
-            # Use section ID and header index for a unique, predictable ID
-            # Format: section-id-h-index (e.g., basic-h-0)
-            header_id = f"{section.id}-h-{idx}"
-            
-            # Simply set the ID directly on the header element
-            header['id'] = header_id
-            
-            # Remove any existing debug spans
-            for debug_span in header.find_all(class_='header-debug'):
-                debug_span.extract()
-            
-            # Remove any ID text that might be visible
-            header_text = header.get_text().strip()
-            if 'ID:' in header_text:
-                # Extract just the title part (before the ID info)
-                clean_title = re.sub(r'ID:.*$', '', header_text).strip()
-                # Clear the header content
-                header.clear()
-                
-                # Add section number for h2 if applicable
-                if header.name == 'h2':
-                    number_span = soup.new_tag('span')
-                    number_span['class'] = ['section-number']
-                    number_span.string = f"{idx + 1}. "
-                    header.append(number_span)
-                
-                # Add the clean title
-                header.append(clean_title)
-                continue
-            
-            # Handle existing numbering
-            # Remove any existing numbers at start of header text
-            if re.match(r'^\d+(\.\d+)*\.\s+', header_text):
-                # Extract just the title part (after the numbering)
-                clean_title = re.sub(r'^\d+(\.\d+)*\.\s+', '', header_text)
-                # Clear the header content
-                header.clear()
-                
-                # Add section number for h2 with a span
-                if header.name == 'h2':
-                    number_span = soup.new_tag('span')
-                    number_span['class'] = ['section-number']
-                    number_span.string = f"{idx + 1}. "
-                    header.append(number_span)
-                
-                # Add the clean title
-                header.append(clean_title)
-            else:
-                # If no existing numbering, add section numbers only for h2
-                if header.name == 'h2':
-                    # Need to clear and rebuild to insert at beginning
-                    header_content = header.get_text()
-                    header.clear()
-                    number_span = soup.new_tag('span')
-                    number_span['class'] = ['section-number']
-                    number_span.string = f"{idx + 1}. "
-                    header.append(number_span)
-                    header.append(header_content)
-         
-        return str(soup), metadata, sources_html
-        
     def hyperlink_citations(self, html: str, section_id: str) -> str:
         """Hyperlink inline citations to their corresponding sources.
         
@@ -463,7 +392,19 @@ class EnhancedPDFGenerator:
         return pattern.sub(replace_citation, html)
         
     def format_sources_html(self, sources_html, section_id):
-        """Format sources as a proper list with IDs for each source."""
+        """Format sources as a proper list with IDs for each source.
+        
+        This function takes HTML content containing sources and formats it into a consistent
+        list with proper IDs for hyperlinking. It relies on finding [SSX] markers in each source
+        to create consistent IDs for reliable hyperlinking.
+        
+        Args:
+            sources_html: HTML content containing the sources
+            section_id: ID of the section these sources belong to
+            
+        Returns:
+            Formatted HTML string with properly structured source list
+        """
         if not sources_html.strip():
             return ""
             
@@ -473,111 +414,100 @@ class EnhancedPDFGenerator:
         sources_container = BeautifulSoup('<div class="sources-section"><div class="sources-list"></div></div>', 'html.parser')
         sources_list = sources_container.find(class_="sources-list")
         
-        # Process the source content to extract all possible source items
-        source_entries = []
-        
-        # Method 1: Try to find existing list items
+        # Find all list items in the source HTML
         li_elements = soup.find_all('li')
-        if li_elements:
-            for li in li_elements:
-                source_entries.append(li.get_text().strip())
         
-        # Method 2: Try to parse sources from text with asterisks
-        if not source_entries:
-            text = soup.get_text()
-            if '*' in text:
-                source_entries = [s.strip() for s in text.split('*') if s.strip()]
-        
-        # Method 3: Try to parse sources from numbered lines
-        if not source_entries:
-            text = soup.get_text()
-            lines = text.split('\n')
-            in_source = False
-            current_source = []
-            
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    if current_source:
-                        source_entries.append(' '.join(current_source))
-                        current_source = []
-                    continue
-                
-                # Check if line starts a new numbered source
-                if re.match(r'^\d+\.', line) or re.match(r'^\[\w+\]', line):
-                    # Save previous source if exists
-                    if current_source:
-                        source_entries.append(' '.join(current_source))
-                        current_source = []
-                    
-                    current_source.append(line)
-                    in_source = True
-                elif in_source:
-                    # Continue with the current source
-                    current_source.append(line)
-            
-            # Add the last source if there is one
-            if current_source:
-                source_entries.append(' '.join(current_source))
-        
-        # Method 4: Try plain text split by line breaks
-        if not source_entries:
-            text = soup.get_text()
-            lines = [line.strip() for line in text.split('\n') if line.strip()]
-            if lines:
-                source_entries = lines
-        
-        # Method 5: Just use the entire text as one source if nothing else worked
-        if not source_entries:
+        # If no list items found, try to parse from plain text
+        if not li_elements:
             text = soup.get_text().strip()
-            if text:
-                source_entries = [text]
-        
-        # Create consistent formatted list items
-        for idx, entry in enumerate(source_entries, 1):
-            if not entry or entry.lower() in ['sources', 'references', 'source list']:
-                continue
+            if not text:
+                return ""
                 
-            source_id = f"{section_id}-source-{idx}"
+            # Create a new unordered list
+            ul = soup.new_tag('ul')
             
-            # Check if this source contains a citation marker [SSx]
-            citation_match = re.search(r'\[SS(\d+)\]', entry)
-            if citation_match:
-                source_id = f"{section_id}-source-SS{citation_match.group(1)}"
+            # Split by newlines or asterisks, whichever gives more items
+            lines_by_newline = [line.strip() for line in text.split('\n') if line.strip() and line.strip().lower() not in ['sources', 'references', 'source list']]
+            lines_by_asterisk = [line.strip() for line in text.split('*') if line.strip() and line.strip().lower() not in ['sources', 'references', 'source list']]
             
-            # Create the LI element
-            li_tag = soup.new_tag('li')
-            li_tag['id'] = source_id
-            li_tag['class'] = ['source-item']
+            # Use the splitting method that gives more items
+            lines = lines_by_asterisk if len(lines_by_asterisk) > len(lines_by_newline) else lines_by_newline
             
-            # If the entry starts with a number like "1. ", remove it
-            entry_text = re.sub(r'^\d+\.\s+', '', entry).strip()
-            
-            # Process any URLs in the text to make them clickable
-            url_pattern = r'https?://[^\s)"]+'
-            urls = re.findall(url_pattern, entry_text)
-            
-            if urls:
-                # Replace URLs with hyperlinks
-                for url in urls:
-                    hyperlink = soup.new_tag('a')
-                    hyperlink['href'] = url
-                    hyperlink['class'] = ['source-url']
-                    hyperlink['target'] = '_blank'  # Open in new tab
-                    hyperlink.string = url
+            # Create li elements for each line
+            for line in lines:
+                if not line:
+                    continue
                     
-                    # Replace URL in the text with the hyperlink
-                    entry_text = entry_text.replace(url, str(hyperlink))
+                li = soup.new_tag('li')
+                li.string = line
+                ul.append(li)
                 
-                # Set the content with hyperlinks
-                li_tag.append(BeautifulSoup(entry_text, 'html.parser'))
+            # If we successfully created list items, use those
+            if ul.find_all('li'):
+                li_elements = ul.find_all('li')
             else:
-                # Just set the text content
-                li_tag.string = entry_text
-                
-            sources_list.append(li_tag)
+                # Last resort: treat the entire text as one source
+                li = soup.new_tag('li')
+                li.string = text
+                ul.append(li)
+                li_elements = [li]
         
-        # Only return non-empty sources
+        # Process each list item to create a properly formatted source entry
+        citation_pattern = re.compile(r'\[SS(\d+)\]')
+        
+        for idx, li in enumerate(li_elements, 1):
+            # Skip empty or header-only items
+            text = li.get_text().strip()
+            if not text or text.lower() in ['sources', 'references', 'source list']:
+                continue
+            
+            # Create a new list item for the output
+            new_li = soup.new_tag('li')
+            new_li['class'] = ['source-item']
+            
+            # Look for SSX marker to create proper ID for hyperlinking
+            match = citation_pattern.search(text)
+            
+            if match:
+                citation_number = match.group(1)
+                new_li['id'] = f"{section_id}-source-SS{citation_number}"
+            else:
+                # CRITICAL CHANGE: For entries without SSX marker, use a distinct non-linking ID
+                # rather than an index-based linking ID that could break references
+                new_li['id'] = f"{section_id}-source-unlinked-{idx}"
+                new_li['class'] = new_li.get('class', []) + ['source-item-missing-marker']
+                
+                # Log a warning about the missing marker
+                print(f"Warning: Source item in section {section_id} lacks [SSX] marker: {text[:100]}...")
+            
+            # Clean the entry text - remove potential list markers and whitespace
+            cleaned_text = re.sub(r'^\s*[\*\-\d]+\.?\s*', '', text).strip()
+            
+            # Process URLs to make them clickable
+            url_pattern = re.compile(r'(https?://[^\s)"]+)')
+            processed_parts = []
+            last_pos = 0
+            
+            for url_match in url_pattern.finditer(cleaned_text):
+                # Add text before the URL
+                processed_parts.append(cleaned_text[last_pos:url_match.start()])
+                
+                # Add the URL as a hyperlink
+                url = url_match.group(1)
+                a_tag = soup.new_tag('a', href=url, target='_blank', **{'class': 'source-url'})
+                a_tag.string = url
+                processed_parts.append(str(a_tag))
+                
+                last_pos = url_match.end()
+            
+            # Add any remaining text after the last URL
+            processed_parts.append(cleaned_text[last_pos:])
+            
+            # Combine all parts and set as content
+            new_li.append(BeautifulSoup("".join(processed_parts), 'html.parser'))
+            sources_list.append(new_li)
+        
+        # Only return if sources were actually processed
         if sources_list.find_all('li'):
             return str(sources_container)
         else:
@@ -935,53 +865,96 @@ class EnhancedPDFGenerator:
                     metadata = loaded_meta if isinstance(loaded_meta, dict) else {}
                     content_to_process = parts[2].strip()
                 except yaml.YAMLError:
-                    print("Could not parse YAML frontmatter. Treating as content.")
+                    print(f"Could not parse YAML frontmatter. Treating as content.")
                     content_to_process = cleaned_content # Process everything if YAML fails
 
         # 2. Split content and sources - more robust pattern matching
         # Find the last occurrence of a potential "Sources" heading
         source_heading_patterns = [
-            r'\n## \s*Sources\s*\n',
-            r'\n### \s*Sources\s*\n',
-            r'\n## \s*References\s*\n',
-            r'\n### \s*References\s*\n',
-            r'\n## \s*Source List\s*\n',
-            r'\n### \s*Source List\s*\n',
-            r'\n## \s*Sources:\s*\n',
-            r'\n### \s*Sources:\s*\n',
-            r'\n## \s*References:\s*\n',
-            r'\n### \s*References:\s*\n'
+            r'\n##\s*Sources\s*\n',
+            r'\n###\s*Sources\s*\n',
+            r'\n##\s*References\s*\n',
+            r'\n###\s*References\s*\n',
+            r'\n##\s*Source List\s*\n',
+            r'\n###\s*Source List\s*\n',
+            r'\n##\s*Sources:\s*\n',
+            r'\n###\s*Sources:\s*\n',
+            r'\n##\s*References:\s*\n',
+            r'\n###\s*References:\s*\n',
+            # More permissive patterns, with less strict whitespace requirements
+            r'\n##\s*[Ss]ources.*?\n',
+            r'\n###\s*[Ss]ources.*?\n',
+            r'\n##\s*[Rr]eferences.*?\n',
+            r'\n###\s*[Rr]eferences.*?\n',
         ]
+        
         split_point = -1
         source_heading_marker = "## Sources" # Default marker
 
+        # Try to find the last occurrence of a source heading
         for pattern in source_heading_patterns:
             matches = list(re.finditer(pattern, content_to_process, re.IGNORECASE | re.MULTILINE))
             if matches:
-                # Take the last match
+                # Take the last match to avoid splitting at an earlier mention
                 last_match = matches[-1]
                 split_point = last_match.start()
                 source_heading_marker = last_match.group(0).strip() # Get the actual heading found
+                
+                # Log what we found for debugging
+                print(f"Found source heading: '{source_heading_marker}' at position {split_point}")
                 break # Found the last heading
 
         # Fallback approach - look for a line just having "Sources" or "References"
         if split_point == -1:
             lines = content_to_process.split("\n")
             for i, line in enumerate(lines):
-                if line.strip().lower() in ["sources", "references", "source list", "sources:", "references:"]:
-                    # Found a potential standalone sources marker
-                    split_point = content_to_process.find(line)
+                clean_line = line.strip().lower()
+                if clean_line in ["sources", "references", "source list", "sources:", "references:"]:
+                    # Calculate the position in the original content
+                    line_start_pos = 0
+                    for j in range(i):
+                        line_start_pos += len(lines[j]) + 1  # +1 for the newline
+                    
+                    split_point = line_start_pos
                     source_heading_marker = "## Sources"  # Use a standard h2 heading
+                    print(f"Found standalone source marker: '{line}' at line {i+1}")
                     break
 
         if split_point != -1:
             main_content = content_to_process[:split_point].strip()
-            # Ensure source heading is properly formatted with consistent spacing
-            sources_content = source_heading_marker + '\n\n' + content_to_process[split_point + len(source_heading_marker):].strip()
+            
+            # Extract everything after the heading
+            source_section_raw = content_to_process[split_point:].strip()
+            
+            # Check if the source heading is properly formatted as a markdown heading
+            if not re.match(r'^#+\s+', source_heading_marker.strip()):
+                # If it's not a heading, format it as one
+                source_heading_marker = "## Sources"
+                
+            # Ensure proper heading formatting with consistent spacing
+            # Get just the heading part without leading/trailing whitespace
+            clean_heading = source_heading_marker.strip()
+            
+            # Ensure source content starts with the heading and proper spacing
+            sources_content = f"{clean_heading}\n\n"
+            
+            # Add the rest of the source content after the heading
+            # Skip the original heading line as we've already added it
+            source_text_lines = source_section_raw.split('\n')
+            # Skip the first line (the original heading)
+            if len(source_text_lines) > 1:
+                rest_of_source = '\n'.join(source_text_lines[1:])
+                sources_content += rest_of_source.strip()
+            
+            # Debug log
+            print(f"Split content at position {split_point}")
+            print(f"Main content length: {len(main_content)}")
+            print(f"Sources content length: {len(sources_content)}")
         else:
             # If no Sources heading found, assume all is main content
             main_content = content_to_process.strip()
-            sources_content = "" # No sources found in this section
+            sources_content = ""
+            print(f"No source section found. All content ({len(main_content)} chars) treated as main content.")
 
         return metadata, main_content, sources_content
 
