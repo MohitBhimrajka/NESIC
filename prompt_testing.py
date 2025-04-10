@@ -179,7 +179,12 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
         *   Address all requested points in each section.
         *   Verify that every section, the General Discussion, and the Sources list are present and adhere to the instructions.
         *   Perform a final internal review before output.
-    
+
+    *   **Sources List:** The Sources list must be present and adhere to the instructions.
+        *   The Sources section should have a header with the text "Sources"
+        *   The Sources section should be formatted as a Markdown unordered list.
+        *   The Sources section should have a link to the source with the text "Source X" where X is the source number.
+                                               
     *   **Inline Citation & Specificity:** Incorporate the inline citation [SSX] for every factual claim (see Inline Citation Requirement) and include specific dates/definitions (see Specificity and Granularity).
     """)
 
@@ -194,6 +199,7 @@ FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
             * No sections have been accidentally omitted or truncated
         
         *   **Formatting Verification:**
+            * All line breaks are properly formatted
             * All section headings use correct Markdown format (`## Number. Title`)
             * All subsections use proper hierarchical format (`###` or indented bullets)
             * Tables have proper headers, separators, and consistent columns
@@ -218,6 +224,18 @@ FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
         Proceed to generate the final 'Sources' list only after confirming these conditions are met.
     """)
 
+# Template for ensuring complete and properly formatted output
+COMPLETION_INSTRUCTION_TEMPLATE = textwrap.dedent("""\
+    **Output Completion Requirements:**
+    
+    Before concluding your response, verify that:
+    1. Every numbered section requested in the prompt is complete with all required subsections
+    2. All content follows proper markdown formatting throughout
+    3. Each section contains all necessary details and is not truncated
+    4. The response maintains consistent formatting for lists, tables, and code blocks
+    5. All inline citations [SSX] are properly placed and formatted
+""")
+
 # --- Prompt Generating Functions ---
 
 def get_basic_prompt(company_name: str, language: str = "Japanese"):
@@ -225,6 +243,7 @@ def get_basic_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f"""
 Comprehensive Corporate Profile, Strategic Overview, and Organizational Analysis of {company_name}
@@ -292,6 +311,7 @@ Source and Accuracy Requirements:
 *   **Source Specificity (Traceability):** Every data point, claim, and quote must be traceable to a specific source using an inline citation (e.g., [SSX]). These must match the final Sources list.
 *   **Source Quality:** Use only official company sources primarily. Secondary sources may be used sparingly for context. All sources must be clearly cited.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -302,6 +322,7 @@ def get_financial_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     enhanced_financial_research_instructions = textwrap.dedent(f"""\
     *   **Mandatory Deep Search & Calculation:** Conduct an exhaustive search within {company_name}'s official financial disclosures for the last 3 fiscal years, including Annual Reports, Financial Statements (Income Statement, Balance Sheet, Cash Flow Statement), Footnotes, Supplementary Data Packs, official filings, and IR materials. Do not rely solely on summary tables; examine detailed statements and notes for definitions and components [SSX].
     *   **Calculation Obligation:** For financial metrics such as Margins, ROE, ROA, Debt-to-Equity, and ROIC: if not explicitly stated, calculate them using standard formulas only if all necessary base data is available and verifiable. Clearly state the calculation method and any averages used (e.g., "ROE (Calculated: Net Income / Average Shareholders' Equity)") [SSX].
@@ -388,6 +409,7 @@ Source and Accuracy Requirements:
 *   **Source Specificity:** Every data point must include an inline citation [SSX] that corresponds to a specific source in the final Sources list.
 *   **Source Quality:** Rely primarily on official company sources. Secondary sources may be used sparingly for context and must be clearly cited.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -398,6 +420,7 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     competitive_research_instructions = textwrap.dedent(f"""\
     **Research & Grounding Strategy for Competitive Analysis:**
 
@@ -455,6 +478,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Every claim must include an inline citation [SSX] corresponding to a grounding URL in the final Sources list.
 *   **Source Quality:** Use primarily official sources and reputable secondary sources only when necessary, with clear attribution.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions} 
 {formatting_instructions}
@@ -465,6 +489,7 @@ def get_management_strategy_prompt(company_name: str, language: str = "Japanese"
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f"""
 Comprehensive Analysis of {company_name}'s Management Strategy and Mid-Term Business Plan: Focus, Execution, and Progress
@@ -517,6 +542,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Every claim must have an inline citation [SSX] linked to the final Sources list.
 *   **Source Quality:** Use primarily official company sources with clear and verifiable references.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -527,6 +553,7 @@ def get_regulatory_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f'''
 In-Depth Analysis of the Regulatory Environment and Compliance for {company_name}'s Digital Transformation (DX)
@@ -563,6 +590,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Each statement must have an inline citation [SSX] corresponding to the final Sources list.
 *   **Source Quality:** Use official company disclosures, government publications, and reputable news sources with clear references.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -573,6 +601,7 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f'''
 In-Depth Analysis of {company_name}'s Digital Crisis Management and Business Continuity
@@ -607,6 +636,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Every claim must include an inline citation [SSX] linked to a source in the final Sources list.
 *   **Source Quality:** Prioritize official company disclosures and reputable news or cybersecurity firm reports.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -617,6 +647,7 @@ def get_digital_transformation_prompt(company_name: str, language: str = "Japane
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f"""
 In-Depth Analysis of {company_name}'s Digital Transformation (DX) Strategy and Execution
@@ -665,6 +696,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Every fact must include an inline citation [SSX] that corresponds to a source in the final Sources list.
 *   **Source Quality:** Prioritize official company disclosures and reputable research with clear source details.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -675,6 +707,7 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese")
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     # Added enhanced completion guidance for business structure
     business_structure_completion_guidance = textwrap.dedent(f"""\
@@ -786,6 +819,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Every fact must include an inline citation [SSX] corresponding to the final Sources list.
 *   **Source Quality:** Use only primary official sources with clear documentation.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -796,6 +830,7 @@ def get_vision_prompt(company_name: str, language: str = "Japanese"):
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f"""
 Analysis of {company_name}'s Strategic Vision and Purpose
@@ -830,6 +865,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Every claim must have an inline citation [SSX] that corresponds to a source in the final Sources list.
 *   **Source Quality:** Use primarily official company documents and well-documented releases.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}
@@ -840,6 +876,7 @@ def get_management_message_prompt(company_name: str, language: str = "Japanese")
     language_instruction = get_language_instruction(language)
     final_source_instructions = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatting_instructions = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
+    completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
     
     return f"""
 Detailed Leadership Strategic Outlook (Verbatim Quotes) for {company_name}
@@ -888,6 +925,7 @@ Source and Accuracy Requirements:
 *   **Traceability:** Each quote must include an inline citation [SSX] corresponding to the final Sources list.
 *   **Source Quality:** Use official communications only, with clear and verifiable details.
 
+{completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}
 {final_source_instructions}
 {formatting_instructions}

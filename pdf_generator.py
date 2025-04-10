@@ -19,8 +19,7 @@ class PDFSection(BaseModel):
     id: str
     title: str
     content: str # Raw Markdown content
-    html_content: str = "" # Processed HTML content (excluding sources)
-    source_list_html: str = "" # HTML for the sources list for this section
+    html_content: str = "" # Processed HTML content
     intro: str = ""
     key_topics: List[str] = []
     metadata: Dict = {} # YAML frontmatter metadata
@@ -58,6 +57,7 @@ class EnhancedPDFGenerator:
             'abbr',  # Abbreviation support
             'md_in_html',  # Markdown inside HTML
             'sane_lists',  # Better list handling
+            'nl2br',  # Convert newlines to <br> tags for proper line breaks
         ], extension_configs={
             'codehilite': {'css_class': 'highlight', 'guess_lang': False},
             'toc': {'permalink': False},  # Disable permalinks to remove ¶
@@ -95,7 +95,7 @@ class EnhancedPDFGenerator:
         """Extract key topics from the content based on headings.
         
         This extracts the subsection headings (h2, h3) from the content to build
-        a table of contents. It skips any headings related to sources/references.
+        a table of contents.
         
         Args:
             content: The markdown content to extract topics from
@@ -109,28 +109,23 @@ class EnhancedPDFGenerator:
         soup = BeautifulSoup(temp_html, 'html.parser')
         
         # Only consider h2 and h3 headings for key topics
-        # First h2 is usually the section title, so skip it
         headings = soup.find_all(['h2', 'h3'])
         topics = []
         
-        # Skip the first h2 which is the section title
+        # Skip the first h2 if it exists and looks like a title
         starting_index = 0
         if headings and headings[0].name == 'h2':
+            # Check if it's the section title (usually matches the section.title)
             starting_index = 1
         
         for heading in headings[starting_index:]:
-            # Skip sources/references sections
+            # Get the clean text without numbers
             text = heading.get_text().strip()
-            if ('sources' in text.lower() or 'references' in text.lower() or 
-                'source list' in text.lower()):
-                continue
             
-            # Remove any debug spans we added
-            for debug_span in heading.find_all(class_='header-debug'):
-                debug_span.extract()
-                
-            # Get the clean text
-            topics.append(text)
+            # Remove any leading numbers like "1. " or "1.1. " that might be present
+            clean_text = re.sub(r'^\d+(\.\d+)*\.\s+', '', text)
+            
+            topics.append(clean_text)
             
             # Only limit if max_topics is specified
             if max_topics and len(topics) >= max_topics:
@@ -138,113 +133,141 @@ class EnhancedPDFGenerator:
         
         return topics
 
-    def _convert_markdown_to_html(self, content: str, section_id: str = "") -> str:
-        """Convert markdown content to HTML with styling enhancements."""
-        if not content:
-            return ""
+    def _create_markdown_processor(self):
+        """Create a markdown processor with all necessary extensions."""
+        md = markdown.Markdown(extensions=[
+            'extra',  # Includes tables, fenced_code, footnotes, etc.
+            'meta',
+            'codehilite',
+            'admonition',
+            'attr_list',
+            'toc',
+            'def_list',  # Definition lists
+            'footnotes',  # Footnotes support
+            'abbr',  # Abbreviation support
+            'md_in_html',  # Markdown inside HTML
+            'sane_lists',  # Better list handling
+            'nl2br',  # Convert newlines to <br> tags for proper line breaks
+        ], extension_configs={
+            'codehilite': {'css_class': 'highlight', 'guess_lang': False},
+            'toc': {'permalink': False},  # Disable permalinks to remove ¶
+            'footnotes': {'BACKLINK_TEXT': '↩'}
+        })
+        return md
+        
+    def _process_headings(self, soup):
+        """Add classes and IDs to headings for better navigation without visible permalinks."""
+        # Process all headings for better styling and navigation
+        for h_tag in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+            # Add classes based on heading level
+            h_tag['class'] = h_tag.get('class', []) + [f'heading-{h_tag.name}']
+            
+            # Generate an ID from the heading text if it doesn't have one
+            if not h_tag.get('id'):
+                heading_text = h_tag.get_text().strip()
+                heading_id = re.sub(r'[^\w\s-]', '', heading_text.lower())
+                heading_id = re.sub(r'[\s-]+', '-', heading_id)
+                h_tag['id'] = heading_id
+            
+            # We no longer add the visible paragraph symbol anchor
+            # Just ensure the heading has an ID for internal linking
 
-        self.md.reset()
-        html = self.md.convert(content)
+    def _convert_markdown_to_html(self, markdown_content):
+        """
+        Convert markdown content to HTML with enhanced styling.
+        """
+        # Create the markdown object with all extensions
+        md = self._create_markdown_processor()
+        
+        # Convert markdown to HTML
+        html = md.convert(markdown_content)
+        
         soup = BeautifulSoup(html, 'html.parser')
-
-        # Add styling classes to tables
+        
+        # Process headings to add anchors for TOC
+        self._process_headings(soup)
+        
+        # Process lists - first-level lists
+        for ul in soup.find_all(['ul', 'ol'], recursive=False):
+            self._process_list(ul, level=1, soup=soup)
+        
+        # Find any lists that may be inside other elements (not directly under body)
+        for container in soup.find_all(['div', 'blockquote', 'td']):
+            for ul in container.find_all(['ul', 'ol'], recursive=False):
+                self._process_list(ul, level=1, soup=soup)
+        
+        # Process tables
         for table in soup.find_all('table'):
+            # Wrap table in a responsive div
+            table_div = soup.new_tag('div')
+            table_div['class'] = ['table-responsive']
+            table.wrap(table_div)
+            
+            # Add enhanced styling to table
             table['class'] = table.get('class', []) + ['enhanced-table']
             
-            # Ensure table has thead for multi-page tables
-            rows = table.find_all('tr')
-            if rows and not table.find('thead') and not rows[0].find_parent('thead'):
-                thead = soup.new_tag('thead')
-                thead.append(rows[0])
-                table.insert(0, thead)
-                
-                # If we moved a th row to thead, create tbody
-                if not table.find('tbody'):
-                    tbody = soup.new_tag('tbody')
-                    for row in rows[1:]:
-                        tbody.append(row)
-                    table.append(tbody)
+            # Add zebra striping and header styling
+            if table.find('thead'):
+                table['class'] = table['class'] + ['has-header']
+            table['class'] = table['class'] + ['zebra-stripe']
             
-            # Basic auto-alignment
-            for cell in table.find_all(['th', 'td']):
-                text = cell.get_text().strip()
-                if text and re.match(r'^[\d,.\-%$¥€£]+$', text.replace('(', '').replace(')', '')): # Check if primarily numeric/currency
-                    cell['class'] = cell.get('class', []) + ['text-right']
-
-        # Add page break avoidance classes (but not to tables)
-        for tag_name in PDF_CONFIG['STYLING'].get('AVOID_PAGE_BREAK_ELEMENTS', []):
-            if tag_name != 'table':  # Skip tables to allow page breaks
-                for elem in soup.find_all(tag_name):
-                    elem['class'] = elem.get('class', []) + ['avoid-break']
-
-        # Process links to ensure they're properly formatted
-        max_url_len = PDF_CONFIG['SOURCES'].get('MAX_URL_DISPLAY_LENGTH', 60)
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            text = a_tag.get_text().strip()
-            if text == href and len(href) > max_url_len:
-                # Truncate intelligently
-                display_text = href[:max_url_len//2 - 2] + '...' + href[-(max_url_len//2 - 2):]
-                a_tag.string = display_text
-                a_tag['class'] = a_tag.get('class', []) + ['long-url']
-                
-        # Update heading IDs if section_id is provided
-        if section_id:
-            headers = soup.find_all(['h2', 'h3', 'h4'])
-            for idx, header in enumerate(headers):
-                # Skip sources/references headers
-                if any(word in header.get_text().lower() for word in ['sources', 'references']):
-                    continue
-                    
-                # Use section ID and header index for a unique, predictable ID
-                header_id = f"{section_id}-h-{idx}"
-                header['id'] = header_id
-                
-                # Clean header text - remove any existing debug spans
-                for debug_span in header.find_all(class_='header-debug'):
-                    debug_span.extract()
-                
-                # Handle existing numbering or add section numbering for h2
-                header_text = header.get_text().strip()
-                
-                # Remove any ID text that might be visible
-                if 'ID:' in header_text:
-                    clean_title = re.sub(r'ID:.*$', '', header_text).strip()
-                    header.clear()
-                    
-                    # Add section number for h2 if applicable
-                    if header.name == 'h2':
-                        number_span = soup.new_tag('span')
-                        number_span['class'] = ['section-number']
-                        number_span.string = f"{idx + 1}. "
-                        header.append(number_span)
-                    
-                    header.append(clean_title)
-                    continue
-                
-                # Handle existing numbering
-                if re.match(r'^\d+(\.\d+)*\.\s+', header_text):
-                    clean_title = re.sub(r'^\d+(\.\d+)*\.\s+', '', header_text)
-                    header.clear()
-                    
-                    if header.name == 'h2':
-                        number_span = soup.new_tag('span')
-                        number_span['class'] = ['section-number']
-                        number_span.string = f"{idx + 1}. "
-                        header.append(number_span)
-                    
-                    header.append(clean_title)
-                elif header.name == 'h2':
-                    # Add numbering only for h2 without existing numbering
-                    header_content = header.get_text()
-                    header.clear()
-                    number_span = soup.new_tag('span')
-                    number_span['class'] = ['section-number']
-                    number_span.string = f"{idx + 1}. "
-                    header.append(number_span)
-                    header.append(header_content)
-
+            # Align number cells to the right
+            for td in table.find_all('td'):
+                if td.string and td.string.strip().replace('.', '', 1).isdigit():
+                    td['class'] = td.get('class', []) + ['text-right']
+        
+        # Process definition lists
+        for dl in soup.find_all('dl'):
+            dl['class'] = dl.get('class', []) + ['definition-list']
+            for dt in dl.find_all('dt'):
+                dt['class'] = dt.get('class', []) + ['term']
+            for dd in dl.find_all('dd'):
+                dd['class'] = dd.get('class', []) + ['definition']
+        
+        # Process footnotes
+        footnotes_div = soup.find('div', class_='footnote')
+        if footnotes_div:
+            footnotes_div['class'] = ['enhanced-footnotes']
+            for ol in footnotes_div.find_all('ol'):
+                ol['class'] = ol.get('class', []) + ['footnote-list']
+                for li in ol.find_all('li'):
+                    li['class'] = li.get('class', []) + ['footnote-item']
+        
         return str(soup)
+
+    def _process_list(self, list_tag, level=1, soup=None):
+        """
+        Process a list and its nested lists recursively.
+        
+        Args:
+            list_tag: The list tag (ul or ol) to process
+            level: The current nesting level
+            soup: The BeautifulSoup object for creating new tags
+        """
+        # Add appropriate classes based on level
+        if level == 1:
+            list_tag['class'] = list_tag.get('class', []) + ['enhanced-list']
+        else:
+            list_tag['class'] = list_tag.get('class', []) + ['nested-list']
+            
+            # For deep nesting (3+), add a level indicator class
+            if level > 2:
+                list_tag['class'] = list_tag['class'] + [f'level-{level}']
+        
+        # Process all list items at this level
+        for li in list_tag.find_all('li', recursive=False):
+            if level == 1:
+                li['class'] = li.get('class', []) + ['enhanced-list-item']
+            else:
+                li['class'] = li.get('class', []) + ['nested-list-item']
+                
+                # For deep nesting (3+), add a level indicator class
+                if level > 2:
+                    li['class'] = li['class'] + [f'item-level-{level}']
+            
+            # Process nested lists recursively
+            for nested_list in li.find_all(['ul', 'ol'], recursive=False):
+                self._process_list(nested_list, level=level+1, soup=soup)
 
     def _generate_toc(self, sections):
         """Generate a properly formatted and hyperlinked table of contents."""
@@ -286,7 +309,7 @@ class EnhancedPDFGenerator:
         
     def _process_sections(self, sections):
         """
-        Process sections for the report, adding IDs and handling subsections.
+        Process sections for the report, adding IDs and processing markdown into HTML.
         """
         processed_sections = []
         section_counter = 0
@@ -315,16 +338,10 @@ class EnhancedPDFGenerator:
                 section.intro = self._extract_intro(main_content)
                 
                 # Convert main content to HTML - this now includes sources
-                full_html = self._convert_markdown_to_html(main_content, section.id)
+                full_html = self._convert_markdown_to_html(main_content)
                 
                 # Set the HTML content for the section
                 section.html_content = full_html
-            
-            # Ensure source_list_html is empty since we're no longer processing sources separately
-            section.source_list_html = ""
-            
-            # Process subsections if they exist
-            # (Note: Current implementation doesn't handle subsections in PDFSection objects)
             
             processed_sections.append(section)
         
@@ -356,28 +373,15 @@ class EnhancedPDFGenerator:
         if not intro_lines:
             return "<p>This section provides detailed analysis and insights.</p>"
             
-        # Convert the intro lines to HTML
-        intro_content = ' '.join(intro_lines)
-        intro_html = markdown.markdown(intro_content)
+        # Convert the intro lines to HTML with full markdown processing
+        intro_content = '\n\n'.join(intro_lines)  # Use double newlines for paragraphs
+        
+        # Use the full markdown processor with all extensions
+        self.md.reset()
+        intro_html = self.md.convert(intro_content)
         
         return intro_html
 
-    def hyperlink_citations(self, html: str, section_id: str) -> str:
-        """No longer hyperlinks citations - left for compatibility.
-        
-        This function now passes through the HTML content without
-        modifying citation markers.
-        
-        Args:
-            html: The HTML content to process
-            section_id: The ID of the current section
-            
-        Returns:
-            Unmodified HTML content
-        """
-        # Simply return the original HTML without any changes
-        return html
-        
     def generate_pdf(self, sections_data: List[PDFSection], output_path: str, metadata: Dict) -> Path:
         """Generate a PDF report from the provided section data and metadata."""
         processed_sections = self._process_sections(sections_data)
@@ -452,6 +456,9 @@ class EnhancedPDFGenerator:
                 .toc-entry {
                     margin: 0.8em 0;
                     position: relative;
+                    display: flex;
+                    align-items: baseline;
+                    justify-content: space-between;
                 }
                 
                 .toc-entry::after {
@@ -473,26 +480,34 @@ class EnhancedPDFGenerator:
                     padding-right: 0.5em;
                     position: relative;
                     z-index: 2;
+                    display: inline-block;
+                    width: auto;
+                    max-width: calc(100% - 4em);
                 }
                 
                 .toc-link::after {
                     content: target-counter(attr(href), page);
                     position: absolute;
-                    right: -3em;
+                    right: -4em;
                     background: white;
-                    padding-left: 0.5em;
+                    padding: 0 0.5em;
                     color: #474747;
                     z-index: 2;
+                    font-weight: normal;
                 }
                 
                 .toc-subsections {
                     margin-left: 2em;
                     margin-top: 0.5em;
+                    width: 100%;
                 }
                 
                 .toc-subsection {
                     margin: 0.4em 0;
                     position: relative;
+                    display: flex;
+                    align-items: baseline;
+                    justify-content: space-between;
                 }
                 
                 .toc-subsection::after {
@@ -513,6 +528,9 @@ class EnhancedPDFGenerator:
                     padding-right: 0.5em;
                     position: relative;
                     z-index: 2;
+                    display: inline-block;
+                    width: auto;
+                    max-width: calc(100% - 3em);
                 }
                 
                 .toc-sublink::after {
@@ -520,16 +538,106 @@ class EnhancedPDFGenerator:
                     position: absolute;
                     right: -3em;
                     background: white;
-                    padding-left: 0.5em;
+                    padding: 0 0.5em;
                     color: #474747;
                     z-index: 2;
+                    font-weight: normal;
+                }
+                
+                /* Enhanced list styles */
+                .enhanced-list {
+                    list-style-type: disc;
+                    margin: 0.8em 0;
+                    padding-left: 1.5em;
+                    line-height: 1.4;
+                }
+                
+                .enhanced-list-item {
+                    margin-bottom: 0.4em;
+                    position: relative;
+                    padding-left: 0.2em;
+                }
+                
+                .nested-list {
+                    list-style-type: circle;
+                    margin: 0.4em 0 0.4em 0.5em;
+                    padding-left: 1.5em;
+                }
+                
+                .nested-list-item {
+                    margin-bottom: 0.3em;
+                }
+                
+                /* Force proper bullet rendering */
+                ul.enhanced-list > li::marker {
+                    color: #474747;
+                    font-size: 0.9em;
+                }
+                
+                ul.nested-list > li::marker {
+                    color: #7f8c8d;
+                    font-size: 0.85em;
+                }
+                
+                /* Additional styling for ordered lists */
+                ol.enhanced-list {
+                    list-style-type: decimal;
+                }
+                
+                ol.nested-list {
+                    list-style-type: lower-alpha;
+                }
+                
+                ol.nested-list ol.nested-list {
+                    list-style-type: lower-roman;
+                }
+                
+                /* Handle mixed nested list types */
+                ul.enhanced-list ol.nested-list {
+                    list-style-type: decimal;
+                }
+                
+                ol.enhanced-list ul.nested-list {
+                    list-style-type: disc;
+                }
+                
+                /* Deeply nested list styles (3+ levels) */
+                .level-3 {
+                    margin-left: 0.3em !important;
+                    padding-left: 1.2em !important;
+                }
+                
+                ul.level-3 {
+                    list-style-type: square;
+                }
+                
+                ol.level-3 {
+                    list-style-type: lower-roman;
+                }
+                
+                .level-4 {
+                    margin-left: 0.2em !important;
+                    padding-left: 1em !important;
+                }
+                
+                ul.level-4 {
+                    list-style-type: none;
+                }
+                
+                ul.level-4 > li:before {
+                    content: "–";
+                    position: absolute;
+                    left: -0.8em;
+                }
+                
+                ol.level-4 {
+                    list-style-type: decimal;
                 }
                 
                 /* Enhanced table styles */
                 .table-responsive {
+                    margin: 0.75em 0;
                     width: 100%;
-                    overflow-x: auto;
-                    margin-bottom: 1em;
                 }
                 
                 .enhanced-table {
@@ -617,60 +725,16 @@ class EnhancedPDFGenerator:
                     text-decoration: underline;
                 }
                 
-                /* Sources list styling improvements */
-                .sources-list {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0.5em 0;
-                }
+                /* Utility classes */
+                .text-right { text-align: right; }
+                .text-center { text-align: center; }
                 
-                .sources-list li {
-                    position: relative;
-                    padding: 0.4em 0;
-                    margin-bottom: 0.6em;
-                    padding-left: 1em;
-                    border-left: 2px solid rgba(133, 194, 11, 0.3);
-                }
-                
-                .sources-list li:target {
-                    background-color: rgba(130, 137, 236, 0.1);
-                    border-left-color: #8289ec;
-                    padding: 0.6em 0.6em 0.6em 1em;
-                    border-radius: 0 3px 3px 0;
-                    transition: background-color 0.3s ease;
-                }
-                
-                .source-url {
-                    color: #8289ec;
-                    text-decoration: none;
-                    border-bottom: 1px dotted #8289ec;
-                    transition: color 0.2s, border-bottom 0.2s;
-                    word-break: break-all;
-                }
-                
-                .source-url:hover {
-                    color: #000b37;
-                    border-bottom: 1px solid #000b37;
-                }
-                
-                .sources-section h3 {
-                    margin-top: 1.5em;
-                    color: #000b37;
-                    font-size: 14pt;
-                    padding-bottom: 0.3em;
-                    border-bottom: 1px solid rgba(133, 194, 11, 0.3);
-                }
-                
-                /* Permalink styles for TOC */
-                .headerlink {
-                    font-size: 0.8em;
-                    margin-left: 0.5em;
-                    color: #999;
-                    text-decoration: none;
-                }
-                
-                .headerlink:hover {
-                    color: #0066cc;
+                /* Long URL display */
+                a.long-url {
+                    word-wrap: break-word;
+                    font-size: 0.9em;
+                    color: #7f8c8d;
+                    font-family: monospace;
                 }
             ''', font_config=font_config)
 

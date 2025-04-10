@@ -126,17 +126,10 @@
         li { margin-bottom: 0.3em; }
 
         /* Sources section - minimal styling for links in content */
-        a {
-            color: var(--soft-blue);
-            text-decoration: none;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-
+        a { color: var(--soft-blue); text-decoration: none; }
+        a:hover { text-decoration: underline; }
         a.long-url {
-            word-break: break-word; /* Changed from break-all for better readability */
+            word-wrap: break-word;
             font-size: 0.85em; /* Slightly smaller */
             color: #7f8c8d; /* Gray */
             font-family: monospace;
@@ -158,6 +151,7 @@
             padding: 0;
             position: relative;
             overflow: hidden;
+            border: 1px solid #eee;
         }
         .cover::before {
             content: "";
@@ -165,8 +159,17 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 10px;
+            height: 15px;
             background: linear-gradient(90deg, var(--lime-green), var(--navy-blue));
+        }
+        .cover::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(90deg, var(--navy-blue), var(--lime-green));
         }
         .cover-wrapper {
             display: flex;
@@ -184,7 +187,6 @@
             margin-bottom: 3cm;
             object-fit: contain;
             object-position: center;
-            /* Uncomment for debugging: border: 2px solid red; */
         }
         .cover-content {
             display: flex;
@@ -228,23 +230,42 @@
 
         /* Table of Contents Styles */
         .table-of-contents {
-            padding: 1.5cm 2cm; /* Reduced top/bottom padding */
+            padding: 1.5cm 2cm;
             page: toc;
+            background: linear-gradient(180deg, #f9f9f9 0%, #ffffff 100%);
         }
-
+        
         /* New TOC styles */
         .toc-container {
-            margin: 1em 0 2em 0;
+            margin: 1em auto;
+            max-width: 800px;
+            background: white;
+            padding: 1.5cm;
+            border-radius: 8px;
+            border: 1px solid #eee;
         }
         
         .toc-title {
-            font-size: 18pt;
+            font-size: 24pt;
             color: var(--navy-blue);
             margin-bottom: 1.5em;
             text-align: center;
             font-weight: bold;
             letter-spacing: 0.05em;
             border-bottom: none;
+            position: relative;
+            padding-bottom: 0.5cm;
+        }
+        
+        .toc-title::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10cm;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--lime-green), transparent);
         }
         
         .toc-entries {
@@ -265,14 +286,14 @@
             bottom: 0.5em;
             left: 0;
             right: 0;
-            border-bottom: 1px dotted var(--light-gray);
+            border-bottom: 1px dotted #c7c7c7;
             z-index: 1;
         }
         
         .toc-link {
             font-weight: bold;
             font-size: 12pt;
-            color: var(--navy-blue);
+            color: #000b37;
             text-decoration: none;
             background: white;
             padding-right: 0.5em;
@@ -280,16 +301,16 @@
             z-index: 2;
             display: inline-block;
             width: auto;
-            max-width: calc(100% - 4em);
+            max-width: 85%;
         }
         
         .toc-link::after {
             content: target-counter(attr(href), page);
             position: absolute;
-            right: -4em;
+            right: -3em;
             background: white;
             padding: 0 0.5em;
-            color: var(--dark-gray);
+            color: #474747;
             z-index: 2;
             font-weight: normal;
         }
@@ -297,11 +318,15 @@
         .toc-subsections {
             margin-left: 2em;
             margin-top: 0.5em;
+            width: 100%;
         }
         
         .toc-subsection {
             margin: 0.4em 0;
             position: relative;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
         }
         
         .toc-subsection::after {
@@ -310,18 +335,21 @@
             bottom: 0.3em;
             left: 0;
             right: 0;
-            border-bottom: 1px dotted var(--light-gray);
+            border-bottom: 1px dotted #c7c7c7;
             z-index: 1;
         }
         
         .toc-sublink {
             font-size: 10pt;
-            color: var(--dark-gray);
+            color: #474747;
             text-decoration: none;
             background: white;
             padding-right: 0.5em;
             position: relative;
             z-index: 2;
+            display: inline-block;
+            width: auto;
+            max-width: 85%;
         }
         
         .toc-sublink::after {
@@ -329,9 +357,10 @@
             position: absolute;
             right: -3em;
             background: white;
-            padding-left: 0.5em;
-            color: var(--dark-gray);
+            padding: 0 0.5em;
+            color: #474747;
             z-index: 2;
+            font-weight: normal;
         }
 
         /* Legacy styles - keep for compatibility */
@@ -431,36 +460,54 @@
             align-items: center;
             text-align: center;
             page-break-after: always;
-            background-color: #f8f9fa;
+            background: linear-gradient(145deg, #f8f9fa 0%, #f1f1f1 100%);
             min-height: 29.7cm;
             padding: 4cm 3cm;
             position: relative;
+            border: 1px solid #eee;
         }
         .section-cover::before {
             content: "";
             position: absolute;
             top: 0;
             left: 0;
-            width: 10px;
+            width: 15px;
             height: 100%;
             background: linear-gradient(to bottom, var(--lime-green), var(--light-lime));
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
         }
         .section-cover h2 {
-            font-size: 28pt;
+            font-size: 32pt;
             margin-bottom: 2cm;
             color: var(--navy-blue);
             border: none;
             font-weight: bold;
             line-height: 1.2;
+            position: relative;
+            padding-bottom: 0.5cm;
+        }
+        .section-cover h2::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10cm;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--lime-green), transparent);
         }
         .section-cover .subsections {
             margin: 0 auto;
             text-align: center;
             width: 80%;
             max-width: 600px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 1.5cm;
+            border-radius: 8px;
+            border: 1px solid #eee;
         }
         .section-cover .subsections h3 {
-            font-size: 16pt;
+            font-size: 18pt;
             color: var(--soft-blue);
             margin-bottom: 1.5cm;
             border: none;
@@ -475,13 +522,26 @@
         }
         .section-cover .reading-time {
             margin-top: 3cm;
-            font-size: 11pt;
+            font-size: 12pt;
             color: #7f8c8d;
             font-style: italic;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.5cm 1cm;
+            border-radius: 50px;
+            border: 1px solid #eee;
         }
         .section-cover .reading-time-value {
             font-weight: bold;
             color: var(--navy-blue);
+        }
+        .section-cover .subsections p.section-topic {
+            text-align: left;
+            margin: 0.8em 0;
+            font-size: 12pt;
+            color: #34495e;
+            line-height: 1.6;
+            padding-left: 1em;
+            text-indent: -1em;
         }
 
         /* Figures and Tables */
@@ -536,7 +596,7 @@
             font-weight: 600;
             color: var(--navy-blue);
             white-space: normal;
-            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
 
         .enhanced-table td {
@@ -544,7 +604,7 @@
             padding: 4px 8px;
             vertical-align: top;
             white-space: normal;
-            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
 
         .enhanced-table .text-right {
@@ -569,7 +629,6 @@
         .table-responsive {
             margin: 0.75em 0; /* Reduced margin */
             width: 100%;
-            overflow-x: auto;
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
@@ -634,20 +693,57 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            background-color: #ffffff;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
             height: 29.7cm;
+            position: relative;
+            border: 1px solid #eee;
+        }
+        .end-page::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(90deg, var(--navy-blue), var(--lime-green));
+        }
+        .end-page::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(90deg, var(--lime-green), var(--navy-blue));
+        }
+        .end-page-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 600px;
+            padding: 2cm;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            border: 1px solid #eee;
         }
         .end-page h2 {
-            font-size: 20pt;
+            font-size: 32pt;
             margin-bottom: 1cm;
-            color: #2c3e50;
+            color: var(--navy-blue);
             border-bottom: none;
         }
-        .end-page p { font-size: 11pt; }
+        .end-page p { 
+            font-size: 14pt; 
+            color: #34495e;
+            margin-bottom: 1cm;
+        }
         .end-page .contact {
-            font-size: 10pt;
+            font-size: 12pt;
             margin-top: 2cm;
             color: #7f8c8d;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding-top: 1cm;
+            width: 100%;
         }
 
         /* Page break control utilities */
@@ -695,6 +791,43 @@
         .section-content {
             margin-bottom: 2cm;
         }
+
+        /* Enhanced list styles */
+        .enhanced-list {
+            padding-left: 1.5em;
+            margin: 0.8em 0;
+            list-style-type: disc;
+        }
+        
+        .enhanced-list-item {
+            margin-bottom: 0.3em;
+            text-align: left;
+        }
+        
+        .nested-list {
+            padding-left: 1.5em;
+            margin: 0.5em 0;
+            list-style-type: circle;
+        }
+        
+        .nested-list-item {
+            margin-bottom: 0.2em;
+        }
+        
+        /* Paragraph list style for content that might not be processed as proper lists */
+        p.bullet-point {
+            position: relative;
+            padding-left: 1.5em;
+            margin: 0.3em 0;
+            text-align: left;
+        }
+        
+        p.bullet-point::before {
+            content: "•";
+            position: absolute;
+            left: 0.5em;
+            color: var(--navy-blue);
+        }
     </style>
 </head>
 <body>
@@ -733,9 +866,13 @@
             
             <div class="subsections">
                 <h3>In this section:</h3>
-                {% for topic in section.key_topics %}
-                <p>• {{ topic }}</p>
-                {% endfor %}
+                {% if section.key_topics %}
+                    {% for topic in section.key_topics %}
+                    <p class="section-topic">• {{ topic }}</p>
+                    {% endfor %}
+                {% else %}
+                    <p class="section-topic">• {{ section.title }}</p>
+                {% endif %}
             </div>
             
             <div class="reading-time">
@@ -757,10 +894,12 @@
 
     <!-- End Page -->
     <div class="end-page">
-        <h2>Thank You</h2>
-        <p>End of the report for {{ company_name }}</p>
-        <div class="contact">
-            <p>For any questions or additional information, please reach out.</p>
+        <div class="end-page-content">
+            <h2>Thank You</h2>
+            <p>End of the report for {{ company_name }}</p>
+            <div class="contact">
+                <p>For any questions or additional information, please reach out.</p>
+            </div>
         </div>
     </div>
 </body>
