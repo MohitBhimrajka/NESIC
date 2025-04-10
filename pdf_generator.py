@@ -298,7 +298,7 @@ class EnhancedPDFGenerator:
                 section.id = f"section-{section_counter}"
             
             # Extract metadata, main content and sources separately
-            metadata, main_content, sources_content = self._extract_metadata_and_split_sources(section.content)
+            metadata, main_content, _ = self._extract_metadata_and_split_sources(section.content)
             
             # Update section with extracted metadata
             section.metadata.update(metadata)
@@ -314,19 +314,14 @@ class EnhancedPDFGenerator:
                 # Extract introduction paragraph
                 section.intro = self._extract_intro(main_content)
                 
-                # Convert main content to HTML
-                main_html = self._convert_markdown_to_html(main_content, section.id)
-                
-                # Add citation links to HTML
-                main_html = self.hyperlink_citations(main_html, section.id)
+                # Convert main content to HTML - this now includes sources
+                full_html = self._convert_markdown_to_html(main_content, section.id)
                 
                 # Set the HTML content for the section
-                section.html_content = main_html
+                section.html_content = full_html
             
-            # Process sources content if available
-            if sources_content:
-                sources_html_blob = self._convert_markdown_to_html(sources_content, section.id)
-                section.source_list_html = self.format_sources_html(sources_html_blob, section.id)
+            # Ensure source_list_html is empty since we're no longer processing sources separately
+            section.source_list_html = ""
             
             # Process subsections if they exist
             # (Note: Current implementation doesn't handle subsections in PDFSection objects)
@@ -368,151 +363,21 @@ class EnhancedPDFGenerator:
         return intro_html
 
     def hyperlink_citations(self, html: str, section_id: str) -> str:
-        """Hyperlink inline citations to their corresponding sources.
+        """No longer hyperlinks citations - left for compatibility.
         
-        This function finds citation markers [SSx] in the text and converts them
-        to links that point to the corresponding source in the sources section.
+        This function now passes through the HTML content without
+        modifying citation markers.
         
         Args:
             html: The HTML content to process
-            section_id: The ID of the current section to scope citations
+            section_id: The ID of the current section
             
         Returns:
-            HTML content with citation markers converted to links
+            Unmodified HTML content
         """
-        pattern = re.compile(r'\[SS(\d+)\]')
+        # Simply return the original HTML without any changes
+        return html
         
-        # Use a custom replacement function to add debug info
-        def replace_citation(match):
-            citation_id = match.group(1)
-            target_id = f"{section_id}-source-SS{citation_id}"
-            return f'<a href="#{target_id}" class="citation-link" data-source="{section_id}-source-SS{citation_id}">[SS{citation_id}]</a>'
-            
-        # Apply the replacements
-        return pattern.sub(replace_citation, html)
-        
-    def format_sources_html(self, sources_html, section_id):
-        """Format sources as a proper list with IDs for each source.
-        
-        This function takes HTML content containing sources and formats it into a consistent
-        list with proper IDs for hyperlinking. It relies on finding [SSX] markers in each source
-        to create consistent IDs for reliable hyperlinking.
-        
-        Args:
-            sources_html: HTML content containing the sources
-            section_id: ID of the section these sources belong to
-            
-        Returns:
-            Formatted HTML string with properly structured source list
-        """
-        if not sources_html.strip():
-            return ""
-            
-        soup = BeautifulSoup(sources_html, 'html.parser')
-        
-        # Create a new sources container
-        sources_container = BeautifulSoup('<div class="sources-section"><div class="sources-list"></div></div>', 'html.parser')
-        sources_list = sources_container.find(class_="sources-list")
-        
-        # Find all list items in the source HTML
-        li_elements = soup.find_all('li')
-        
-        # If no list items found, try to parse from plain text
-        if not li_elements:
-            text = soup.get_text().strip()
-            if not text:
-                return ""
-                
-            # Create a new unordered list
-            ul = soup.new_tag('ul')
-            
-            # Split by newlines or asterisks, whichever gives more items
-            lines_by_newline = [line.strip() for line in text.split('\n') if line.strip() and line.strip().lower() not in ['sources', 'references', 'source list']]
-            lines_by_asterisk = [line.strip() for line in text.split('*') if line.strip() and line.strip().lower() not in ['sources', 'references', 'source list']]
-            
-            # Use the splitting method that gives more items
-            lines = lines_by_asterisk if len(lines_by_asterisk) > len(lines_by_newline) else lines_by_newline
-            
-            # Create li elements for each line
-            for line in lines:
-                if not line:
-                    continue
-                    
-                li = soup.new_tag('li')
-                li.string = line
-                ul.append(li)
-                
-            # If we successfully created list items, use those
-            if ul.find_all('li'):
-                li_elements = ul.find_all('li')
-            else:
-                # Last resort: treat the entire text as one source
-                li = soup.new_tag('li')
-                li.string = text
-                ul.append(li)
-                li_elements = [li]
-        
-        # Process each list item to create a properly formatted source entry
-        citation_pattern = re.compile(r'\[SS(\d+)\]')
-        
-        for idx, li in enumerate(li_elements, 1):
-            # Skip empty or header-only items
-            text = li.get_text().strip()
-            if not text or text.lower() in ['sources', 'references', 'source list']:
-                continue
-            
-            # Create a new list item for the output
-            new_li = soup.new_tag('li')
-            new_li['class'] = ['source-item']
-            
-            # Look for SSX marker to create proper ID for hyperlinking
-            match = citation_pattern.search(text)
-            
-            if match:
-                citation_number = match.group(1)
-                new_li['id'] = f"{section_id}-source-SS{citation_number}"
-            else:
-                # CRITICAL CHANGE: For entries without SSX marker, use a distinct non-linking ID
-                # rather than an index-based linking ID that could break references
-                new_li['id'] = f"{section_id}-source-unlinked-{idx}"
-                new_li['class'] = new_li.get('class', []) + ['source-item-missing-marker']
-                
-                # Log a warning about the missing marker
-                print(f"Warning: Source item in section {section_id} lacks [SSX] marker: {text[:100]}...")
-            
-            # Clean the entry text - remove potential list markers and whitespace
-            cleaned_text = re.sub(r'^\s*[\*\-\d]+\.?\s*', '', text).strip()
-            
-            # Process URLs to make them clickable
-            url_pattern = re.compile(r'(https?://[^\s)"]+)')
-            processed_parts = []
-            last_pos = 0
-            
-            for url_match in url_pattern.finditer(cleaned_text):
-                # Add text before the URL
-                processed_parts.append(cleaned_text[last_pos:url_match.start()])
-                
-                # Add the URL as a hyperlink
-                url = url_match.group(1)
-                a_tag = soup.new_tag('a', href=url, target='_blank', **{'class': 'source-url'})
-                a_tag.string = url
-                processed_parts.append(str(a_tag))
-                
-                last_pos = url_match.end()
-            
-            # Add any remaining text after the last URL
-            processed_parts.append(cleaned_text[last_pos:])
-            
-            # Combine all parts and set as content
-            new_li.append(BeautifulSoup("".join(processed_parts), 'html.parser'))
-            sources_list.append(new_li)
-        
-        # Only return if sources were actually processed
-        if sources_list.find_all('li'):
-            return str(sources_container)
-        else:
-            return ""
-
     def generate_pdf(self, sections_data: List[PDFSection], output_path: str, metadata: Dict) -> Path:
         """Generate a PDF report from the provided section data and metadata."""
         processed_sections = self._process_sections(sections_data)
@@ -839,18 +704,16 @@ class EnhancedPDFGenerator:
         return content
 
     def _extract_metadata_and_split_sources(self, raw_content: str) -> Tuple[Dict, str, str]:
-        """Extract YAML frontmatter, main content, and source list from raw markdown.
+        """Extract YAML frontmatter only, keeping content intact.
         
         This function:
         1. Extracts any YAML frontmatter at the beginning of the content
-        2. Splits the content into main section and sources section
-        3. Returns the metadata and both content parts
-        
-        Sources are identified by looking for a heading with "Sources" or "References"
+        2. Returns the metadata and the full content
+        3. No longer splits sources from main content
         """
         metadata = {}
         main_content = ""
-        sources_content = ""
+        sources_content = "" # This will always remain empty now
 
         cleaned_content = self._cleanup_raw_markdown(raw_content)
 
@@ -868,93 +731,9 @@ class EnhancedPDFGenerator:
                     print(f"Could not parse YAML frontmatter. Treating as content.")
                     content_to_process = cleaned_content # Process everything if YAML fails
 
-        # 2. Split content and sources - more robust pattern matching
-        # Find the last occurrence of a potential "Sources" heading
-        source_heading_patterns = [
-            r'\n##\s*Sources\s*\n',
-            r'\n###\s*Sources\s*\n',
-            r'\n##\s*References\s*\n',
-            r'\n###\s*References\s*\n',
-            r'\n##\s*Source List\s*\n',
-            r'\n###\s*Source List\s*\n',
-            r'\n##\s*Sources:\s*\n',
-            r'\n###\s*Sources:\s*\n',
-            r'\n##\s*References:\s*\n',
-            r'\n###\s*References:\s*\n',
-            # More permissive patterns, with less strict whitespace requirements
-            r'\n##\s*[Ss]ources.*?\n',
-            r'\n###\s*[Ss]ources.*?\n',
-            r'\n##\s*[Rr]eferences.*?\n',
-            r'\n###\s*[Rr]eferences.*?\n',
-        ]
-        
-        split_point = -1
-        source_heading_marker = "## Sources" # Default marker
-
-        # Try to find the last occurrence of a source heading
-        for pattern in source_heading_patterns:
-            matches = list(re.finditer(pattern, content_to_process, re.IGNORECASE | re.MULTILINE))
-            if matches:
-                # Take the last match to avoid splitting at an earlier mention
-                last_match = matches[-1]
-                split_point = last_match.start()
-                source_heading_marker = last_match.group(0).strip() # Get the actual heading found
-                
-                # Log what we found for debugging
-                print(f"Found source heading: '{source_heading_marker}' at position {split_point}")
-                break # Found the last heading
-
-        # Fallback approach - look for a line just having "Sources" or "References"
-        if split_point == -1:
-            lines = content_to_process.split("\n")
-            for i, line in enumerate(lines):
-                clean_line = line.strip().lower()
-                if clean_line in ["sources", "references", "source list", "sources:", "references:"]:
-                    # Calculate the position in the original content
-                    line_start_pos = 0
-                    for j in range(i):
-                        line_start_pos += len(lines[j]) + 1  # +1 for the newline
-                    
-                    split_point = line_start_pos
-                    source_heading_marker = "## Sources"  # Use a standard h2 heading
-                    print(f"Found standalone source marker: '{line}' at line {i+1}")
-                    break
-
-        if split_point != -1:
-            main_content = content_to_process[:split_point].strip()
-            
-            # Extract everything after the heading
-            source_section_raw = content_to_process[split_point:].strip()
-            
-            # Check if the source heading is properly formatted as a markdown heading
-            if not re.match(r'^#+\s+', source_heading_marker.strip()):
-                # If it's not a heading, format it as one
-                source_heading_marker = "## Sources"
-                
-            # Ensure proper heading formatting with consistent spacing
-            # Get just the heading part without leading/trailing whitespace
-            clean_heading = source_heading_marker.strip()
-            
-            # Ensure source content starts with the heading and proper spacing
-            sources_content = f"{clean_heading}\n\n"
-            
-            # Add the rest of the source content after the heading
-            # Skip the original heading line as we've already added it
-            source_text_lines = source_section_raw.split('\n')
-            # Skip the first line (the original heading)
-            if len(source_text_lines) > 1:
-                rest_of_source = '\n'.join(source_text_lines[1:])
-                sources_content += rest_of_source.strip()
-            
-            # Debug log
-            print(f"Split content at position {split_point}")
-            print(f"Main content length: {len(main_content)}")
-            print(f"Sources content length: {len(sources_content)}")
-        else:
-            # If no Sources heading found, assume all is main content
-            main_content = content_to_process.strip()
-            sources_content = ""
-            print(f"No source section found. All content ({len(main_content)} chars) treated as main content.")
+        # 2. NO LONGER SPLITTING SOURCES - All remaining content is main_content
+        main_content = content_to_process
+        sources_content = "" # Explicitly set to empty
 
         return metadata, main_content, sources_content
 

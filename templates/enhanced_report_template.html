@@ -125,8 +125,16 @@
         ul, ol { padding-left: 1.5em; }
         li { margin-bottom: 0.3em; }
 
-        a { color: var(--soft-blue); text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        /* Sources section - minimal styling for links in content */
+        a {
+            color: var(--soft-blue);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+
         a.long-url {
             word-break: break-word; /* Changed from break-all for better readability */
             font-size: 0.85em; /* Slightly smaller */
@@ -618,82 +626,6 @@
             border-bottom: 1px dotted #ccc;
         }
 
-        /* --- Sources Section --- */
-        .sources-section {
-            margin-top: 2em;
-            padding-top: 1em;
-            border-top: 2px solid rgba(0, 11, 55, 0.2);
-        }
-        .sources-section h3 {
-            color: var(--navy-blue);
-            font-size: 14pt;
-            margin-bottom: 1em;
-        }
-        .sources-section ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .sources-section li {
-            margin-bottom: 0.8em;
-            font-size: 9pt;
-            color: #666;
-            white-space: normal;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-        }
-        .sources-section a {
-            color: var(--soft-blue);
-            text-decoration: none;
-            word-break: break-word;
-        }
-        .sources-section a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Citation links */
-        .citation-link {
-            color: var(--navy-blue);
-            text-decoration: none;
-            font-weight: 600;
-            background-color: rgba(130, 137, 236, 0.1);
-            padding: 0.1em 0.3em;
-            border-radius: 3px;
-            transition: background-color 0.2s;
-        }
-        .citation-link:hover {
-            text-decoration: underline;
-            background-color: rgba(130, 137, 236, 0.2);
-        }
-        
-        /* --- Section Headings --- */
-        .section-number {
-            color: var(--lime-green);
-            margin-right: 0.5em;
-            font-weight: bold;
-        }
-        
-        /* Fix header anchors */
-        h2[id], h3[id], h4[id] {
-            scroll-margin-top: 2em;
-            position: relative;
-        }
-        
-        /* Remove the old section anchor styling */
-        .section-anchor {
-            display: none;
-        }
-        
-        /* Remove the old section title position styling */
-        .section-title {
-            position: relative;
-        }
-        
-        /* Section content styling */
-        .section-content {
-            margin-bottom: 2cm;
-        }
-
         /* --- End Page --- */
         .end-page {
             page: end;
@@ -746,24 +678,22 @@
             display: none !important;
         }
 
-        /* Sources list styling improvements */
-        .sources-list {
-            list-style: none;
-            padding: 0;
-            margin: 0.5em 0;
+        /* --- Section Headings --- */
+        .section-number {
+            color: var(--lime-green);
+            margin-right: 0.5em;
+            font-weight: bold;
         }
-        .sources-list li {
+        
+        /* Fix header anchors */
+        h2[id], h3[id], h4[id] {
+            scroll-margin-top: 2em;
             position: relative;
-            padding: 0.4em 0;
-            margin-bottom: 0.6em;
-            padding-left: 1em;
-            border-left: 2px solid rgba(133, 194, 11, 0.3);
         }
-        .sources-list li:target {
-            background-color: rgba(130, 137, 236, 0.1);
-            border-left-color: var(--soft-blue);
-            padding: 0.6em 0.6em 0.6em 1em;
-            border-radius: 0 3px 3px 0;
+        
+        /* Section content styling */
+        .section-content {
+            margin-bottom: 2cm;
         }
     </style>
 </head>
@@ -817,13 +747,6 @@
         <div class="section-content">
             <h2 id="section-{{ section.id }}">{{ section.title }}</h2>
             {{ section.html_content | safe }}
-            
-            {% if section.source_list_html %}
-            <div class="sources-section" id="sources-{{ section.id }}">
-                <h3>Sources & References</h3>
-                {{ section.source_list_html | safe }}
-            </div>
-            {% endif %}
         </div>
     {% endfor %}
 
