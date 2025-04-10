@@ -253,29 +253,7 @@ class EnhancedPDFGenerator:
             wrapper = soup.new_tag('div')
             wrapper['class'] = ['table-responsive']
             table.wrap(wrapper)
-            
-            # Add text alignment classes to cells with enhanced detection
-            for cell in table.find_all(['th', 'td']):
-                text = cell.get_text().strip()
-                cell_classes = []
-                
-                # Check for numeric content
-                if text and all(c.isdigit() or c in '.,-%$¥€£' for c in text.strip()):
-                    cell_classes.append('text-right')
-                
-                # Check for centered content markers
-                elif text.startswith('^') and text.endswith('^'):
-                    cell.string = text[1:-1]
-                    cell_classes.append('text-center')
-                
-                # Check for short content (likely headers or labels)
-                elif len(text.split()) <= 2:
-                    cell_classes.append('text-center')
-                
-                # Apply classes
-                if cell_classes:
-                    cell['class'] = cell.get('class', []) + cell_classes
-        
+
         # Extract sources section
         sources_html = ""
         sources_header = soup.find(['h2', 'h3'], string=lambda s: s and ('sources' in s.lower() or 'references' in s.lower()))
@@ -308,21 +286,31 @@ class EnhancedPDFGenerator:
                 continue
                 
             header_id = f"{section.id}-h-{idx}"
-            header['id'] = header_id
+            
+            # Create anchor tag for the ID
+            anchor = soup.new_tag('a')
+            anchor['id'] = header_id
+            anchor['class'] = ['section-anchor']
+            
+            # Wrap header content in a span
+            header_content = soup.new_tag('span')
+            header_content['class'] = ['section-title']
+            
+            # Move all content to the header_content span
+            for content in header.contents:
+                header_content.append(content)
+            
+            # Clear header and add our new structure
+            header.clear()
+            header.append(anchor)
+            header.append(header_content)
             
             # Add section number for h2
             if header.name == 'h2':
                 number_span = soup.new_tag('span')
                 number_span['class'] = ['section-number']
                 number_span.string = f"{idx + 1}. "
-                header.insert(0, number_span)
-            
-            # Add anchor link
-            anchor = soup.new_tag('a')
-            anchor['class'] = ['section-anchor']
-            anchor['href'] = f"#{header_id}"
-            anchor.string = '¶'
-            header.append(anchor)
+                header_content.insert(0, number_span)
         
         return str(soup), metadata, sources_html
 
@@ -369,36 +357,32 @@ class EnhancedPDFGenerator:
         assets_dir = template_dir / 'assets'
         os.makedirs(assets_dir, exist_ok=True)
         
-        # Look for PNG files first, then fallback to SVG
-        logo_path = assets_dir / 'supervity_logo.png'
-        favicon_path = assets_dir / 'supervity_favicon.png'
+        # Define paths for PNG files
+        logo_path = Path('supervity_logo.png')
+        favicon_path = Path('supervity_favicon.png')
         
-        # Create placeholder images if the PNG files don't exist
-        if not logo_path.exists():
-            try:
-                # Try to find PNG files in the workspace root
-                workspace_logo = Path(os.path.dirname(os.path.dirname(self.template_dir))) / 'supervity_logo.png'
-                workspace_favicon = Path(os.path.dirname(os.path.dirname(self.template_dir))) / 'supervity_favicon.png'
-                
-                if workspace_logo.exists():
-                    import shutil
-                    shutil.copy2(workspace_logo, logo_path)
-                if workspace_favicon.exists():
-                    import shutil
-                    shutil.copy2(workspace_favicon, favicon_path)
-            except Exception as e:
-                print(f"Error copying logo files: {e}")
-                
-            # If still not found, create placeholder SVG
-            if not logo_path.exists():
-                logo_path = assets_dir / 'supervity_logo.svg'
-                logo_svg = '''<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
-                    <text x="10" y="40" font-family="Arial" font-size="40" fill="#3498db">Supervity</text>
-                </svg>'''
-                with open(logo_path, 'w') as f:
-                    f.write(logo_svg)
+        # Copy PNG files to assets directory if they exist in workspace root
+        if logo_path.exists():
+            import shutil
+            target_logo = assets_dir / 'supervity_logo.png'
+            shutil.copy2(logo_path, target_logo)
+            logo_path = target_logo
+        else:
+            # Fallback to SVG placeholder
+            logo_path = assets_dir / 'supervity_logo.svg'
+            logo_svg = '''<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
+                <text x="10" y="40" font-family="Arial" font-size="40" fill="#3498db">Supervity</text>
+            </svg>'''
+            with open(logo_path, 'w') as f:
+                f.write(logo_svg)
         
-        if not favicon_path.exists():
+        if favicon_path.exists():
+            import shutil
+            target_favicon = assets_dir / 'supervity_favicon.png'
+            shutil.copy2(favicon_path, target_favicon)
+            favicon_path = target_favicon
+        else:
+            # Fallback to SVG placeholder
             favicon_path = assets_dir / 'supervity_favicon.svg'
             favicon_svg = '''<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="12" cy="12" r="10" fill="#3498db"/>
