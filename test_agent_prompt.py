@@ -149,8 +149,60 @@ def generate_content(client: genai.Client, prompt: str, output_path: Path) -> Di
             "error": str(e)
         }
 
-def generate_all_prompts(company_name: str, language: str):
-    """Generate content for all prompts in parallel using ThreadPoolExecutor."""
+def get_user_input() -> tuple[str, list[str], list[tuple[str, str]]]:
+    """Get company name, languages, and prompts from user input."""
+    company_name = input("\nEnter company name: ")
+    
+    print("\nAvailable languages:")
+    for key, lang in AVAILABLE_LANGUAGES.items():
+        print(f"{key}: {lang}")
+    
+    while True:
+        languages = input("\nSelect language(s) (1-10, comma separated, default is 1 for Japanese): ").strip()
+        if not languages:
+            languages = "1"
+            
+        # Split by comma and remove whitespace
+        language_keys = [key.strip() for key in languages.split(",")]
+        
+        # Validate all language keys
+        if all(key in AVAILABLE_LANGUAGES for key in language_keys):
+            break
+        print("Invalid selection. Please choose numbers between 1 and 10, separated by commas.")
+
+    # Prompt selection
+    print("\nAvailable report sections:")
+    for idx, (section_id, prompt_func) in enumerate(PROMPT_FUNCTIONS, 1):
+        print(f"{idx}: {section_id}")
+    print("0: Generate entire report (all sections)")
+
+    while True:
+        sections = input("\nSelect sections (comma-separated numbers, or 0 for all): ").strip()
+        if not sections:
+            sections = "0"
+
+        # Split by comma and remove whitespace
+        section_indices = [idx.strip() for idx in sections.split(",")]
+
+        # Validate section indices
+        try:
+            section_indices = [int(idx) for idx in section_indices]
+            if 0 in section_indices:
+                selected_prompts = PROMPT_FUNCTIONS
+                break
+            elif all(1 <= idx <= len(PROMPT_FUNCTIONS) for idx in section_indices):
+                # Convert indices to 0-based and get selected prompts
+                selected_prompts = [PROMPT_FUNCTIONS[idx-1] for idx in section_indices]
+                break
+            else:
+                print(f"Invalid selection. Please choose numbers between 0 and {len(PROMPT_FUNCTIONS)}.")
+        except ValueError:
+            print("Invalid input. Please enter numbers separated by commas.")
+    
+    return company_name, language_keys, selected_prompts
+
+def generate_all_prompts(company_name: str, language: str, selected_prompts: list[tuple[str, str]], progress=None, language_task_id=None):
+    """Generate content for selected prompts in parallel using ThreadPoolExecutor."""
     start_time = time.time()
     
     # Get API key from .env file
@@ -180,86 +232,88 @@ def generate_all_prompts(company_name: str, language: str):
         "company_name": company_name,
         "language": language,
         "timestamp": datetime.now().isoformat(),
-        "sections": [section[0] for section in SECTION_ORDER],
+        "sections": [section[0] for section in selected_prompts],  # Only selected sections
         "model": LLM_MODEL,
         "temperature": LLM_TEMPERATURE
     }
     with open(misc_dir / "generation_config.yaml", "w") as f:
         yaml.dump(config, f)
     
-    # Process all prompts with progress tracking
+    # Calculate optimal number of workers for prompt generation
+    max_workers_prompts = max(len(selected_prompts), 10)
+    
+    # Process all prompts
     results = {}
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(complete_style="green", finished_style="green"),
-        TaskProgressColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-        console=console,
-        expand=True
-    ) as progress:
-        # Add main progress bar
-        overall_task = progress.add_task(
-            "[bold cyan]Generating sections...", 
-            total=len(PROMPT_FUNCTIONS)
-        )
-        
-        # Create progress bars for each section
-        section_tasks = {
-            prompt_name: progress.add_task(
-                f"[green]{prompt_name:.<30}",
-                total=1,
-                visible=True
-            )
-            for prompt_name, _ in PROMPT_FUNCTIONS
-        }
-        
-        with ThreadPoolExecutor(max_workers=len(PROMPT_FUNCTIONS)) as executor:
-            futures = []
-            for prompt_name, prompt_func_name in PROMPT_FUNCTIONS:
-                if shutdown_requested:
-                    break
-                    
-                # Get the prompt function from the prompt_testing module
-                prompt_func = getattr(prompt_testing, prompt_func_name)
-                prompt = prompt_func(company_name, language)
-                output_path = markdown_dir / f"{prompt_name}.md"
+    
+    # If no progress display is provided, create a dummy progress context
+    class DummyProgress:
+        def add_task(self, *args, **kwargs):
+            return None
+        def update(self, *args, **kwargs):
+            pass
+    
+    progress = progress or DummyProgress()
+    
+    # Create section tasks if we have a real progress display
+    section_tasks = {}
+    if not isinstance(progress, DummyProgress):
+        for prompt_name, _ in selected_prompts:
+            task_desc = f"[green]{language}: {prompt_name:.<30}"
+            section_tasks[prompt_name] = progress.add_task(task_desc, total=1, visible=True)
+    
+    with ThreadPoolExecutor(max_workers=max_workers_prompts) as executor:
+        futures = []
+        for prompt_name, prompt_func_name in selected_prompts:
+            if shutdown_requested:
+                break
                 
-                future = executor.submit(generate_content, client, prompt, output_path)
-                futures.append((prompt_name, future))
+            # Get the prompt function from the prompt_testing module
+            prompt_func = getattr(prompt_testing, prompt_func_name)
+            prompt = prompt_func(company_name, language)
+            output_path = markdown_dir / f"{prompt_name}.md"
             
-            # Collect results
-            for prompt_name, future in futures:
-                try:
-                    if not shutdown_requested:
-                        result = future.result()
-                        results[prompt_name] = result
-                        
-                        # Update progress
+            future = executor.submit(generate_content, client, prompt, output_path)
+            futures.append((prompt_name, future))
+        
+        # Collect results
+        for prompt_name, future in futures:
+            try:
+                if not shutdown_requested:
+                    result = future.result()
+                    results[prompt_name] = result
+                    
+                    # Update progress for this section
+                    if prompt_name in section_tasks:
                         progress.update(section_tasks[prompt_name], 
                             advance=1,
-                            description=f"[bold green]{prompt_name:.<30}✓"
+                            description=f"[bold green]{language}: {prompt_name:.<30}✓"
                         )
-                        progress.update(overall_task, advance=1)
-                    else:
-                        results[prompt_name] = {
-                            "status": "interrupted",
-                            "error": "Generation interrupted by user"
-                        }
-                        progress.update(section_tasks[prompt_name],
-                            description=f"[yellow]{prompt_name:.<30}⚠"
+                    
+                    # Update language-level progress if provided
+                    if language_task_id is not None:
+                        progress.update(language_task_id, 
+                            advance=1/len(selected_prompts),
+                            description=f"[cyan]{language} Progress"
                         )
-                except Exception as e:
-                    logger.error(f"Error processing {prompt_name}: {str(e)}")
+                else:
                     results[prompt_name] = {
-                        "status": "error",
-                        "error": str(e)
+                        "status": "interrupted",
+                        "error": "Generation interrupted by user"
                     }
+                    if prompt_name in section_tasks:
+                        progress.update(section_tasks[prompt_name],
+                            description=f"[yellow]{language}: {prompt_name:.<30}⚠"
+                        )
+            except Exception as e:
+                logger.error(f"Error processing {prompt_name}: {str(e)}")
+                results[prompt_name] = {
+                    "status": "error",
+                    "error": str(e)
+                }
+                if prompt_name in section_tasks:
                     progress.update(section_tasks[prompt_name],
-                        description=f"[red]{prompt_name:.<30}✗"
+                        description=f"[red]{language}: {prompt_name:.<30}✗"
                     )
-                finally:
-                    progress.update(overall_task, advance=1)
     
     total_execution_time = time.time() - start_time
     
@@ -289,64 +343,115 @@ def generate_all_prompts(company_name: str, language: str):
     
     return token_stats, base_dir
 
-def get_user_input() -> tuple[str, str]:
-    """Get company name and language from user input."""
-    company_name = input("\nEnter company name: ")
-    
-    print("\nAvailable languages:")
-    for key, lang in AVAILABLE_LANGUAGES.items():
-        print(f"{key}: {lang}")
-    
-    while True:
-        language = input("\nSelect language (1-10, default is 1 for Japanese): ").strip()
-        if not language:
-            language = "1"
-        if language in AVAILABLE_LANGUAGES:
-            break
-        print("Invalid selection. Please choose a number between 1 and 10.")
-    
-    return company_name, language
-
 def main():
     try:
-        # Get user input
-        company_name, language_key = get_user_input()
-        language = AVAILABLE_LANGUAGES[language_key]
+        # Get user input including prompt selection
+        company_name, language_keys, selected_prompts = get_user_input()
         
-        console.print(f"\nGenerating prompts for {company_name} in {language}...")
-        console.print(f"Using model: {LLM_MODEL} with temperature: {LLM_TEMPERATURE}")
-        console.print("Output will be saved in the 'output' directory.\n")
+        # Create tasks for each language
+        tasks = []
+        for language_key in language_keys:
+            language = AVAILABLE_LANGUAGES[language_key]
+            console.print(f"\nGenerating prompts for {company_name} in {language}...")
+            console.print(f"Using model: {LLM_MODEL} with temperature: {LLM_TEMPERATURE}")
+            console.print("Output will be saved in the 'output' directory.\n")
+            tasks.append((company_name, language))
 
-        # Run the generation process
-        token_stats, base_dir = generate_all_prompts(company_name, language)
+        # Calculate optimal number of workers for language-level parallelization
+        max_workers_languages = max(len(tasks) * 2, 20)
+        
+        # Process all languages in parallel using ThreadPoolExecutor
+        results = []
+        
+        # Create a single progress display for all languages
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(complete_style="green", finished_style="green"),
+            TaskProgressColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            console=console,
+            expand=True
+        ) as progress:
+            # Create language-level progress tasks
+            language_tasks = {
+                lang: progress.add_task(f"[cyan]{lang} Progress", total=len(selected_prompts))
+                for _, lang in tasks
+            }
+            
+            with ThreadPoolExecutor(max_workers=max_workers_languages) as executor:
+                futures = []
+                for company, lang in tasks:
+                    if shutdown_requested:
+                        break
+                    future = executor.submit(
+                        generate_all_prompts,
+                        company,
+                        lang,
+                        selected_prompts,  # Pass selected prompts
+                        progress=progress,
+                        language_task_id=language_tasks[lang]
+                    )
+                    futures.append((company, lang, future))
+                
+                # Collect results
+                for company, lang, future in futures:
+                    try:
+                        if not shutdown_requested:
+                            token_stats, base_dir = future.result()
+                            results.append((lang, token_stats, base_dir))
+                            
+                            # Display results for this language
+                            console.print(f"\n[bold]Generation Summary for {lang}:[/bold]")
+                            console.print(Panel.fit(
+                                "\n".join([
+                                    f"Total Execution Time: {format_time(token_stats['summary']['total_execution_time'])}",
+                                    f"Total Tokens: {token_stats['summary']['total_tokens']:,}",
+                                    f"Successful Prompts: [green]{token_stats['summary']['successful_prompts']}[/]",
+                                    f"Failed Prompts: [red]{token_stats['summary']['failed_prompts']}[/]"
+                                ]),
+                                title=f"Results - {lang}",
+                                border_style="cyan"
+                            ))
+
+                            # Generate PDF if there were successful prompts
+                            if token_stats['summary']['successful_prompts'] > 0:
+                                console.print(f"\n[bold cyan]Generating PDF report for {lang}...[/bold cyan]")
+                                pdf_path = process_markdown_files(base_dir, company_name, lang)
+                                
+                                if pdf_path:
+                                    console.print(f"\n[green]PDF report generated for {lang}: {pdf_path}[/green]")
+                                else:
+                                    console.print(f"\n[yellow]PDF generation failed for {lang}.[/yellow]")
+                        else:
+                            console.print(f"\n[yellow]Generation process interrupted for {lang}.[/yellow]")
+                    except Exception as e:
+                        console.print(f"\n[red]Error processing {lang}: {str(e)}[/red]")
+                        logger.exception(f"Error processing {lang}")
 
         if shutdown_requested:
             console.print("\n[yellow]Generation process interrupted.[/yellow]")
             return
 
-        # Display results
-        if token_stats:
-            console.print("\n[bold]Generation Summary:[/bold]")
+        # Display final summary for all languages
+        if results:
+            console.print("\n[bold]Overall Generation Summary:[/bold]")
+            total_execution_time = sum(stats['summary']['total_execution_time'] for _, stats, _ in results)
+            total_tokens = sum(stats['summary']['total_tokens'] for _, stats, _ in results)
+            total_successful = sum(stats['summary']['successful_prompts'] for _, stats, _ in results)
+            total_failed = sum(stats['summary']['failed_prompts'] for _, stats, _ in results)
+            
             console.print(Panel.fit(
                 "\n".join([
-                    f"Total Execution Time: {format_time(token_stats['summary']['total_execution_time'])}",
-                    f"Total Tokens: {token_stats['summary']['total_tokens']:,}",
-                    f"Successful Prompts: [green]{token_stats['summary']['successful_prompts']}[/]",
-                    f"Failed Prompts: [red]{token_stats['summary']['failed_prompts']}[/]"
+                    f"Total Languages Processed: {len(results)}",
+                    f"Total Execution Time: {format_time(total_execution_time)}",
+                    f"Total Tokens Across All Languages: {total_tokens:,}",
+                    f"Total Successful Prompts: [green]{total_successful}[/]",
+                    f"Total Failed Prompts: [red]{total_failed}[/]"
                 ]),
-                title="Results",
+                title="Overall Results",
                 border_style="cyan"
             ))
-
-            # Generate PDF if there were successful prompts
-            if token_stats['summary']['successful_prompts'] > 0:
-                console.print("\n[bold cyan]Generating PDF report...[/bold cyan]")
-                pdf_path = process_markdown_files(base_dir, company_name, language)
-                
-                if pdf_path:
-                    console.print(f"\n[green]PDF report generated: {pdf_path}[/green]")
-                else:
-                    console.print("\n[yellow]PDF generation failed.[/yellow]")
         
     except KeyboardInterrupt:
         console.print("\n[yellow]Process interrupted by user.[/yellow]")
