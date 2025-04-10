@@ -59,7 +59,7 @@ class EnhancedPDFGenerator:
             'sane_lists',  # Better list handling
         ], extension_configs={
             'codehilite': {'css_class': 'highlight', 'guess_lang': False},
-            'toc': {'permalink': True},
+            'toc': {'permalink': False},  # Disable permalinks to remove ¶
             'footnotes': {'BACKLINK_TEXT': '↩'}
         })
 
@@ -166,24 +166,29 @@ class EnhancedPDFGenerator:
         """Generate a structured table of contents with nested subsections."""
         toc_items = []
         toc_items.append('<nav class="toc-navigation">')
+        toc_items.append('<div class="toc-header">Contents</div>')
         toc_items.append('<ul class="toc-list">')
         
         for section_idx, section in enumerate(sections, 1):
             # Add main section
             section_id = f"section-{section.id}"
-            toc_items.append(f'<li class="toc-item level-1">')
-            toc_items.append(f'<span class="toc-number">{section_idx}.</span>')
+            toc_items.append('<li class="toc-item level-1">')
+            toc_items.append('<div class="toc-line">')
+            toc_items.append(f'<span class="toc-number">{section_idx}</span>')
             toc_items.append(f'<a href="#{section_id}">{section.title}</a>')
+            toc_items.append('</div>')
             
             # Process all subsections without limiting
             subsections = self._extract_key_topics(section.content)
             if subsections:
                 toc_items.append('<ul class="toc-sublist">')
                 for topic_idx, topic in enumerate(subsections, 1):
-                    topic_id = f"{section.id}-h-{topic_idx-1}"  # Adjust index to match header IDs
-                    toc_items.append(f'<li class="toc-item level-2">')
+                    topic_id = f"{section.id}-h-{topic_idx-1}"
+                    toc_items.append('<li class="toc-item level-2">')
+                    toc_items.append('<div class="toc-line">')
                     toc_items.append(f'<span class="toc-number">{section_idx}.{topic_idx}</span>')
                     toc_items.append(f'<a href="#{topic_id}">{topic}</a>')
+                    toc_items.append('</div>')
                     toc_items.append('</li>')
                 toc_items.append('</ul>')
             
@@ -357,18 +362,47 @@ class EnhancedPDFGenerator:
         assets_dir = template_dir / 'assets'
         os.makedirs(assets_dir, exist_ok=True)
         
-        # Define paths for PNG files
-        logo_path = Path('supervity_logo.png')
-        favicon_path = Path('supervity_favicon.png')
+        # Directly use the assets that already exist
+        logo_path = assets_dir / 'supervity_logo.png'
+        favicon_path = assets_dir / 'supervity_favicon.png'
         
-        # Copy PNG files to assets directory if they exist in workspace root
-        if logo_path.exists():
-            import shutil
-            target_logo = assets_dir / 'supervity_logo.png'
-            shutil.copy2(logo_path, target_logo)
-            logo_path = target_logo
-        else:
-            # Fallback to SVG placeholder
+        # If the files don't exist in assets, try to find them elsewhere
+        if not logo_path.exists() or not favicon_path.exists():
+            # Print debug information
+            print(f"Logo path {logo_path} exists: {logo_path.exists()}")
+            print(f"Favicon path {favicon_path} exists: {favicon_path.exists()}")
+            
+            # Check multiple potential locations
+            search_paths = [
+                Path('.'),  # Current directory
+                Path(os.getcwd()),  # Explicitly use current working directory
+                Path(os.path.dirname(os.path.dirname(self.template_dir))),  # Project root
+                Path('/Users/mohit/Desktop/everything/Supervity/NESIC-prompt-testing')  # Absolute workspace path
+            ]
+            
+            # Find logo
+            if not logo_path.exists():
+                for base_path in search_paths:
+                    search_logo = base_path / 'supervity_logo.png'
+                    if search_logo.exists():
+                        print(f"Found logo at: {search_logo}")
+                        import shutil
+                        shutil.copy2(search_logo, logo_path)
+                        break
+            
+            # Find favicon
+            if not favicon_path.exists():
+                for base_path in search_paths:
+                    search_favicon = base_path / 'supervity_favicon.png'
+                    if search_favicon.exists():
+                        print(f"Found favicon at: {search_favicon}")
+                        import shutil
+                        shutil.copy2(search_favicon, favicon_path)
+                        break
+        
+        # Create fallback SVG if files still don't exist
+        if not logo_path.exists():
+            print("No logo found, using SVG placeholder")
             logo_path = assets_dir / 'supervity_logo.svg'
             logo_svg = '''<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
                 <text x="10" y="40" font-family="Arial" font-size="40" fill="#3498db">Supervity</text>
@@ -376,13 +410,8 @@ class EnhancedPDFGenerator:
             with open(logo_path, 'w') as f:
                 f.write(logo_svg)
         
-        if favicon_path.exists():
-            import shutil
-            target_favicon = assets_dir / 'supervity_favicon.png'
-            shutil.copy2(favicon_path, target_favicon)
-            favicon_path = target_favicon
-        else:
-            # Fallback to SVG placeholder
+        if not favicon_path.exists():
+            print("No favicon found, using SVG placeholder")
             favicon_path = assets_dir / 'supervity_favicon.svg'
             favicon_svg = '''<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="12" cy="12" r="10" fill="#3498db"/>
@@ -390,6 +419,13 @@ class EnhancedPDFGenerator:
             </svg>'''
             with open(favicon_path, 'w') as f:
                 f.write(favicon_svg)
+        
+        # Use relative paths for better WeasyPrint compatibility
+        rel_logo_path = os.path.relpath(logo_path, template_dir)
+        rel_favicon_path = os.path.relpath(favicon_path, template_dir)
+        
+        print(f"Relative logo path: {rel_logo_path}")
+        print(f"Relative favicon path: {rel_favicon_path}")
 
         # Prepare template context
         context = {
@@ -399,15 +435,19 @@ class EnhancedPDFGenerator:
             'sections': processed_sections,
             'toc': self._generate_toc(processed_sections),
             'metadata': metadata,
-            'logo_path': str(logo_path),
-            'favicon_path': str(favicon_path)
+            'logo_path': rel_logo_path,
+            'favicon_path': rel_favicon_path
         }
 
         # Render template and generate PDF
         final_html_content = self.template.render(**context)
 
         try:
-            html = HTML(string=final_html_content, base_url=self.template_dir)
+            # Get the base directory for proper resource resolution
+            base_url = f"file://{os.path.abspath(self.template_dir)}"
+            print(f"Using base URL: {base_url}")
+            
+            html = HTML(string=final_html_content, base_url=base_url)
             # Define font config (consider making this configurable)
             font_config = FontConfiguration()
             css = CSS(string='''
