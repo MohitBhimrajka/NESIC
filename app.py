@@ -374,18 +374,14 @@ with st.form("report_generator_form"):
     with col2:
         # Advanced options with expander
         with st.expander("Advanced Options", expanded=False):
-            # Model settings
-            st.subheader("Model Settings")
-            model = st.text_input("Model", value=LLM_MODEL, disabled=True)
-            temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=LLM_TEMPERATURE, step=0.01)
-            
             # Section selection
             st.subheader("Section Selection")
             section_options = [name for name, _ in PROMPT_FUNCTIONS]
             selected_sections = st.multiselect(
                 "Select Sections to Generate",
                 options=section_options,
-                default=section_options
+                default=section_options,
+                help="Choose which sections to include in the report. By default, all sections are selected."
             )
     
     # Generate report button
