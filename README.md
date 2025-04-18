@@ -104,4 +104,39 @@ This project is proprietary and confidential.
 
 - Python 3.8+
 - Google Generative AI API access
-- Dependencies listed in `requirements.txt` 
+- Dependencies listed in `requirements.txt`
+
+## Streamlit Web Interface
+
+A Streamlit-based web interface is now available for easier report generation. This provides a user-friendly GUI that allows you to:
+
+1. Enter the target company name (the company to analyze)
+2. Specify your company name as the context (who is generating the report)
+3. Select language for the report
+4. Choose which sections to include
+5. Generate the report with a single click
+6. Preview the PDF report directly in the browser
+7. Download the completed report
+
+### Running the Streamlit App
+
+To run the Streamlit interface:
+
+```bash
+streamlit run app.py
+```
+
+The app will open in your default web browser at http://localhost:8501.
+
+### Deploying to Render
+
+This project includes a `render.yaml` configuration file that allows for easy deployment to Render.com. To deploy:
+
+1. Create a new account or sign in to [Render](https://render.com)
+2. Connect your GitHub repository
+3. Click "New +" and select "Blueprint"
+4. Select your repository and Render will automatically detect the configuration
+5. Set your GEMINI_API_KEY as an environment variable in the Render dashboard
+6. Deploy the service
+
+The application will be accessible at your Render URL. 

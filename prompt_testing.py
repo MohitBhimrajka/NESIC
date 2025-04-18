@@ -31,7 +31,7 @@ ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
 
     *   **Quotes with Inline Citations:**
         - Any verbatim quote must include:
-            1. The speaker’s name and date or document reference in parentheses.
+            1. The speaker's name and date or document reference in parentheses.
             2. An inline citation [SSX] immediately following.
         - This ensures clarity on who said it, when they said it, and the exact source.
 
@@ -999,11 +999,11 @@ Source and Accuracy Requirements:
 """.strip()
 
 
-def get_account_strategy_prompt(company_name: str, language: str = "Japanese"):
+def get_account_strategy_prompt(company_name: str, language: str = "Japanese", context_company: str = "NESIC"):
     """
     Generates a prompt for creating a comprehensive 3-year Account Strategy Action Plan
-    specifically for {company_name}, leveraging NESIC's official context and capabilities.
-    The plan uses verifiable data from Gemini (and NESIC's knowledge) to craft a highly
+    specifically for {company_name}, leveraging {context_company}'s official context and capabilities.
+    The plan uses verifiable data from Gemini (and {context_company}'s knowledge) to craft a highly
     targeted approach, maintaining single-entity coverage. All factual claims must have an
     inline citation [SSX].
     """
@@ -1013,19 +1013,19 @@ def get_account_strategy_prompt(company_name: str, language: str = "Japanese"):
     completion_instructions = COMPLETION_INSTRUCTION_TEMPLATE
 
     return f"""
-Comprehensive 3-Year Account Strategy Action Plan for {company_name} (NESIC Specialist Approach)
+Comprehensive 3-Year Account Strategy Action Plan for {company_name} ({context_company} Specialist Approach)
 
-Objective: Create a highly detailed, data-driven account strategy for the next three fiscal years, using NESIC's official solutions and insight. This plan must align with the verified data from Gemini and NESIC’s public resources, focusing on a single entity. Avoid generic or unsupported content.
+Objective: Create a highly detailed, data-driven account strategy for the next three fiscal years, using {context_company}'s official solutions and insight. This plan must align with the verified data from Gemini and {context_company}'s public resources, focusing on a single entity. Avoid generic or unsupported content.
 
-Target Audience Context: This plan is developed for NEC Network and System Integration Corporation (NESIC). All recommendations should reflect how NESIC can best serve {company_name}, referencing real NESIC offerings, known solution strengths, and verifiable data. {AUDIENCE_CONTEXT_REMINDER}
+Target Audience Context: This plan is developed for {context_company}. All recommendations should reflect how {context_company} can best serve {company_name}, referencing real {context_company} offerings, known solution strengths, and verifiable data. {AUDIENCE_CONTEXT_REMINDER}
 
 {language_instruction}
 
 Research Requirements:
-*   Use only data validated through Gemini or official NESIC sources.
+*   Use only data validated through Gemini or official {context_company} sources.
 *   Each fact or figure must be backed by an inline citation [SSX]. Omit any unverified points.
 *   If employee figures appear, provide a range (e.g., 5,000–8,000 employees) if that is how data is presented.
-*   Incorporate NESIC's known core competencies (managed services, network security, cloud integration, etc.) where relevant.
+*   Incorporate {context_company}'s known core competencies (managed services, network security, cloud integration, etc.) where relevant.
 
 {HANDLING_MISSING_INFO_INSTRUCTION.format(language=language)}
 {RESEARCH_DEPTH_INSTRUCTION}
@@ -1034,63 +1034,63 @@ Research Requirements:
 {ANALYSIS_SYNTHESIS_INSTRUCTION}
 {ADDITIONAL_REFINED_INSTRUCTIONS}
 
-## 1. Customer Profile (Incorporating NESIC Context)
+## 1. Customer Profile (Incorporating {context_company} Context)
     *   Summarize {company_name}'s business scope, HQ location, current CEO, and approximate employee range [SSX].
-    *   Reference any official NESIC insights—e.g., prior dealings, industry commentary, or synergy points—if verifiable [SSX].
+    *   Reference any official {context_company} insights—e.g., prior dealings, industry commentary, or synergy points—if verifiable [SSX].
 
 ## 2. Revenue Analysis & Growth Drivers
     *   Extract revenue for FY2021, FY2022, and FY2023 if available [SSX].
     *   Calculate YoY growth rates; identify segments/units fueling increases or declines [SSX].
-    *   Discuss how NESIC solutions can reinforce high-growth areas or address weaknesses [SSX].
+    *   Discuss how {context_company} solutions can reinforce high-growth areas or address weaknesses [SSX].
 
 ## 3. Financial Performance Indicators
     *   Briefly outline net income trends for 3 years [SSX].
-    *   Note profitable divisions/BU and potential NESIC alignments [SSX].
-    *   Use any margin/benchmark data to contextualize NESIC’s opportunity [SSX].
+    *   Note profitable divisions/BU and potential {context_company} alignments [SSX].
+    *   Use any margin/benchmark data to contextualize {context_company}'s opportunity [SSX].
 
-## 4. Strategic Initiatives & Key NESIC Alignments
-    *   List {company_name}’s stated initiatives (investment amounts, timeline, technology focus) [SSX].
-    *   Match each initiative to a specific NESIC solution (e.g., network modernization, security platforms) [SSX].
-    *   Emphasize the direct synergy between the initiative and a known NESIC capability.
+## 4. Strategic Initiatives & Key {context_company} Alignments
+    *   List {company_name}'s stated initiatives (investment amounts, timeline, technology focus) [SSX].
+    *   Match each initiative to a specific {context_company} solution (e.g., network modernization, security platforms) [SSX].
+    *   Emphasize the direct synergy between the initiative and a known {context_company} capability.
 
 ## 5. Decision-Making Structure & Stakeholders
     *   Outline the org chart focusing on IT budget owners or transformation leads [SSX].
-    *   Note any historical NESIC–{company_name} interactions if grounded [SSX].
+    *   Note any historical {context_company}–{company_name} interactions if grounded [SSX].
 
-## 6. Critical Business Challenges & NESIC Solutions
-    *   Enumerate {company_name}’s major challenges (operational, tech, strategic) [SSX].
-    *   Propose definitive NESIC solutions for each challenge, clarifying exactly how they resolve the issue [SSX].
+## 6. Critical Business Challenges & {context_company} Solutions
+    *   Enumerate {company_name}'s major challenges (operational, tech, strategic) [SSX].
+    *   Propose definitive {context_company} solutions for each challenge, clarifying exactly how they resolve the issue [SSX].
     *   Avoid vague language; specify outcomes, timelines, or metrics where possible.
 
-## 7. Technology Roadmap with NESIC Capabilities
-    *   Present {company_name}’s 3-year tech roadmap gleaned from data [SSX].
-    *   Show how NESIC’s offerings (e.g., managed infrastructure, AI/IoT, cloud security) tie into that roadmap [SSX].
+## 7. Technology Roadmap with {context_company} Capabilities
+    *   Present {company_name}'s 3-year tech roadmap gleaned from data [SSX].
+    *   Show how {context_company}'s offerings (e.g., managed infrastructure, AI/IoT, cloud security) tie into that roadmap [SSX].
 
 ## 8. Engagement Strategy (FY2025–2027)
     *   Provide a quarter-by-quarter plan:
-        - NESIC solutions proposed
+        - {context_company} solutions proposed
         - Target internal department/unit
-        - Direct need from {company_name}’s data
+        - Direct need from {company_name}'s data
         - Projected order values or spending estimates (if verifiable) [SSX]
     *   No generic proposals—reference official challenges or initiatives [SSX].
 
 ## 9. Competitive Positioning
     *   Identify existing IT or communications vendors/partners per available data [SSX].
-    *   Highlight NESIC’s specific differentiators (technical, cost, brand, synergy) against each competitor [SSX].
+    *   Highlight {context_company}'s specific differentiators (technical, cost, brand, synergy) against each competitor [SSX].
 
-## 10. Success Metrics & “Expected 2025 Results”
-    *   Provide specific, measurable goals (e.g., “Close two major deals per quarter [SSX]”).
+## 10. Success Metrics & "Expected 2025 Results"
+    *   Provide specific, measurable goals (e.g., "Close two major deals per quarter [SSX]").
     *   Include a short table or bullet list with metric definitions, referencing relevant baseline data [SSX].
-    *   Label them “Expected 2025 Results” or “Projected KPIs,” and explain the calculation rationale (e.g., prior NESIC engagement patterns, external benchmarks) [SSX].
+    *   Label them "Expected 2025 Results" or "Projected KPIs," and explain the calculation rationale (e.g., prior {context_company} engagement patterns, external benchmarks) [SSX].
 
 ## 11. Final 3-Year Account Strategy Summary
-    *   Conclude with a single paragraph (~300–500 words) integrating all insights. Demonstrate how NESIC’s approach directly tackles {company_name}’s environment and fosters mutual growth [SSX].
+    *   Conclude with a single paragraph (~300–500 words) integrating all insights. Demonstrate how {context_company}'s approach directly tackles {company_name}'s environment and fosters mutual growth [SSX].
     *   Do not introduce new data; only synthesize prior points.
 
 Source and Accuracy Requirements:
-*   **Accuracy:** All data or solution references must be grounded in official records or valid NESIC/Gemini insight.  
+*   **Accuracy:** All data or solution references must be grounded in official records or valid {context_company}/Gemini insight.  
 *   **Traceability:** Each fact or figure includes [SSX], linking to final source(s).  
-*   **Single-Entity Coverage:** Strictly reference {company_name}’s data; omit any similarly named entities.
+*   **Single-Entity Coverage:** Strictly reference {company_name}'s data; omit any similarly named entities.
 
 {completion_instructions}
 {FINAL_REVIEW_INSTRUCTION}

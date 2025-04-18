@@ -59,9 +59,11 @@ def signal_handler(signum, frame):
         console.print("\n[red]Force quitting...[/red]")
         sys.exit(1)
 
-# Register signal handlers
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+# Only register signal handlers when running as main program
+if __name__ == '__main__':
+    # Register signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -149,9 +151,14 @@ def generate_content(client: genai.Client, prompt: str, output_path: Path) -> Di
             "error": str(e)
         }
 
-def get_user_input() -> tuple[str, list[str], list[tuple[str, str]]]:
-    """Get company name, languages, and prompts from user input."""
+def get_user_input() -> tuple[str, list[str], list[tuple[str, str]], str]:
+    """Get company name, languages, prompts and context company from user input."""
     company_name = input("\nEnter company name: ")
+    
+    # Get the context company name (defaults to NESIC if not provided)
+    context_company = input("\nEnter the company creating the strategy (default is NESIC): ").strip()
+    if not context_company:
+        context_company = "NESIC"
     
     print("\nAvailable languages:")
     for key, lang in AVAILABLE_LANGUAGES.items():
@@ -199,9 +206,9 @@ def get_user_input() -> tuple[str, list[str], list[tuple[str, str]]]:
         except ValueError:
             print("Invalid input. Please enter numbers separated by commas.")
     
-    return company_name, language_keys, selected_prompts
+    return company_name, language_keys, selected_prompts, context_company
 
-def generate_all_prompts(company_name: str, language: str, selected_prompts: list[tuple[str, str]], progress=None, language_task_id=None):
+def generate_all_prompts(company_name: str, language: str, selected_prompts: list[tuple[str, str]], progress=None, language_task_id=None, context_company: str = "NESIC"):
     """Generate content for selected prompts in parallel using ThreadPoolExecutor."""
     start_time = time.time()
     
@@ -234,7 +241,8 @@ def generate_all_prompts(company_name: str, language: str, selected_prompts: lis
         "timestamp": datetime.now().isoformat(),
         "sections": [section[0] for section in selected_prompts],  # Only selected sections
         "model": LLM_MODEL,
-        "temperature": LLM_TEMPERATURE
+        "temperature": LLM_TEMPERATURE,
+        "context_company": context_company
     }
     with open(misc_dir / "generation_config.yaml", "w") as f:
         yaml.dump(config, f)
@@ -269,7 +277,13 @@ def generate_all_prompts(company_name: str, language: str, selected_prompts: lis
                 
             # Get the prompt function from the prompt_testing module
             prompt_func = getattr(prompt_testing, prompt_func_name)
-            prompt = prompt_func(company_name, language)
+            
+            # Check if this is the account strategy prompt and pass context_company if it is
+            if prompt_func_name == "get_account_strategy_prompt":
+                prompt = prompt_func(company_name, language, context_company)
+            else:
+                prompt = prompt_func(company_name, language)
+                
             output_path = markdown_dir / f"{prompt_name}.md"
             
             future = executor.submit(generate_content, client, prompt, output_path)
@@ -346,7 +360,7 @@ def generate_all_prompts(company_name: str, language: str, selected_prompts: lis
 def main():
     try:
         # Get user input including prompt selection
-        company_name, language_keys, selected_prompts = get_user_input()
+        company_name, language_keys, selected_prompts, context_company = get_user_input()
         
         # Create tasks for each language
         tasks = []
@@ -354,6 +368,7 @@ def main():
             language = AVAILABLE_LANGUAGES[language_key]
             console.print(f"\nGenerating prompts for {company_name} in {language}...")
             console.print(f"Using model: {LLM_MODEL} with temperature: {LLM_TEMPERATURE}")
+            console.print(f"Context company: {context_company}")
             console.print("Output will be saved in the 'output' directory.\n")
             tasks.append((company_name, language))
 
@@ -390,7 +405,8 @@ def main():
                         lang,
                         selected_prompts,  # Pass selected prompts
                         progress=progress,
-                        language_task_id=language_tasks[lang]
+                        language_task_id=language_tasks[lang],
+                        context_company=context_company
                     )
                     futures.append((company, lang, future))
                 
@@ -462,4 +478,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
