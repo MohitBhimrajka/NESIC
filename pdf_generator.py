@@ -172,10 +172,103 @@ class EnhancedPDFGenerator:
             # We no longer add the visible paragraph symbol anchor
             # Just ensure the heading has an ID for internal linking
 
+    def _cleanup_raw_markdown(self, content: str) -> str:
+        """Clean up common LLM formatting issues like literal '\n'."""
+        # Replace literal '\n' with actual newlines
+        content = content.replace('\\n', '\n')
+        # Remove any trailing whitespace
+        content = content.strip()
+        # Normalize line endings
+        content = content.replace('\r\n', '\n').replace('\r', '\n')
+        # Ensure consistent spacing around headers
+        content = re.sub(r'(\n#{1,6}.*?)(?:\n(?!\n))', r'\1\n\n', content)
+        
+        # Fix table formatting issues
+        # 1. Find potential table patterns (lines with multiple |)
+        lines = content.split('\n')
+        in_table = False
+        table_start_index = -1
+        for i, line in enumerate(lines):
+            pipe_count = line.count('|')
+            
+            # Check if this line looks like a table row (has 2+ pipes)
+            if pipe_count >= 2:
+                # If we weren't in a table before, mark this as the start
+                if not in_table:
+                    in_table = True
+                    table_start_index = i
+            # If we were in a table but current line doesn't look like one
+            elif in_table:
+                # We've reached the end of a table
+                in_table = False
+                # Process the table we just found
+                table_lines = lines[table_start_index:i]
+                
+                # Check if we have a header row and separator row
+                if len(table_lines) >= 2:
+                    header_row = table_lines[0]
+                    separator_row = table_lines[1]
+                    
+                    # Fix separator row if needed (it should contain only |, -, and :)
+                    if not all(c in '|:-' for c in separator_row.strip()):
+                        # Create a proper separator row based on the header
+                        cols = header_row.strip('|').split('|')
+                        separator_row = '|' + '|'.join(['-' * len(col.strip()) for col in cols]) + '|'
+                        table_lines[1] = separator_row
+                
+                # Update the original lines with fixed table
+                lines[table_start_index:i] = table_lines
+                
+        # Ensure proper spacing around tables
+        content = '\n'.join(lines)
+        content = re.sub(r'(\n\|.*\|\n)(?!\n)', r'\1\n', content)  # Add newline after table
+        content = re.sub(r'\n\n(\|.*\|)', r'\n\1', content)  # Remove extra newline before table
+        
+        return content
+
     def _convert_markdown_to_html(self, markdown_content):
         """
         Convert markdown content to HTML with enhanced styling.
         """
+        # Pre-process raw table-like structures to ensure proper table rendering
+        lines = markdown_content.split('\n')
+        processed_lines = []
+        i = 0
+        
+        while i < len(lines):
+            line = lines[i]
+            # If line has 2+ pipe characters, it might be part of a table
+            if line.count('|') >= 2:
+                # This might be the start of a table
+                table_lines = [line]
+                j = i + 1
+                
+                # Collect all consecutive table-like lines
+                while j < len(lines) and lines[j].count('|') >= 2:
+                    table_lines.append(lines[j])
+                    j += 1
+                    
+                # Check if we have at least 2 rows (header + separator)
+                if len(table_lines) >= 2:
+                    # Ensure we have a proper separator row
+                    if not all(c in '|:-' for c in table_lines[1].strip() if c not in ' '):
+                        # Create a proper separator row based on header
+                        cols = table_lines[0].count('|') - 1
+                        table_lines.insert(1, '|' + '|'.join(['---' for _ in range(cols)]) + '|')
+                
+                # Add table with proper line breaks before and after
+                if processed_lines and processed_lines[-1]:
+                    processed_lines.append('')  # Empty line before table
+                processed_lines.extend(table_lines)
+                processed_lines.append('')  # Empty line after table
+                i = j
+            else:
+                processed_lines.append(line)
+                i += 1
+                
+        # Use the pre-processed markdown
+        markdown_content = '\n'.join(processed_lines)
+        
         # Create the markdown object with all extensions
         md = self._create_markdown_processor()
         
@@ -183,6 +276,65 @@ class EnhancedPDFGenerator:
         html = md.convert(markdown_content)
         
         soup = BeautifulSoup(html, 'html.parser')
+        
+        # Check for raw table text that wasn't converted
+        # This is a fallback for tables that weren't properly parsed
+        for p in soup.find_all('p'):
+            text = p.get_text()
+            # If paragraph contains multiple | characters in a row-like pattern
+            if '|' in text and len(re.findall(r'\|.*\|', text)) > 0:
+                table_lines = text.split('\n')
+                # Only process if we have at least 2 lines with pipes
+                if sum(1 for line in table_lines if '|' in line) >= 2:
+                    # This might be a table that wasn't parsed correctly
+                    # Create HTML table manually
+                    table = soup.new_tag('table')
+                    table['class'] = ['enhanced-table', 'zebra-stripe']
+                    
+                    in_header = True
+                    for line in table_lines:
+                        if not line.strip() or not '|' in line:
+                            continue
+                        # Skip separator row (contains only |, -, and :)
+                        if all(c in '|:-' for c in line.strip()):
+                            in_header = False
+                            continue
+                            
+                        # Process as a table row
+                        tr = soup.new_tag('tr')
+                        cells = line.strip().split('|')
+                        # Skip empty first/last cell if line starts/ends with |
+                        if line.startswith('|'):
+                            cells = cells[1:]
+                        if line.endswith('|'):
+                            cells = cells[:-1]
+                            
+                        for cell in cells:
+                            if in_header:
+                                td = soup.new_tag('th')
+                            else:
+                                td = soup.new_tag('td')
+                            td.string = cell.strip()
+                            tr.append(td)
+                        
+                        if in_header:
+                            thead = soup.new_tag('thead')
+                            thead.append(tr)
+                            table.append(thead)
+                            in_header = False
+                        else:
+                            if not table.find('tbody'):
+                                tbody = soup.new_tag('tbody')
+                                table.append(tbody)
+                            table.tbody.append(tr)
+                    
+                    # If we created a valid table, replace the paragraph
+                    if table.find('tr'):
+                        # Wrap in responsive div
+                        table_div = soup.new_tag('div')
+                        table_div['class'] = ['table-responsive']
+                        table_div.append(table)
+                        p.replace_with(table_div)
         
         # Process headings to add anchors for TOC
         self._process_headings(soup)
@@ -198,10 +350,11 @@ class EnhancedPDFGenerator:
         
         # Process tables
         for table in soup.find_all('table'):
-            # Wrap table in a responsive div
-            table_div = soup.new_tag('div')
-            table_div['class'] = ['table-responsive']
-            table.wrap(table_div)
+            # Wrap table in a responsive div if not already wrapped
+            if table.parent.get('class') != ['table-responsive']:
+                table_div = soup.new_tag('div')
+                table_div['class'] = ['table-responsive']
+                table.wrap(table_div)
             
             # Add enhanced styling to table
             table['class'] = table.get('class', []) + ['enhanced-table']
@@ -754,18 +907,6 @@ class EnhancedPDFGenerator:
                 f_debug.write(final_html_content)
             print(f"Debug HTML saved to: {debug_html_path}")
             raise  # Re-raise the exception
-
-    def _cleanup_raw_markdown(self, content: str) -> str:
-        """Clean up common LLM formatting issues like literal '\n'."""
-        # Replace literal '\n' with actual newlines
-        content = content.replace('\\n', '\n')
-        # Remove any trailing whitespace
-        content = content.strip()
-        # Normalize line endings
-        content = content.replace('\r\n', '\n').replace('\r', '\n')
-        # Ensure consistent spacing around headers
-        content = re.sub(r'(\n#{1,6}.*?)(?:\n(?!\n))', r'\1\n\n', content)
-        return content
 
     def _extract_metadata_and_split_sources(self, raw_content: str) -> Tuple[Dict, str, str]:
         """Extract YAML frontmatter only, keeping content intact.

@@ -2,10 +2,11 @@ import streamlit as st
 import os
 import time
 import base64
+import re
 from pathlib import Path
 from datetime import datetime
 import yaml
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict, Set
 
 # Import functions from test_agent_prompt.py directly
 from test_agent_prompt import (
@@ -16,6 +17,7 @@ from test_agent_prompt import (
 )
 from pdf_generator import process_markdown_files
 from config import SECTION_ORDER, AVAILABLE_LANGUAGES, PROMPT_FUNCTIONS, LLM_MODEL, LLM_TEMPERATURE
+from google import genai
 
 # Configure page settings
 st.set_page_config(
@@ -39,8 +41,49 @@ def display_pdf(pdf_path):
     pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
 
+# Check if a markdown file contains proper content with a "Sources" heading
+def validate_markdown(file_path: Path) -> bool:
+    """
+    Check if a markdown file contains a "Sources" heading at any level.
+    This is a simple heuristic to determine if the file contains proper content.
+    
+    Args:
+        file_path: Path to the markdown file
+        
+    Returns:
+        bool: True if the file is valid, False otherwise
+    """
+    if not file_path.exists() or file_path.stat().st_size == 0:
+        return False
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        # Check if the markdown has a "Sources" heading at any level
+        sources_pattern = re.compile(r'^#+\s+Sources', re.MULTILINE)
+        if sources_pattern.search(content):
+            return True
+            
+        # Alternative patterns that might indicate valid content
+        alt_patterns = [
+            re.compile(r'^#+\s+参考資料', re.MULTILINE),  # Japanese "References"
+            re.compile(r'^#+\s+出典', re.MULTILINE),      # Japanese "Sources"
+            re.compile(r'^#+\s+References', re.MULTILINE),
+            re.compile(r'^#+\s+Bibliography', re.MULTILINE),
+            re.compile(r'\[SSX\]', re.MULTILINE)         # Citation markers
+        ]
+        
+        for pattern in alt_patterns:
+            if pattern.search(content):
+                return True
+                
+        return False
+    except Exception:
+        return False
+
 # Custom wrapper around generate_all_prompts to integrate with Streamlit
-def generate_report_with_progress(company_name: str, language: str, selected_prompts: List[Tuple[str, str]], context_company: str = "Supervity"):
+def generate_report_with_progress(company_name: str, language: str, selected_prompts: List[Tuple[str, str]], context_company_name: str, ticker: Optional[str] = None, industry: Optional[str] = None):
     """Wrapper around generate_all_prompts with Streamlit progress indicators"""
     # Create a Streamlit progress display
     progress_bar = st.progress(0)
@@ -77,10 +120,96 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
         token_stats, base_dir = generate_all_prompts(
             company_name, 
             language, 
-            selected_prompts, 
-            progress=StreamlitProgress(),
-            context_company=context_company
+            selected_prompts,
+            context_company_name,
+            ticker=ticker,
+            industry=industry,
+            progress=StreamlitProgress()
         )
+        
+        # Validate all markdown files and rerun invalid ones
+        markdown_dir = base_dir / "markdown"
+        invalid_files: Dict[str, Path] = {}
+        
+        status_text.text("Validating generated markdown files...")
+        
+        # First check - validate each markdown file
+        for prompt_name, _ in selected_prompts:
+            md_file = markdown_dir / f"{prompt_name}.md"
+            if not validate_markdown(md_file):
+                invalid_files[prompt_name] = md_file
+                status_text.text(f"Found invalid content in {prompt_name}.md, will retry...")
+        
+        # Re-run prompts for invalid files if any
+        if invalid_files:
+            status_text.text(f"Re-running {len(invalid_files)} prompts with invalid content...")
+            
+            # Create API client
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                raise ValueError("GEMINI_API_KEY not found in .env file")
+            client = genai.Client(api_key=api_key)
+            
+            # Get remaining invalid prompt pairs
+            invalid_prompts = [(name, next(p[1] for p in selected_prompts if p[0] == name)) 
+                              for name in invalid_files.keys()]
+            
+            # Create a progress indicator for retries
+            retry_progress = StreamlitProgress()
+            for retry_idx, (prompt_name, prompt_func_name) in enumerate(invalid_prompts):
+                retry_task = retry_progress.add_task(f"Retrying {prompt_name}...", total=1)
+                
+                # Get the prompt function from prompt_testing module
+                import prompt_testing
+                prompt_func = getattr(prompt_testing, prompt_func_name)
+                
+                # Generate the prompt with proper parameters
+                if prompt_name == "strategy_research":
+                    prompt = prompt_func(
+                        company_name, 
+                        language, 
+                        ticker=ticker, 
+                        industry=industry, 
+                        context_company_name=context_company_name
+                    )
+                else:
+                    prompt = prompt_func(
+                        company_name, 
+                        language, 
+                        ticker=ticker, 
+                        industry=industry,
+                        context_company_name=context_company_name
+                    )
+                
+                # Generate content
+                status_text.text(f"Retrying {prompt_name}...")
+                result = generate_content(client, prompt, invalid_files[prompt_name])
+                
+                # Update token stats
+                if result["status"] == "success":
+                    token_stats["prompts"][prompt_name] = result
+                    token_stats["summary"]["total_input_tokens"] += result["input_tokens"]
+                    token_stats["summary"]["total_output_tokens"] += result["output_tokens"]
+                    token_stats["summary"]["total_tokens"] += result["total_tokens"]
+                    token_stats["summary"]["successful_prompts"] += 1
+                    if prompt_name in token_stats["summary"].get("failed_prompts", []):
+                        token_stats["summary"]["failed_prompts"] -= 1
+                
+                retry_progress.update(retry_task, advance=1, description=f"Retried {prompt_name}")
+                
+            # Second check - validate retried files
+            still_invalid = []
+            for prompt_name in invalid_files:
+                md_file = markdown_dir / f"{prompt_name}.md"
+                if not validate_markdown(md_file):
+                    still_invalid.append(prompt_name)
+            
+            if still_invalid:
+                status_text.text(f"Warning: {len(still_invalid)} files still have invalid content: {', '.join(still_invalid)}")
+            else:
+                status_text.text("All files validated successfully after retries!")
+        else:
+            status_text.text("All markdown files validated successfully!")
         
         # Return the results
         pdf_path = None
@@ -359,8 +488,26 @@ with st.form("report_generator_form"):
     
     with col1:
         # Required inputs
-        target_company = st.text_input("Target Company Name", placeholder="Enter the company to analyze")
-        context_company = st.text_input("Context Company", value="Supervity", placeholder="Enter your company name (generating the report)")
+        target_company = st.text_input(
+            "Target Company Name", 
+            placeholder="Enter the name of the company you want to research",
+            help="The company you want to generate a research report about"
+        )
+        context_company = st.text_input(
+            "Context Company", 
+            placeholder="Enter your company name",
+            help="Required: Your company name that will appear as the author of the report"
+        )
+        ticker = st.text_input(
+            "Stock Ticker Symbol", 
+            placeholder="Optional: AAPL, MSFT, GOOG, etc.",
+            help="The stock ticker symbol of the target company (if publicly traded)"
+        )
+        industry = st.text_input(
+            "Primary Industry", 
+            placeholder="Optional: Technology, Healthcare, Finance, etc.",
+            help="The primary industry sector of the target company"
+        )
         
         # Language options - convert dictionary to list of tuples for selectbox
         language_options = [(key, value) for key, value in AVAILABLE_LANGUAGES.items()]
@@ -368,7 +515,7 @@ with st.form("report_generator_form"):
             "Select Language",
             options=language_options,
             format_func=lambda x: f"{x[1]} ({x[0]})",
-            index=0
+            index=1  # Index 1 corresponds to English
         )
     
     with col2:
@@ -389,10 +536,19 @@ with st.form("report_generator_form"):
 
 st.markdown('</div>', unsafe_allow_html=True)
 
+# Add additional information for the user
+st.info("**Help Tips:**  \n"
+        "• Target Company Name: The company you want to research  \n"
+        "• Context Company: YOUR company that will create the report  \n"
+        "• Stock Ticker Symbol: The ticker of the target company (e.g., AAPL for Apple)  \n"
+        "• Primary Industry: The main industry of the target company")
+
 # Handle form submission
 if generate_button:
     if not target_company:
         st.error("Please enter a target company name.")
+    elif not context_company:
+        st.error("Please enter your company name as the context company.")
     else:
         # Get selected language
         language_key, language = selected_language_option
@@ -409,7 +565,9 @@ if generate_button:
                 target_company, 
                 language, 
                 selected_prompts, 
-                context_company
+                context_company,
+                ticker=ticker if ticker else None,
+                industry=industry if industry else None
             )
         
         if token_stats and pdf_path:

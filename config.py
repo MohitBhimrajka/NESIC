@@ -41,7 +41,7 @@ SECTION_ORDER = [
     ("competitive", "Competitive Landscape"),
     ("regulatory", "Regulatory Environment"),
     ("business_structure", "Business Structure"),
-    ("account_strategy", "Account Strategy")
+    ("strategy_research", "Strategy Research")
 ]
 
 # Available languages for selection
@@ -70,5 +70,5 @@ PROMPT_FUNCTIONS = [
     ("business_structure", "get_business_structure_prompt"),
     ("vision", "get_vision_prompt"),
     ("management_message", "get_management_message_prompt"),
-    ("account_strategy", "get_account_strategy_prompt")
+    ("strategy_research", "get_strategy_research_prompt")
 ] 
