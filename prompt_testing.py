@@ -6,6 +6,66 @@ from typing import Optional
 # --- Standard Instruction Blocks ---
 # (Updated with placeholders for formatting)
 
+# --- Enhanced NESIC Capabilities Block ---
+NESIC_CAPABILITIES_CONTEXT = textwrap.dedent("""\
+    **NESIC Capabilities & Strategic Context (Reference for Analysis):**
+
+    *   **Core Business Domains (What We Do):**
+        *   **Digital Transformation (DX) Enablement:** Partnering with clients from strategic DX consulting and roadmap design through to complex implementation and ongoing optimization, focusing on solving core business challenges and driving innovation.
+        *   **Advanced System Integration (SI):** Expertise in architecting, building, testing, and integrating sophisticated, mission-critical IT systems, ensuring seamless operation within complex multi-vendor environments. Focus on reliability and future-readiness.
+        *   **Next-Generation Network Solutions:** Designing, deploying, securing, and managing robust network infrastructures (LAN, WAN, Wireless, 5G/Local 5G, SD-WAN). Delivering high-performance, secure connectivity for both enterprise and carrier-grade requirements.
+        *   **Comprehensive Cybersecurity Services:** Providing end-to-end security solutions: strategic consulting, risk/vulnerability assessments, advanced Security Operations Center (SOC) services, Managed Security Service Provider (MSSP) offerings, threat detection/response, and compliance support.
+        *   **Strategic Cloud Services:** Enabling multi-cloud adoption (AWS, Azure, GCP, OCI+) through expert migration planning and execution, secure cloud infrastructure management, performance/cost optimization, and hybrid/private cloud integration.
+        *   **Intelligent Managed Services & BPO:** Delivering high-quality IT infrastructure operation, 24/7 proactive monitoring & management, service desk support, and IT-related Business Process Outsourcing to enhance client operational efficiency, reduce TCO, and ensure service continuity.
+        *   **Modern Collaboration & Communication Platforms:** Implementing and managing unified communications (UC), advanced video conferencing systems, AI-enhanced contact center solutions, and digital workplace tools to boost productivity and user experience.
+        *   **Applied IoT & Data Analytics:** Designing and implementing IoT solutions for data collection/integration, providing data visualization and analytics services, often leveraging advanced AI/ML capabilities from the NEC Group to unlock business insights.
+        *   **Converged Physical Security & Facility Management:** Integrating IT infrastructure with physical security systems (biometrics, surveillance, access control) and smart building/facility management solutions for enhanced safety and efficiency.
+
+    *   **NESIC's Core Value Proposition & Strategic Approach (How We Succeed):**
+        *   **Co-Creation Partnership:** We prioritize understanding client challenges deeply and collaborating closely to design and deliver the *optimal* solution, acting as a long-term strategic partner.
+        *   **Leveraging NEC Group Strengths:** We uniquely integrate cutting-edge technologies (AI, biometrics, 5G/6G R&D, advanced analytics) and the broad solution portfolio of the NEC Corporation to deliver innovative and differentiated outcomes.
+        *   **Ensuring Mission-Critical Reliability:** Decades of proven experience delivering and managing large-scale, complex systems for demanding clients, ensuring operational stability and resilience.
+        *   **End-to-End Service Lifecycle:** Providing comprehensive support across the entire lifecycle, from initial consultation and design to implementation, management, and continuous improvement.
+        *   **Vendor-Agnostic Integration Expertise:** Skillfully integrating best-of-breed solutions from a wide range of technology partners while ensuring interoperability and avoiding vendor lock-in where appropriate.
+
+    *   **Key Differentiators (Why Choose NESIC):**
+        *   **NEC Group Technology Access:** Unique ability to incorporate world-class NEC R&D and specialized technologies.
+        *   **Proven SI Track Record:** Unmatched experience in delivering complex, large-scale projects within the Japanese market.
+        *   **Deep Networking & Security DNA:** Core technical leadership and heritage in designing and securing critical networks.
+        *   **Nationwide Delivery & Support:** Robust, skilled service infrastructure across Japan for reliable installation, maintenance, and operational support.
+        *   **Client-Centric Flexibility:** Combining structured methodologies with the agility to tailor solutions and engagement models to specific client needs.
+
+    *   **Primary Target Segments:** Large Enterprises, Government Agencies & Public Sector Organizations, Telecommunications Carriers, Critical Social Infrastructure Providers.
+
+    **(Note for AI Strategist:** Use this context to identify how NESIC's specific capabilities, approach, and differentiators can best address the target company's identified needs, challenges, and strategic initiatives from both web grounding and provided documents. Frame opportunities by highlighting NESIC's unique value.)
+""")
+
+# NEW Instruction Block for Document Handling
+DOCUMENT_ANALYSIS_INSTRUCTION = textwrap.dedent("""\
+    *   **CRITICAL: Analysis of Provided Documents (PDFs, PPTXs, etc.):**
+        *   **Priority Source:** You **WILL BE PROVIDED** with relevant documents (e.g., internal presentations, past proposals, meeting notes, org charts). Treat these documents as a **PRIMARY and often MORE CURRENT/DETAILED source of context** than general web search results, especially regarding:
+            *   Specific ongoing projects, initiatives, and timelines.
+            *   Internal challenges, pain points, and stated needs.
+            *   Detailed organizational structure, key personnel, and decision-making processes.
+            *   Relationship history or past engagements between {company_name} and {context_company_name} (if mentioned).
+            *   Specific figures, targets, or plans not yet publicly released.
+        *   **Mandatory Integration:** Your analysis and the resulting Account Strategy **MUST** deeply integrate insights extracted directly from these provided documents. Do not rely solely on web grounding when relevant document information is available.
+        *   **Information Extraction:** Diligently extract information from all parts of the documents:
+            *   **Text:** Key strategies, statements, goals, challenges, personnel names/roles.
+            *   **Tables:** Financial data, project timelines, KPI targets, organizational lists. Extract relevant data accurately.
+            *   **Charts/Graphs:** Summarize the key trends, data points, or conclusions presented visually. Note the existence and location (e.g., "Chart on slide 15 shows X trend [DOC1, Slide 15]"). Do not attempt to recreate charts.
+            *   **Images/Diagrams:** Interpret information conveyed (e.g., Org charts, process flows, infrastructure diagrams). Describe the key takeaways and note the location (e.g., "Org chart on p.3 indicates... [DOC2, p.3]").
+        *   **Document Citation (MANDATORY & DISTINCT):**
+            *   Cite information extracted *directly* from provided documents using the format `[DOCX, reference]`, where 'X' is the document number (if multiple are provided, assume DOC1 if only one) and 'reference' is the specific page number, slide number, section header, or figure/table identifier (e.g., `[DOC1, p.5]`, `[DOC2, Slide 10]`, `[DOC1, Section 3.1]`).
+            *   This `[DOCX]` citation is **distinct** from the `[SSX]` citation used for web grounding URLs. Use the appropriate citation type based on the information's origin.
+        *   **Conflict Resolution:** If conflicting information exists between provided documents and web grounding results:
+            *   Prioritize the **latest official provided document** for internal strategy, plans, and organizational details specific to {company_name}. Cite as `[DOCX]`.
+            *   Prioritize the **latest verifiable public web grounding source** (`[SSX]`) for publicly stated facts (e.g., official revenue figures, CEO name).
+            *   If a significant conflict exists that impacts the strategy, briefly note it in the analysis (e.g., "Document [DOC1, p. 8] outlines Plan A, while recent press release [SS3] mentions Plan B adjustment.").
+        *   **Multi-lingual Documents:** Be prepared to process documents in Japanese or English. Extract relevant information regardless of source language and present the final analysis in the target output language: **{language}**.
+        *   **Silent Omission:** If specific information requested cannot be verified *either* through web grounding (`[SSX]`) *or* within the provided documents (`[DOCX]`) after exhaustive review, omit it silently per the standard handling instructions.
+    """)
+
 ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
     **Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage:**
 
@@ -64,9 +124,11 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     **1. Content - MANDATORY URL Type & Source Integrity:**
     *   **Exclusive Source Type:** This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
     *   **URL Pattern:** These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`. **Only URLs matching this exact pattern are permitted.**
-    *   **Strict Filtering:** Absolutely **DO NOT** include any other type of URL (direct website links, news, PDFs, etc.).
+    *   **Strict Filtering:** Absolutely **DO NOT** include any other type of URL (direct website links, news, PDFs found elsewhere, etc.).
+    *   # NEW: Explicitly exclude DOCX citations from this list
+        **Document citations (`[DOCX, reference]`) MUST NOT be included in this final "Sources" list.** Those citations are handled inline only, referencing the provided documents directly. This list is exclusively for the `[SSX]` web grounding URLs.
     *   **CRITICAL - No Hallucination:** **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/...` URLs** from previous queries or general knowledge if they were not explicitly provided as grounding results *for this query*. If a fact is identified but lacks a corresponding provided grounding URL after exhaustive search, it must be silently omitted from the report body AND no source should be listed for it.
-    *   **Purpose:** This list verifies the specific grounding data provided by Vertex AI Search for this request—not external knowledge or other URLs.
+    *   **Purpose:** This list verifies the specific web grounding data provided by Vertex AI Search for this request—not external knowledge, other URLs, or provided documents.
 
     **2. Formatting and Annotation (CRITICAL FOR PARSING):**
     *   **Source Line Format:** Present each source on a completely new line. Each line **MUST** start with a Markdown list indicator (`* ` or `- `) followed by the hyperlink in Markdown format and then its annotation.
@@ -84,27 +146,29 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     *   **Fact Linkage:** Every grounding URL listed MUST directly correspond to facts/figures/statements present in the report body referenced with the corresponding inline citation [SSX].
 
     **4. Content Selection Based on Verifiable Grounding:**
-    *   **Prerequisite for Inclusion:** Only include facts, figures, details, or quotes in the main report if they can be supported by a verifiable Vertex AI grounding URL from this query after exhaustive search.
-    *   **Omission of Ungrounded Facts/Sections:** If specific information cannot be supported by a verifiable grounding URL after exhaustive search, silently omit that detail. If a whole section cannot be grounded after exhaustive search, retain the section heading but omit the content.
+    *   **Prerequisite for Inclusion:** Only include facts, figures, details, or quotes in the main report if they can be supported by a verifiable Vertex AI grounding URL from this query `[SSX]` or are present in a provided document `[DOCX, reference]` after exhaustive search.
+    *   **Omission of Ungrounded Facts/Sections:** If specific information cannot be supported by a verifiable grounding URL or found in provided documents after exhaustive search, silently omit that detail. If a whole section cannot be grounded/documented after exhaustive search, retain the section heading but omit the content.
 
     **5. Final Check:**
     *   Before concluding the response, review the entire output. Verify:
-        * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts.
-        * Each source is on a new line and follows the correct format.
-        * Every fact in the report body is supported by an inline citation [SSX] that corresponds to a source in this list.
+        * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts `[SSX]`.
+        * Correct use of `[DOCX, reference]` for documented facts.
+        * Each source in this list is on a new line and follows the correct format.
+        * Every fact in the report body is supported by an appropriate inline citation (`[SSX]` or `[DOCX]`) that corresponds to a source in this list or a provided document.
         * Every source listed corresponds to at least one inline citation [SSX] in the report body.
     *   The "**Sources**" section must appear only once, at the end of the entire response.
     """)
 
 HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
     *   **Handling Missing or Ungrounded Information:**
-        *   **Exhaustive Research First:** Conduct exhaustive research using primarily official company sources (see `RESEARCH_DEPTH_INSTRUCTION`). Search diligently across *multiple relevant primary sources* (e.g., latest AR, previous AR, Financial Statements + Footnotes, Supplementary Data Packs, Tanshin/Filings, MTP docs, IR presentations, Results Overviews, specific website sections) for *each data point* before concluding information is unavailable. Check document publication dates for recency.
+        *   **Exhaustive Research First:** Conduct exhaustive research using primarily official company sources (see `RESEARCH_DEPTH_INSTRUCTION`). Search diligently across *multiple relevant primary sources* (e.g., latest AR, previous AR, Financial Statements + Footnotes, Supplementary Data Packs, Tanshin/Filings, MTP docs, IR presentations, Results Overviews, specific website sections, **checking alternate language versions of the website**) for *each data point* before concluding information is unavailable. Check document publication dates for recency.
         *   **Grounding Requirement for Inclusion:** Information is included only if:
-            1. The information is located in a reliable source document.
-            2. A corresponding, verifiable Vertex AI grounding URL (matching the pattern `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`) is provided in the search results for this query.
-        *   **Strict Silent Omission Policy:** If information cannot meet both conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only `-` without explanation (verify data is missing *in the source*).
+            1. The information is located in a reliable source document (either provided or found via web search).
+            2. For web-found information, a corresponding, verifiable Vertex AI grounding URL (matching the pattern `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`) is provided in the search results for this query.
+            3. For provided document information, it is clearly present within the document.
+        *   **Strict Silent Omission Policy:** If information cannot meet these conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded/documented data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only `-` without explanation (verify data is missing *in the source*).
         *   **No Inference/Fabrication:** Do not infer, guess, or estimate ungrounded information. Do not fabricate grounding URLs.
-        *   **Cross-Language Search:** If necessary, check other language results; if found, translate only the necessary information and list the corresponding grounding URL.
+        *   **Cross-Language Search:** If necessary, check other language results; if found, translate only the necessary information and cite the corresponding grounding URL `[SSX]` or document reference `[DOCX, reference]`.
     """)
 
 RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
@@ -114,11 +178,20 @@ RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
         *   **Primary Source Focus (MANDATORY):** Use official company sources primarily, including:
             *   Latest Annual / Integrated Reports (and previous years *only* for trends/baselines)
             *   Official Financial Statements (Income Statement, Balance Sheet, Cash Flow) & **Crucially: Footnotes**
-            *   Supplementary Financial Data, Investor Databooks, Official Filings (e.g., Tanshin, EDINET, SEC filings, local equivalents)
+            *   Supplementary Financial Data, Investor Databooks, Official Filings (e.g., **Japanese Annual Security Reports / 有価証券報告書 (Yuho)**, Tanshin, EDINET, **SEC Form 20-F/10-K**, local equivalents) - **prioritize these definitive annual filings.**
             *   Investor Relations Presentations & Materials (including Mid-Term Plans, Strategy Day presentations)
             *   Earnings Call Transcripts & Presentations (focus on Q&A sections)
             *   Official Corporate Website sections (e.g., "About Us", "Investor Relations", "Strategy", "Governance", "Sustainability/ESG", "Management/Directors") - check for "last updated" dates.
             *   Official Press Releases detailing strategy, financials, organizational structure, or significant events.
+        *   # NEW: Specific Annual Report Prioritization
+            **CRITICAL: Prioritize full, official annual financial reports (e.g., Annual Security Report/有価証券報告書, Form 20-F/10-K, audited consolidated Financial Statements) over summary reports, preliminary results, or quarterly/half-year interim reports.** Only use interim reports if they are the *sole* source for essential recent data *and* acknowledge this limitation internally. Always seek the comprehensive year-end filing for the period requested.
+        *   # NEW: Complex Website Navigation Awareness
+            **Be aware that consumer-facing websites (e.g., `brand.com`) are often distinct from the Corporate / Investor Relations site (e.g., `brand-global.com/corp/`, `brand.com/ir/`). Navigate diligently:**
+            *   Look for "Investor Relations (IR)", "Shareholders & Investors", "Company Information", or "Corporate" links, often in the site footer or main navigation.
+            *   Within IR sections, common paths are: IR Home -> IR Library / Financial Information / Filings -> Annual Reports / SEC Filings / Financial Results / Security Reports (有価証券報告書).
+            *   Search specifically for the document types mentioned above covering the required fiscal year (e.g., "FY2023 ended March 31, 2024").
+        *   # NEW: Language/Regional Site Variation Handling
+            **Check both Japanese and English versions of the corporate/IR website if necessary.** Content availability (especially specific report types like Security Reports vs. Financial Results summaries) and site structure can differ. If a key document is missing on one language site, check the other before concluding it's unavailable. Prioritize the most comprehensive/official version found.
         *   **Forbidden Sources:** Do NOT use:
             *   Wikipedia
             *   Generic blogs, forums, or social media posts
@@ -136,7 +209,7 @@ RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
         *   **Calculation Guidelines:** If metrics are not explicitly reported but must be calculated:
             *   Calculate only if all necessary base data (e.g., Net Income, Revenue, Equity, Assets, Debt) is available and verifiable from grounded sources.
             *   Clearly state the formula used, and if averages are used, mention that (e.g., "ROE (Calculated: Net Income / Average Shareholders' Equity)") [SSX]. **Cite the sources for all base data points used in the calculation.**
-        *   **Confirmation of Unavailability (Internal):** Only conclude information is unavailable *internally* after a diligent, confirmed search across *multiple* relevant primary source *types* fails to yield verifiable, grounded data. **Do not state this conclusion in the output.**
+        *   **Confirmation of Unavailability (Internal):** Only conclude information is unavailable *internally* after a diligent, confirmed search across *multiple* relevant primary source *types* (including different website sections and language versions) fails to yield verifiable, grounded data. **Do not state this conclusion in the output.**
     """)
 
 ANALYSIS_SYNTHESIS_INSTRUCTION = textwrap.dedent("""\
@@ -151,11 +224,12 @@ ANALYSIS_SYNTHESIS_INSTRUCTION = textwrap.dedent("""\
 
 INLINE_CITATION_INSTRUCTION = textwrap.dedent("""\
     *   **Inline Citation Requirement:**
-        *   Every factual claim, data point (including figures in tables), direct quote, and specific summary **MUST** include an inline citation in the format `[SSX]`, where X corresponds exactly to the sequential number of the source in the final Sources list.
-        *   Place the inline citation immediately after the supported statement and **before punctuation** when possible (e.g., "Revenue was ¥100B [SS1].").
-        *   If a single sentence contains multiple distinct facts from different sources, cite each appropriately (e.g., "Revenue was ¥100B [SS1] and net income was ¥10B [SS2].").
-        *   If a single source supports multiple facts within a paragraph or table, reuse the same `[SSX]`.
-        *   This ensures that each fact is directly verifiable against the corresponding "Supervity Source X" in the final Sources list.
+        *   # MODIFIED: Mention dual citation types
+            Every factual claim, data point (including figures in tables), direct quote, and specific summary **MUST** include an inline citation indicating its source. Use the format `[SSX]` for information derived from **verifiable web grounding URLs** provided by Vertex AI Search, where X corresponds exactly to the sequential number of the source in the final Sources list. Use the format `[DOCX, reference]` for information derived directly from **provided documents**, where X is the document number and 'reference' is the page/slide/section.
+        *   Place the inline citation immediately after the supported statement and **before punctuation** when possible (e.g., "Revenue was ¥100B [SS1].", "The plan outlines three pillars [DOC1, p.5].").
+        *   If a single sentence contains multiple distinct facts from different sources, cite each appropriately (e.g., "Revenue was ¥100B [SS1] and the internal target is ¥110B [DOC2, Slide 10].").
+        *   If a single source (web or document) supports multiple facts within a paragraph or table, reuse the same citation.
+        *   This ensures that each fact is directly verifiable against either the corresponding "Supervity Source X" in the final Sources list or the referenced provided document.
     """)
 
 SPECIFICITY_INSTRUCTION = textwrap.dedent("""\
@@ -235,77 +309,46 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     *   **Inline Citation & Specificity:** Incorporate the inline citation [SSX] for every factual claim (see Inline Citation Requirement) and include specific dates/definitions (see Specificity and Granularity).
     """)
 
-ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
-    **Mandatory Preliminary Research: Understanding the Analyzing Company ({context_company_name})**
-
-    **CRITICAL Prerequisite:** Before generating the Strategy Research plan for the Target Company ({company_name}), you MUST conduct a **thorough, in-depth preliminary research** step focused *exclusively* on understanding the **Analyzing Company ({context_company_name})**. The goal is to move far beyond generic assumptions and build a specific profile of their offerings and strengths.
-
-    *   **Research Depth & Source Prioritization:**
-        *   **Mandatory Sources:** Prioritize and diligently examine {context_company_name}'s:
-            1.  **Official Website:** Specifically the sections detailing "Products," "Services," "Solutions," "Industries," "Case Studies," and "About Us." Look for specific named offerings.
-            2.  **Latest Annual/Integrated Report:** Focus on sections describing business segments, strategy, R&D, key investments, and market positioning.
-            3.  **Recent Investor Relations Materials:** (Presentations, Factbooks) Check for strategic priorities, targeted growth areas, and capability highlights.
-        *   **Supplemental Sources:** Use reputable industry analysis or financial news reports *only* if necessary to clarify specific offerings or market position, but prioritize official self-descriptions.
-        *   **Timeframe:** Focus on the *current* and *most recently reported* capabilities and strategic direction.
-
-    *   **Information to Extract (Be Specific):**
-        1.  **Core Business Domains & *Named* Solutions:** Identify the *specific, named* products, services, platforms, and solutions {context_company_name} actively markets. (e.g., Instead of "Cloud Services," find "CloudFlex Managed Azure" or "AI-Powered Predictive Maintenance Suite"). List the key domains (e.g., Cybersecurity, Cloud Infrastructure, ERP Implementation, Network Integration, Industry-Specific Software [specify industry]).
-        2.  **Key Verifiable Strengths & Differentiators:** What does {context_company_name} claim as its specific advantages? (e.g., "Certified expertise in SAP S/4HANA migration," "Proprietary AI algorithm for X," "Extensive nationwide service network with Y depots," "Decades of experience in the Z vertical," "Unique partnership with TechVendor ABC"). Avoid generic terms like "good service."
-        3.  **Primary Target Industries/Verticals:** Which specific industries does {context_company_name} explicitly state it focuses on or has deep expertise in?
-        4.  **Technological Focus/Partnerships:** Identify key technologies {context_company_name} emphasizes (e.g., AI/ML, IoT, specific cloud platforms, cybersecurity frameworks) and major strategic technology partnerships mentioned.
-
-    *   **CRITICAL - AVOID GENERICITY:**
-        *   **Do NOT rely on assumptions or superficial knowledge.** Your understanding must be based on the specific research conducted using the sources above.
-        *   **Do NOT use generic descriptions** like "offers IT solutions," "provides consulting," or "is good at technology." Be precise and use the specific terminology and offering names found in {context_company_name}'s own materials.
-
-    *   **Purpose & Application:**
-        *   This preliminary research is **fundamental** to generating a valuable and non-generic Strategy Research plan. The quality and specificity of your proposed alignments in the main report (Sections 4, 6, 7, 9, 11) **directly depend** on the accuracy and depth of this initial research.
-        *   You will explicitly use the *specific capabilities, named solutions, and verifiable strengths* identified here when analyzing the Target Company ({company_name}) and proposing potential alignments.
-        *   You do *not* need to cite these preliminary research sources in the final output unless they overlap with provided grounding URLs for the Target Company ({company_name}).
-
-    *   **Internal Verification:** Before proceeding to analyze the Target Company, internally confirm you have identified specific, named offerings and verifiable strengths for {context_company_name}, not just generic categories.
-    """)
-
 FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
     *   **Internal Final Review:** Before generating the 'Sources' list, review your generated response for:
 
         *   **Completeness Check:**
             * Every numbered section requested in the prompt is present with the correct heading.
-            * Each section contains all requested subsections and information points for the Target Company ({company_name}), or the content has been silently omitted if ungrounded after exhaustive search (headings retained).
-            * The "Final Strategy Summary" (Section 11) is included.
+            * Each section contains all requested subsections and information points, or the content has been silently omitted if ungrounded after exhaustive search (headings retained).
+            * The "General Discussion" paragraph is included.
             * No sections have been accidentally omitted or truncated.
 
         *   **Formatting Verification:**
             * All line breaks are properly formatted (no literal '\\n').
             * All section headings use correct Markdown format (`## Number. Title`).
             * All subsections use proper hierarchical format (`###` or indented bullets).
-            * **Tables are PERFECTLY formatted** (aligned pipes, matching columns, start/end pipes, `-` used sparingly only for missing cell data *confirmed absent in source* for {company_name}, data accuracy check vs source).
+            * **Tables are PERFECTLY formatted** (aligned pipes, matching columns, start/end pipes, `-` used sparingly only for missing cell data *confirmed absent in source*, data accuracy check vs source).
             * Lists use consistent formatting and indentation.
 
-        *   **Citation Integrity (Target Company - {company_name}):**
-            * Every factual claim about **{company_name}** has an inline citation `[SSX]`.
-            * **Specifically verify {company_name}'s financial data points and table entries for correct [SSX] citations.**
+        *   **Citation Integrity:**
+            * Every factual claim has an inline citation `[SSX]`.
+            * **Specifically verify financial data points and table entries for correct [SSX] citations.**
             * Citations are placed immediately after the supported claim, before punctuation.
-            * All citations correspond exactly to entries that WILL BE in the final Sources list.
-            * Every source listed corresponds to at least one inline citation `[SSX]` referring to **{company_name}**.
+            * All citations correspond to entries that WILL BE in the final Sources list.
+            * Every source listed corresponds to at least one inline citation [SSX].
 
-        *   **Data Precision & Recency (Target Company - {company_name}):**
-            * All monetary values for **{company_name}** specify currency and reporting period.
-            * All dates for **{company_name}** are in consistent format and reflect the latest available grounded data.
-            * Numerical data for **{company_name}** is presented with appropriate precision and units.
-            * Primary sources used for **{company_name}** are confirmed to be the most recent available and grounded.
+        *   **Data Precision & Recency:**
+            * All monetary values specify currency and reporting period.
+            * All dates are in consistent format and reflect the latest available data.
+            * Numerical data is presented with appropriate precision and units.
+            * Primary sources used are confirmed to be the most recent available.
 
-        *   **Content Quality & Alignment Specificity:**
+        *   **Content Quality:**
             * Direct start with no conversational text.
-            * Professional tone with no placeholders (except the minimal `-` in tables for {company_name} where structurally needed and confirmed absent in source).
-            * Adherence to silent omission handling instructions for {company_name}.
+            * Professional tone with no placeholders (except the minimal `-` in tables where structurally needed and confirmed absent in source).
+            * Adherence to silent omission handling instructions.
             * Logical flow within and between sections.
             * Analytical depth provided where required (explaining 'why').
-            * **Alignment Specificity:** Verify that proposed alignments between the Analyzing Company's ({context_company_name}) capabilities and the Target Company's ({company_name}) needs (Sections 4, 6, 7, 9, 11) are **specific, non-generic, and plausibly based on the Analyzing Company's likely offerings** (reflecting thorough preliminary research). They should reference specific needs/challenges of {company_name} [SSX].
+            * Lists (KPIs, Officers, Subsidiaries) verified for completeness based on source availability.
 
-        *   **Single-Entity & Role Clarity (CRITICAL):**
-            *   Ensure that analysis and data strictly pertains to the specified Target Company **'{company_name}'**. Verify no data from similarly named but unrelated entities has crept in.
-            *   Maintain clarity between the Target Company ({company_name}) and the Analyzing Company ({context_company_name}). Ensure proposals clearly articulate *how* {context_company_name} can help {company_name}.
+        *   **Single-Entity & Group Structure Clarity (CRITICAL):**
+            *   Ensure that only the specified company name **'{company_name}'** is researched and included. Verify no data from similarly named but unrelated entities has crept in.
+            *   Clarity maintained between parent group data and specific subsidiary data where applicable, clearly sourced [SSX].
 
         Proceed to generate the final 'Sources' list only after confirming these conditions are met.
     """)
@@ -325,7 +368,7 @@ COMPLETION_INSTRUCTION_TEMPLATE = textwrap.dedent("""\
 # --- Prompt Generating Functions ---
 
 # Basic Prompt
-def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for a comprehensive basic company profile with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -334,7 +377,7 @@ def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Opti
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -431,7 +474,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Financial Prompt
-def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for a detailed financial analysis with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -440,7 +483,7 @@ def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: 
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -594,7 +637,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Competitive Landscape Prompt
-def get_competitive_landscape_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_competitive_landscape_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for a detailed competitive analysis with nuanced grounding rules and expanded scope."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -603,7 +646,7 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -711,7 +754,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Management Strategy Prompt
-def get_management_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_management_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for analyzing management strategy and mid-term business plan with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -720,7 +763,7 @@ def get_management_strategy_prompt(company_name: str, language: str = "Japanese"
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -803,7 +846,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Regulatory Prompt
-def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for analyzing the regulatory environment with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -812,7 +855,7 @@ def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker:
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -895,7 +938,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Crisis Prompt
-def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for analyzing digital crisis management and business continuity with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -904,7 +947,7 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Opt
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -964,7 +1007,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Digital Transformation Prompt
-def get_digital_transformation_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_digital_transformation_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for analyzing DX strategy and execution with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -973,7 +1016,7 @@ def get_digital_transformation_prompt(company_name: str, language: str = "Japane
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -1048,7 +1091,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Business Structure Prompt
-def get_business_structure_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_business_structure_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for analyzing business structure, geographic footprint, ownership, and leadership linkages with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1057,7 +1100,7 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese",
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -1184,8 +1227,8 @@ Source and Accuracy Requirements:
     return prompt
 
 # Vision Prompt
-def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
-    """Generates a prompt for analyzing corporate vision and purpose with enhanced entity focus."""
+def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+    """Generates a prompt focused on company vision and strategic purpose with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
     if industry: context_str += f" (Industry: {industry})"
@@ -1193,7 +1236,7 @@ def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Opt
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -1233,7 +1276,7 @@ Conduct in-depth research using official sources for **{company_name}** such as 
     *   ***Stakeholder Focus:*** Analyze how the vision statement and its supporting pillars for {company_name} explicitly address or prioritize key stakeholder groups (e.g., customers, employees, shareholders, society, environment) based on the language used in official communications [SSX]. Provide specific examples or quotes [SSY].
 
 ## 2. General Discussion:
-    *   Provide a concluding single paragraph (300-500 words) that synthesizes the information in Section 1 regarding **{company_name}**. Evaluate the clarity, ambition, distinctiveness, and internal coherence of the stated vision and its components. Use inline citations to link back to specific elements (e.g., "The vision's focus on sustainability [SSX] is clearly measured by the CO2 reduction KPI [SSY], demonstrating commitment... However, the link between the 'Innovation' pillar and specific KPIs appears less defined [SSZ] based on available public disclosures..."). Incorporate key quantitative points if available.
+    *   Provide a concluding single paragraph (300-500 words) synthesizing the information in Section 1 regarding **{company_name}**. Evaluate the clarity, ambition, distinctiveness, and internal coherence of the stated vision and its components. Use inline citations to link back to specific elements (e.g., "The vision's focus on sustainability [SSX] is clearly measured by the CO2 reduction KPI [SSY], demonstrating commitment... However, the link between the 'Innovation' pillar and specific KPIs appears less defined [SSZ] based on available public disclosures..."). Incorporate key quantitative points if available.
     *   Structure the analysis logically—start with an overall summary of the vision's core message, discuss the strength and measurability of its components and stakeholder considerations, and finally evaluate its potential effectiveness in guiding strategy and its relevance for a Japanese audience assessing long-term direction.
     *   Do not introduce new claims beyond the synthesized findings from Section 1 and citations about **{company_name}**.
 
@@ -1250,7 +1293,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Management Message Prompt
-def get_management_message_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_management_message_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
     """Generates a prompt for collecting strategic quotes from leadership with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1259,7 +1302,7 @@ def get_management_message_prompt(company_name: str, language: str = "Japanese",
     # Prepare formatted instruction blocks
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
     formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name)
+    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name)
     formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
     formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
@@ -1322,7 +1365,7 @@ Conduct focused research on recent (last 1-2 years) official communications from
 *   *(Include 1-3 highly relevant, verifiable quotes per key executive if applicable)*
 
 ## 2. General Discussion:
-    *   Provide a concluding single paragraph (300-500 words) that synthesizes the key strategic messages, priorities, and tone conveyed *exclusively* through the collected, verifiable quotes from **{company_name}**'s leadership in Section 1. Identify recurring themes, potential shifts in focus, or areas where different executives provide complementary perspectives. Use inline citations to link back to specific quotes or speakers (e.g., "The CEO's emphasis on digital innovation [SSX, SSZ] aligns with the CTO's focus on AI investment [SST], suggesting a unified direction... However, the Chairman's cautionary note on governance [SSV] highlights potential execution risks..."). Consider potential DX opportunities or challenges implied by the leadership messages [SSX].
+    *   Provide a concluding single paragraph (300-500 words) synthesizing the key strategic messages, priorities, and tone conveyed *exclusively* through the collected, verifiable quotes from **{company_name}**'s leadership in Section 1. Identify recurring themes, potential shifts in focus, or areas where different executives provide complementary perspectives. Use inline citations to link back to specific quotes or speakers (e.g., "The CEO's emphasis on digital innovation [SSX, SSZ] aligns with the CTO's focus on AI investment [SST], suggesting a unified direction... However, the Chairman's cautionary note on governance [SSV] highlights potential execution risks..."). Consider potential DX opportunities or challenges implied by the leadership messages [SSX].
     *   Structure your analysis logically: summarize the dominant strategic narrative from leadership based on the quotes, highlight any nuances or potential tensions between messages, and conclude with an assessment of the clarity and consistency of the strategic communication relevant for a Japanese audience interpreting leadership signals.
     *   Do not introduce any new factual claims or analysis beyond what is directly supported by the quotes provided and cited about **{company_name}**.
 
@@ -1338,171 +1381,235 @@ Source and Accuracy Requirements:
 """
     return prompt
 
-def get_strategy_research_prompt(
-    company_name: str,  # Target Company
-    language: str = "English",
-    ticker: Optional[str] = None,
-    industry: Optional[str] = None,
-    context_company_name: str = "NESIC"  # Analyzing Company - default added back
-):
+# --- Enhanced Account Strategy Prompt Function ---
+def get_account_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """
-    Generates a generalized prompt for creating a comprehensive 3-Year "Strategy Research"
-    Action Plan for {company_name} (Target Company), leveraging the dynamically and
-    thoroughly researched capabilities of {context_company_name} (Analyzing Company),
-    with enhanced entity focus and analytical depth.
+    Generates the BEST POSSIBLE prompt for creating a comprehensive, actionable 3-Year Account Strategy Action Plan
+    FOR {context_company_name} TARGETING {company_name}. It leverages PROVIDED DOCUMENTS as PRIMARY context,
+    supplemented by verifiable web grounding, and maps opportunities to {context_company_name}'s capabilities.
     """
-    context_str = f"**{company_name}**" # Target Company context string
+    # --- Role Assignment ---
+    persona = f"You are a Senior Account Strategist at {context_company_name} ({context_company_name}). Your task is to develop a comprehensive, data-driven 3-year account strategy plan for targeting {company_name}."
+
+    # --- Context Setup ---
+    context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
     if industry: context_str += f" (Industry: {industry})"
 
-    # Prepare formatted instruction blocks
+    # --- Format Standard Instruction Blocks ---
+    # (Ensure these are correctly defined and accessible)
     formatted_additional_instructions = ADDITIONAL_REFINED_INSTRUCTIONS.format(company_name=company_name, ticker=ticker or "N/A", industry=industry or "N/A")
-    formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name)
-    # Use the updated FINAL_REVIEW_INSTRUCTION which includes the alignment check
-    formatted_final_review = FINAL_REVIEW_INSTRUCTION.format(
-        company_name=company_name,
-        context_company_name=context_company_name # Pass context company name for review instruction
-        )
-    formatted_completion_template = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name)
-    formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language)
+    # MODIFIED: Enhance research depth specifically for this prompt context
+    formatted_research_depth = RESEARCH_DEPTH_INSTRUCTION.format(company_name=company_name) + textwrap.dedent(f"""\
+
+        *   **CRITICAL - Account Strategy Context:** When applying these research instructions for the Account Strategy Prompt, remember the goal is to gather intelligence *on* **{company_name}** specifically *to inform strategy FOR* **{context_company_name}**. Prioritize information revealing needs, plans, challenges, and organizational details relevant to potential {context_company_name} solutions.
+        *   **Document Prioritization for Internal Context:** CRITICALLY, prioritize and deeply integrate information found within the **provided documents** [DOCX] as the primary source for internal strategy, plans, specific challenges, personnel, and relationship history. Supplement with the latest official primary web sources [SSX] for public facts (revenue, official structure, etc.) and broader market context. Use the correct citation type based on origin. If conflicts arise, prioritize latest official provided document for internal strategy/plans, and latest verifiable public web source for public facts.
+    """)
+    formatted_final_review_base = FINAL_REVIEW_INSTRUCTION.format(company_name=company_name) # Base for later enhancement
+    formatted_completion_base = COMPLETION_INSTRUCTION_TEMPLATE.format(company_name=company_name) # Base for later enhancement
+    # MODIFIED: Clarify SSX-only nature of final list
+    formatted_final_source_list = FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE.format(language=language) + textwrap.dedent("""\
+
+        **Note for Account Strategy:** This final "Sources" list is *exclusively* for the web grounding URLs cited as `[SSX]`. Document citations `[DOCX, reference]` are inline only and **must not** be included here.
+    """)
     formatted_base_formatting = BASE_FORMATTING_INSTRUCTIONS.format(language=language)
-    formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
-    # NEW: Format the ENHANCED context company capabilities instruction
-    formatted_analyzing_company_capabilities = ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION.format(
-        context_company_name=context_company_name, # Analyzing Company
-        company_name=company_name # Target Company
+    # MODIFIED: Ensure audience context is applied to NESIC's perspective
+    formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language) + f" Ensure recommendations are actionable for **{context_company_name}**."
+
+    # --- Format Document Analysis Instruction ---
+    # MODIFIED: Slight wording tweak for synthesis context
+    formatted_document_analysis = DOCUMENT_ANALYSIS_INSTRUCTION.format(company_name=company_name, context_company_name=context_company_name, language=language).replace(
+        "analysis and the resulting Account Strategy **MUST** deeply integrate insights extracted",
+        "analysis and the resulting Account Strategy **MUST** deeply synthesize and integrate insights extracted"
+    ).replace(
+        "Do not rely solely on web grounding when relevant document information is available.",
+        "Prioritize document insights for internal context, but synthesize with web grounding for a complete picture."
     )
 
+
+    # --- Assemble the Final Prompt ---
+    # MODIFIED: Added persona clarification and mandatory dual-source emphasis
     prompt = f"""
-**CRITICAL FOCUS:** This Strategy Research is *exclusively* about the specific Target Company: {context_str}. Verify the identity of the Target Company for all sourced information [SSX]. Do not include unrelated entities. This plan leverages public data about the Target Company ({company_name}) to inform a strategic account plan for the Analyzing Company ({context_company_name}).
+{persona} Your goal is to create an actionable plan for {context_company_name}.
 
-Comprehensive 3-Year Strategy Research & Action Plan: Targeting {company_name} for {context_company_name}
+**CRITICAL FOCUS:** This entire request is *exclusively* about creating a strategic account plan FOR **{context_company_name}** targeting the specific entity: {context_str}. Verify the identity of **{company_name}** for all sourced information. Avoid unrelated entities.
 
-Objective: Create a detailed, data-driven, and highly specific Strategy Research action plan for engaging the Target Company ({company_name}) over the next three fiscal years (e.g., FY2025-FY2027). This plan must be based *exclusively* on verifiable information about the Target Company ({company_name}) obtained through grounded sources [SSX]. Crucially, the analysis must identify **specific, non-generic opportunities** where the **thoroughly researched capabilities, named solutions, and verifiable strengths** of the Analyzing Company ({context_company_name}), determined via mandatory preliminary research (see instructions below), align with the Target Company's ({company_name}) stated needs, initiatives, or challenges. Focus strictly on the Target Company: {context_str}.
+# MODIFIED: Emphasize dual source mandate
+**PRIMARY CONTEXT SOURCES (MANDATORY SYNTHESIS):** This plan **MUST** be built upon insights derived from **BOTH**:
+1.  **Provided Documents (HIGHEST PRIORITY FOR INTERNAL CONTEXT):** Internal presentations, plans, meeting notes, org charts, etc., specific to {company_name} (Cite as `[DOCX, reference]`). Assume these provide the most current internal view unless contradicted by very recent, verifiable public sources.
+2.  **Verifiable Web Grounding (FOR PUBLIC FACTS & WIDER CONTEXT):** Latest public information (financials, official strategy statements, market news) validated via grounding URLs (Cite as `[SSX]`). Use this to supplement and verify public aspects of the documents.
 
-Target Audience Context: This plan is for internal use by the Analyzing Company's ({context_company_name}) sales, pre-sales, marketing, and strategy teams. Recommendations must be concrete and actionable, highlighting potential alignments between the Target Company's ({company_name}) verified situation [SSX] and the specifically identified capabilities of the Analyzing Company ({context_company_name}). The goal is a practical, differentiated roadmap, not a generic overview. {formatted_audience_reminder}
+Comprehensive 3-Year Account Strategy Action Plan: {context_company_name} for {company_name}
+
+Objective: Create a detailed, actionable, and strategically sound account plan for **{context_company_name}** covering the next three fiscal years (e.g., FY2025-FY2027), focused on **{company_name}**. This plan **MUST synthesize information from BOTH provided documents AND verifiable web grounding** to identify strategic opportunities where **{context_company_name}'s** known capabilities (see reference below) align with **{company_name}'s** needs, challenges, and initiatives (both stated publicly and detailed internally). The output must be tailored for internal use by **{context_company_name}** sales and strategy teams, highlighting clear value propositions and differentiators.
+
+Target Audience Context: {formatted_audience_reminder} Recommendations must be actionable for {context_company_name}, focusing on strategic alignment and potential ROI.
 
 {get_language_instruction(language)}
 
-{formatted_analyzing_company_capabilities} # Instructs LLM on mandatory, in-depth research & application of {context_company_name} capabilities
+--- {context_company_name} Context (Reference) ---
+{NESIC_CAPABILITIES_CONTEXT}
+--- End {context_company_name} Context ---
 
-Research Requirements (Target Company - {company_name}):
-*   Use only data about the **Target Company ({company_name})** validated through Gemini grounding URLs [SSX]. Perform exhaustive checks across multiple primary sources (latest reports, filings, presentations, official website) before silently omitting unverified data about {company_name}.
-*   Every fact, figure, stated initiative, or challenge pertaining to the **Target Company ({company_name})** must be backed by an inline citation [SSX]. Silently omit any unverified points about {company_name}.
-*   Use **perfect Markdown tables** for presenting data related to {company_name}. Verify data accuracy against sources. Use '-' for missing data points only if structurally necessary and confirmed absent in source for {company_name}.
-*   Focus on extracting actionable intelligence about **{company_name}** that informs specific, tailored strategic engagement possibilities for **{context_company_name}**. Analyze the *implications* of the data deeply.
+--- Core Instructions & Constraints ---
 
-{HANDLING_MISSING_INFO_INSTRUCTION}
-{formatted_research_depth} # Focus on {company_name}'s reports, financials, strategy docs
+Research & Analysis Requirements:
+*   # MODIFIED: Explicit dual source synthesis and prioritization logic
+    **Dual Source Synthesis (MANDATORY):** Deeply analyze and synthesize information from BOTH provided documents (`[DOCX]`) AND web grounding (`[SSX]`).
+        *   Prioritize documents for internal strategy, specific plans/timelines, internal challenges/pain points, organizational details, and relationship history.
+        *   Use latest verifiable public web grounding for official public facts (e.g., reported revenue, CEO name, major public announcements) and broader market/industry context.
+        *   If conflicting information exists: Prioritize the **latest official provided document** for internal strategy/plans specific to {company_name}. Prioritize the **latest verifiable public web grounding source** for publicly stated facts. Note significant conflicts impacting strategy.
+*   **Accurate & Distinct Citation (MANDATORY):** Every factual claim about {company_name} MUST have the correct inline citation: `[SSX]` for web grounding, `[DOCX, reference]` for provided documents.
+*   **Exhaustive Review:** Perform thorough review of *all* provided document content (text, tables, visuals) and conduct exhaustive web searches before silently omitting unverified data.
+*   **{context_company_name} Perspective (CRITICAL):** Frame ALL analysis and recommendations from **{context_company_name}'s** viewpoint – "How can WE ({context_company_name}) uniquely help {company_name} achieve their goals and overcome their challenges using OUR capabilities and strengths?".
+*   **Actionable & Strategic Output:** Focus on extracting insights that inform concrete strategic engagement possibilities, value propositions, and potential risks for {context_company_name}.
+*   **Perfect Formatting:** Adhere strictly to Markdown rules (esp. tables). Verify data accuracy. Use '-' sparingly in tables only if data is confirmed absent in source and needed for structure.
+
+{formatted_document_analysis}
+{HANDLING_MISSING_INFO_INSTRUCTION} # Includes check for alternate language sites
+{formatted_research_depth} # Includes document prioritization logic
 {SPECIFICITY_INSTRUCTION}
-{INLINE_CITATION_INSTRUCTION}
-{ANALYSIS_SYNTHESIS_INSTRUCTION} # Focus analysis on identifying needs {context_company_name} could meet & explaining *why* with specifics
+{INLINE_CITATION_INSTRUCTION} # Reminds of the two citation types
+{ANALYSIS_SYNTHESIS_INSTRUCTION} # Synthesize from BOTH sources
 
-{formatted_additional_instructions}
+{formatted_additional_instructions} # Includes single-entity focus, markdown rules etc.
 
-## 1. Target Company Profile ({company_name})
-    *   **Company Name:** {company_name} [SSX]
-    *   **Ticker:** {ticker or "N/A"} [SSX]
-    *   **Industry & Sub-sector:** {industry or "N/A"} [SSX] (Note key sub-sectors if relevant and verifiable [SSY])
-    *   **Headquarters:** [Full Registered HQ Address] [SSX]
-    *   **Current CEO:** [Full Name and Title] [SSX] (Verify latest)
-    *   **Key Executives Relevant to Strategy/IT/Operations:** (List names/titles if verifiable, e.g., CIO, CTO, CDO, CFO, COO, Head of Digital, Key BU Leaders) [SSY]
-    *   **Approximate Employee Range/Number:** [Most recent figure with date] [SSX]
-    *   **Core Business Summary:** Summarize main operations, key products/services, primary customer segments, and main markets based on latest official reports for {company_name} [SSX].
-    *   *(Note: Avoid speculation on {context_company_name}-{company_name} relationship history unless verifiable via grounding URLs [SSZ]. Focus analysis on {company_name}.)*
+--- Account Strategy Plan Structure ---
 
-## 2. Target Company Revenue Analysis & Growth Drivers ({company_name})
-    *   Present Revenue for {company_name} for the last 3 full fiscal years (FYXXXX, FYYYYY, FYZZZZ) in a **perfectly formatted Markdown table**, specifying currency (e.g., JPY Millions) [SSX]. Calculate YoY Growth Rate (%). Verify data. Use '-' for missing data points only if needed for table structure.
-        | Metric                  | FYXXXX | FYYYYY | FYZZZZ | Source(s) |
-        |-------------------------|--------|--------|--------|-----------|
-        | Total Revenue (Unit)    |        |        |        | [SSX]     |
-        | YoY Growth Rate (%)     | N/A    |  X.X%  |  Y.Y%  | (Calc)    |
-    *   Identify key business segments or geographic regions driving **{company_name}**'s revenue growth or decline, based on sourced segment data [SSY]. Analyze trends using specific figures (% change, contribution shift) from the latest available data [SSZ]. Explain the *reasons* for these trends if stated in sources [SSW].
-    *   **Strategic Implications for {context_company_name}:** Where are the verifiable growth areas within {company_name} [SSY, SSZ] that align with {context_company_name}'s specific, researched capabilities and target industries? (e.g., "Target's growth in Sector X [SSY] aligns with Analyzing Co.'s 'Solution Suite for Sector X'"). Where are the verifiable challenges (e.g., declining segment needing efficiency gains [SSW]) that {context_company_name}'s specific solutions (e.g., "Named Automation Platform Y," "Specific Managed Service Z") could address? Explain the connection clearly and specifically.
+## 0. Executive Summary (for {context_company_name})
+    *   Provide a concise (1-2 paragraph) overview of the 3-year strategy for engaging {company_name}, **based on synthesis of DOCX and SSX insights**.
+    *   Highlight the top 2-3 strategic opportunities identified for {context_company_name}.
+    *   Summarize the core value proposition {context_company_name} offers to {company_name}.
+    *   Briefly mention the overall ambition level (e.g., expand footprint, become strategic partner).
+    *   Cite key supporting data points [DOCX / SSX].
 
-## 3. Target Company Financial Performance & Investment Capacity ({company_name})
-    *   Present Net Income (Attributable to Parent), Operating Margin (%), and Capital Expenditures (CapEx) for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table** [SSX, SSY, SSZ]. Verify data. Use '-' for missing data points only if needed for table structure.
+## 1. Target Customer Profile ({company_name})
+    *   Company Name: {company_name} [SSX or DOCX]
+    *   Ticker: {ticker or "N/A"} [SSX or DOCX]
+    *   Industry: {industry or "N/A"} [SSX or DOCX]
+    *   Headquarters Address: [Full Registered HQ Address] [SSX or DOCX]
+    *   Current CEO: [Full Name and Title] [SSX or DOCX - Verify latest]
+    *   Key Business Summary: Summarize main operations, markets, recent performance highlights, and overall business trajectory based on latest reports and documents [SSX, DOCX].
+    *   Approximate Employee Range/Number: [Most recent figure with date] [SSX or DOCX]
+    *   Reported Relationship with {context_company_name}: Summarize any existing relationship, past projects, or engagement level *if explicitly mentioned and verifiable* in provided documents or grounded sources [DOCX, SSY]. Otherwise, state "No verifiable relationship history found".
+
+## 2. Key Insights from Provided Documents & Implications for {context_company_name}
+    *   **Document Overview:** List provided documents (e.g., "DOC1: FY24 Internal Strategy PPT", "DOC2: Org Chart PDF").
+    *   **Major Strategic Themes & Priorities (from Docs):** Summarize core goals, transformation efforts, investment areas stated within documents [DOCX, reference]. **Implication for {context_company_name}:** [Analyze what these themes mean for potential {context_company_name} engagement].
+    *   **Recent Activities & Projects (from Docs):** Highlight significant ongoing/planned projects/initiatives mentioned [DOCX, reference]. **Implication for {context_company_name}:** [Identify specific, immediate opportunities or areas for {context_company_name} to align with].
+    *   **Organizational Nuances & Key Stakeholders (from Docs):** Detail relevant structure insights, team names, key individuals [DOCX, reference]. **Implication for {context_company_name}:** [Identify key contacts, decision-makers, and potential relationship mapping targets].
+    *   **Explicitly Stated Needs / Pain Points (from Docs):** List challenges, requirements, gaps directly articulated [DOCX, reference]. **Implication for {context_company_name}:** [Pinpoint where {context_company_name}'s solutions directly address these expressed needs].
+
+## 3. Financial Health & Investment Capacity ({company_name})
+    *   Present Revenue, Net Income (Parent), and Operating Margin (%) for last 3 fiscal years in a **perfectly formatted Markdown table** [SSX]. Calculate Revenue YoY Growth (%). Verify data. Use '-' minimally.
         | Metric                           | FYXXXX | FYYYYY | FYZZZZ | Source(s) |
         |----------------------------------|--------|--------|--------|-----------|
-        | Net Income (Parent) (Unit)       |        |        |        | [SSX]     |
+        | Total Revenue (JPY M)            |        |        |        | [SSX]     |
+        | Revenue YoY Growth (%)           | N/A    |  X.X%  |  Y.Y%  | (Calc)    |
+        | Net Income (Parent) (JPY M)      |        |        |        | [SSX]     |
         | Operating Margin (%)             |        |        |        | [SSY]     |
-        | Capital Expenditures (CapEx) (Unit)|        |        |        | [SSZ]     |
-    *   Note key profitable divisions/segments of {company_name} if identifiable from sourced data [SSW]. Analyze trends in profitability and investment levels, explaining drivers if possible [SSX, SSY, SSZ]. Look for commentary on investment priorities [SSV].
-    *   **Strategic Implications for {context_company_name}:** Does {company_name}'s financial health [SSX] and CapEx trend/priorities [SSZ, SSV] suggest capacity and appetite for significant strategic investments aligning with {context_company_name}'s high-value offerings (e.g., large DX/SI projects)? Are margin pressures [SSY] creating a verifiable need for specific cost optimization solutions (e.g., "{context_company_name}'s Managed Cloud Cost Optimization Service," "{context_company_name}'s RPA Implementation for Finance Processes") from {context_company_name}'s researched portfolio? Justify the assessment with evidence.
+    *   Identify key profitable/high-growth divisions/segments [SSZ, DOCX].
+    *   **Analyze Investment Capacity & Priorities (for {context_company_name}):** Based on financial trends [SSX] and investment plans/commentary in documents [DOCX], assess {company_name}'s likely capacity AND strategic priorities for IT/DX/Operations investments. Where are they most likely to spend? Are there signs of budget constraints {context_company_name} should be aware of? [DOCX, SSX].
 
-## 4. Target Company Strategic Initiatives & Specific {context_company_name} Alignments ({company_name})
-    *   List **{company_name}**'s major publicly stated strategic initiatives for the next 1-3 years (from latest MTP, Annual Report, IR presentations, CEO messages). Include focus areas (e.g., Digital Transformation, Sustainability/ESG, Supply Chain Resilience, New Product/Market Development, Workforce Upskilling), specific verifiable goals (quantitative preferred), timelines, and investment figures (with currency) if available [SSX]. Use detailed bullet points for 3-5 key initiatives:
-        *   **Initiative 1:** [Name/Focus, e.g., "Sustainability Program: Carbon Neutrality by 2040"] [SSX]
-            *   Stated Goal: [e.g., Reduce Scope 1 & 2 emissions by 50% by 2030; Source 100% renewable energy] [SSX]
-            *   Key Actions Mentioned: [e.g., Investing in energy-efficient manufacturing tech, deploying smart building solutions, improving supply chain sustainability reporting] [SSY]
-            *   **Potential {context_company_name} Alignment:** [Explain *specifically* how {context_company_name}'s researched capabilities fit. e.g., "If {context_company_name} offers Green IT solutions, IoT for energy monitoring (like 'Smart Facility Monitor X'), or Sustainability Data Platform integration services, these directly support stated actions [SSY]. Highlight specific relevant offerings identified in preliminary research."]
-        *   **Initiative 2:** [Name/Focus, e.g., "Next-Generation Product Development using AI"] [SSZ]
-            *   Stated Goal: [e.g., Launch 3 new AI-enabled products in Sector Y by FY2026] [SSZ]
-            *   Technology Focus: [e.g., Building internal AI/ML capabilities, potentially partnering for specific algorithms] [SSW]
-            *   **Potential {context_company_name} Alignment:** [e.g., "{context_company_name}'s 'AI Development Platform' or 'AI Consulting Services' could accelerate this. If {context_company_name} has AI partnerships or specific industry AI solutions (identified in research), these create strong alignment. SI capabilities needed for integration."]
-        *   *(List 3-5 major verifiable initiatives from latest sources for {company_name}, ensuring goals and actions are captured)*
-    *   For each verifiable initiative of {company_name}, explicitly and specifically state how the researched **{context_company_name}** capabilities, **named solutions**, and **verifiable strengths** could provide unique value and support its stated goals. Demonstrate clear understanding of both companies.
+## 4. Strategic Initiatives & {context_company_name} Opportunity Mapping ({company_name})
+    *   Synthesize **{company_name}**'s major stated [SSX] AND internally documented [DOCX] strategic initiatives relevant to {context_company_name}'s offerings (DX, Cloud, Security, Network, ESG Tech, Ops Efficiency).
+    *   For each key initiative (list 3-5):
+        *   **Initiative Name/Focus:** [Specific name/goal] [Source: DOCX or SSX]
+        *   **Objective & Timeline:** [Details] [Source: DOCX or SSX]
+        *   **Investment (if known):** [Details] [Source: DOCX or SSX]
+        *   **{context_company_name} Value Proposition & Differentiation (CRITICAL):** Explicitly map relevant **{context_company_name}** capabilities AND strengths (incl. NEC Group synergy). Crucially, articulate **WHY {context_company_name} is uniquely positioned** to help {company_name} succeed with this initiative compared to potential competitors. What is our specific value-add?
 
-## 5. Target Company Decision-Making Structure & Key Stakeholders ({company_name})
-    *   Outline **{company_name}**'s organizational structure relevant to IT / DX / Strategic Procurement decisions (e.g., Role and influence of specific C-level execs like CIO/CTO/CDO/CFO, structure of IT department, existence and mandate of DX-focused teams or committees, BU autonomy) based on latest verifiable sources [SSX]. Note location of official org charts if found [SSY].
-    *   Identify key executives (names, current titles) within **{company_name}** responsible for overall strategy, finance (CFO), IT/Digital (CIO/CTO/CDO), operations (COO), procurement, and heads of major business units that are likely targets for {context_company_name}'s solutions. Use latest verifiable management structure information [SSY]. Verify titles meticulously.
-    *   Analyze potential decision-making processes for different types of solutions (e.g., "Major platform decisions likely involve cross-functional committee including IT, Finance, and relevant BUs, requiring C-level sign-off [SSX]. Smaller operational tech upgrades may be driven at BU level with IT validation [SSY]"). Consider influence maps if possible based on roles/structure.
+## 5. Decision-Making Landscape & Key Stakeholders ({company_name})
+    *   Outline **{company_name}**'s relevant decision-making structure (IT/DX/Ops/Relevant BUs) based on BOTH public data [SSX] and insights from provided documents (e.g., Org charts, project roles) [DOCX]. Identify key departments, committees, individuals.
+    *   Identify key executives AND relevant managers/leaders (names, titles, roles) based on latest verifiable information [SSY, DOCX].
+    *   **Analyze Influence & Engagement Strategy (for {context_company_name}):** Who are the key decision-makers, influencers, and potential champions/detractors for {context_company_name}'s proposed offerings? Outline a high-level relationship mapping strategy for {context_company_name}.
 
-## 6. Target Company Critical Business Challenges & Specific {context_company_name} Solutions ({company_name})
-    *   Enumerate **{company_name}**'s major business challenges as explicitly stated in recent official sources (e.g., Annual Report risk factors, MTP context analysis, management commentary). Categorize if possible (e.g., Market Competition, Operational Inefficiency, Technological Debt, Regulatory Compliance, Talent Acquisition/Retention, Cybersecurity Threats, Supply Chain Disruptions) [SSX].
-        *   **Challenge 1:** [e.g., "Intensifying competition from digital-native startups in core market segment"] [SSX] -> **Potential {context_company_name} Solution:** [Be specific & link to researched capability. e.g., "{context_company_name}'s 'Digital Customer Experience Platform' combined with its 'Agile Development Services' could help {company_name} rapidly launch competing digital offerings. This leverages {context_company_name}'s strength in [Specific Strength]."]
-        *   **Challenge 2:** [e.g., "Ensuring compliance with upcoming data privacy regulation XYZ"] [SSY] -> **Potential {context_company_name} Solution:** [e.g., "{context_company_name}'s 'Data Governance & Compliance Consulting Service', potentially including implementation support for specific tools they partner with (if known), directly addresses this regulatory need."]
-        *   **Challenge 3:** [e.g., "Skills gap in workforce for adopting new digital tools"] [SSZ] -> **Potential {context_company_name} Solution:** [e.g., "While {context_company_name} might not offer training directly, its 'Managed Services for Tool X' could reduce the immediate need for internal expertise. Alternatively, {context_company_name}'s SI services often include knowledge transfer components."]
-        *   *(List 3-5 key verifiable challenges for {company_name} from latest sources)*
-    *   For each verifiable challenge of {company_name}, propose **specific, relevant {context_company_name} solutions or service categories** (referencing the specific offerings identified during preliminary research) that directly address the verified problem. Clearly explain the value proposition and why it's a better fit than a generic approach.
+## 6. Critical Business Challenges & {context_company_name} Solution Fit ({company_name})
+    *   Enumerate **{company_name}**'s major challenges based on official sources [SSX] AND explicitly stated pain points from provided documents [DOCX]. Categorize if possible.
+        *   **Challenge 1:** [Specific challenge] [Source: DOCX or SSX] -> **{context_company_name} Solution Fit & Value Proposition:** [Explain precisely how {context_company_name}'s specific service/capability directly addresses this challenge and delivers tangible value (e.g., cost savings, efficiency gains, risk reduction, enhanced capability)].
+        *   *(List 3-5 key verifiable challenges)*
+    *   Focus on challenges where {context_company_name} has a strong, differentiated solution.
 
-## 7. Target Company Technology Environment & Future Roadmap ({company_name})
-    *   Summarize **{company_name}**'s known current technology landscape (e.g., primary ERP system, main cloud provider(s), key operational technology platforms, stated use of specific SaaS tools) *if explicitly mentioned* in recent, verifiable sources [SSX]. Note key stated technology vendor relationships or strategic partnerships [SSY].
-    *   Synthesize **{company_name}**'s likely technology investment priorities for the next 3 years based on stated initiatives (Sec 4), investment commentary (Sec 3), and challenges (Sec 6). Examples: [Be specific based on findings] Cloud platform rationalization [SSX], Investment in data warehousing/lakes [SSY], Implementing specific cybersecurity framework [SSZ], Automation technologies (RPA/AI) in Function X [SSW], Upgrading specific core business application [SSV]. Use latest verifiable information.
-    *   **Strategic Implications for {context_company_name}:** How does {company_name}'s apparent tech environment and roadmap [SSX, SSY] align or conflict with {context_company_name}'s core technology expertise, key partnerships (identified in preliminary research), and flagship solution portfolio? Identify specific areas of strong synergy (e.g., "{company_name}'s focus on Azure [SSX] aligns perfectly with {context_company_name}'s Premier Azure Partner status") and potential gaps {context_company_name} might need to address (e.g., via partnerships) to provide comprehensive solutions for {company_name}.
+## 7. Technology Environment & {context_company_name} Synergy ({company_name})
+    *   Summarize **{company_name}**'s current technology landscape (key systems, vendors, platforms) based on available information [SSX, DOCX]. Identify potential areas of technological debt or opportunity.
+    *   Identify likely technology focus areas/investments for the next 3 years [DOCX, SSX].
+    *   **Analyze {context_company_name} Synergy & Integration Potential:** Map {company_name}'s tech focus to the **{context_company_name}** portfolio. Highlight where **NEC Group synergy** offers unique advantages. Assess how well {context_company_name} solutions can integrate with {company_name}'s existing environment.
 
-## 8. Strategic Engagement Plan Outline (FY2025–2027)
-    *   Provide a high-level quarterly engagement plan concept for {context_company_name} to approach {company_name}. Focus on **strategic themes** derived from {company_name}'s verified needs and initiatives, directly aligned with **specific, researched {context_company_name} capabilities/solutions**. Use a **perfectly formatted Markdown table**. Verify data links. Prioritize themes based on potential impact and alignment strength.
-        | Fiscal Year / Quarter | Engagement Theme / Focus Area (Derived from {company_name}'s verified needs/initiatives) | Specific {context_company_name} Capabilities/Solutions to Propose (Use researched names/details) | Target Dept/Stakeholder ({company_name} - Informed Guess based on Sec 5) | Supporting {company_name} Data Point Citation | Rationale / Goal for {context_company_name} |
-        |-----------------------|------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|-----------------------------------------------|---------------------------------------------|
-        | FY2025 Q1             | Aligning on Strategic DX Goals & Showcasing Relevant Expertise                           | Workshop on {context_company_name}'s 'DX Framework for {industry}', Case studies of 'Solution X' success | CIO, Head of Digital, Strategy Team                                     | Initiative Sec 4 [SSX], Vision Sec 1          | Establish credibility, understand priorities|
-        | FY2025 Q2             | Addressing Top Challenge: Cybersecurity in the Cloud Era                                 | Executive Briefing on {context_company_name}'s 'Cloud Security Suite', Assessment offer           | CISO, Cloud Architecture Team                                           | Challenge Sec 6 [SSY], Tech Env Sec 7         | Position as trusted security partner        |
-        | FY2025 Q3             | Deep Dive: Enabling Initiative Y with {context_company_name}'s 'Platform Z'                 | Technical demo of 'Platform Z', Co-creation workshop for Initiative Y                             | Relevant BU Lead, IT Project Lead                                       | Initiative Sec 4 [SSZ]                        | Identify pilot opportunity                  |
-        | FY2025 Q4             | Demonstrating ROI for Operational Efficiency Challenge                                   | Business value assessment using {context_company_name}'s 'Managed Service ABC', ROI calculator      | CFO, COO, IT Operations Head                                            | Challenge Sec 6 [SSW], Financials Sec 3       | Build financial case for solution           |
-        | FY2026 Q1-Q2          | Formal Proposal Development for Prioritized Pilot Projects                               | Detailed SOWs for selected {context_company_name} solutions addressing specific {company_name} needs | Key Decision Makers identified in Sec 5                                 | Based on FY25 Engagement Outcomes             | Secure initial project wins                 |
-        | FY2026 Q3-Q4          | Executing Pilots & Expanding Value Discussion                                            | Pilot delivery, QBRs focused on results & next steps, Introduce complementary services           | Project Sponsors, BU Leads                                              | Based on Pilot Success                        | Demonstrate value, identify upsell        |
-        | FY2027 onwards        | Transitioning to Strategic Partner & Roadmap Co-Development                              | Joint strategy sessions, Long-term support models, Exploring new innovation areas                 | C-Suite, Strategy Department                                            | Based on Established Trust                  | Achieve preferred partner status            |
-    *   Ensure each proposed engagement theme directly links back to a verified need, challenge, or initiative identified for **{company_name}** in earlier sections [SSX, SSY, SSZ] and clearly aligns with **specific, researched {context_company_name} capabilities/solutions**. Provide brief rationale for timing/sequencing based on likely {company_name} priorities.
+## 8. 3-Year Engagement Strategy & Action Plan (for {context_company_name})
+    *   Provide a high-level, phased engagement plan concept for **{context_company_name}**. Focus on strategic themes derived from {company_name}'s needs (identified via DOCX and SSX), aligned with {context_company_name}'s capabilities and differentiators. Use a **perfectly formatted Markdown table**.
+        | Phase / Timeline        | Strategic Engagement Theme (for {context_company_name}) | Key {company_name} Need/Initiative Addressed | Potential {context_company_name} Offerings (Highlight Differentiation) | Target Stakeholders ({company_name}) | Source (Doc/Web) | Proposed Next Steps (Actionable for {context_company_name}) | Potential Hurdles / Considerations (for {context_company_name}) |
+        |-------------------------|---------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------|--------------------------------------|------------------|---------------------------------------------------------|--------------------------------------------------------------------|
+        | **Year 1: Build & Prove**|                                                         |                                               |                                                                  |                                      | [DOCX / SSX]     |                                                         |                                                                    |
+        | (Q1-Q2)                 | Address network pain points; Build trust              | Network readiness for Cloud [Sec 4]           | Network Solutions (Assessment, SD-WAN Design - emphasize NESIC expertise) | IT Infra / CIO [Sec 5]               | DOC1, Slide 5    | Propose assessment workshop; Present relevant case study        | Budget cycle alignment; Internal resistance to change              |
+        | (Q3-Q4)                 | Position for strategic DX security                      | Cybersecurity for New Platform [Sec 6]        | Cybersecurity (Consulting, MSSP intro - leverage NEC Group Intel)   | CISO / DX Team [Sec 5]               | DOC2             | Targeted security briefing; Proof of concept proposal             | Competition from incumbent security vendors                        |
+        | **Year 2: Expand & Deepen** |                                                         |                                               |                                                                  |                                      | [DOCX / SSX]     |                                                         |                                                                    |
+        | (Q1-Q2)                 | Enable data-driven insights                             | Data Silos Challenge [Sec 6]                  | SI (Integration - highlight multi-vendor skill), Data Analytics Support | DX Team / BU Lead [Sec 5]            | DOC1, p. 10      | Co-creation workshop on data strategy; Pilot proposal           | Data governance complexity; Resource availability at client      |
+        | (Q3-Q4)                 | Demonstrate efficiency gains                            | Potential Margin Pressure [Sec 3]             | Managed Services (Network/Cloud - focus on ROI), BPO              | IT Ops / Finance [Sec 5]             | SSX              | Customized TCO/ROI analysis; Service level agreement draft      | Proving value beyond cost reduction; Contract negotiation          |
+        | **Year 3: Partner & Grow**|                                                         |                                               |                                                                  |                                      | [DOCX / SSX]     |                                                         |                                                                    |
+        | (Ongoing)               | Solidify Strategic Partnership                          | Scaling successes, Long-term DX roadmap       | Full Managed Services, DX Consulting, Joint Innovation Programs  | CIO / Strategy / BU Heads [Sec 5]    | Synthesis        | Joint strategic roadmap session; Executive sponsorship engagement | Maintaining momentum; Aligning with evolving client strategy       |
+    *   Ensure each engagement theme links directly to verified needs/initiatives [DOCX, SSX], leverages specific {context_company_name} strengths, and includes concrete, actionable next steps for the {context_company_name} team.
 
-## 9. Competitive Landscape ({company_name}'s Perspective) & {context_company_name}'s Differentiated Positioning
-    *   Identify **{company_name}**'s existing major IT service providers, consultants, system integrators, or key technology vendors *if explicitly mentioned* in verifiable, recent sources [SSX]. Note the specific scope of their engagement if stated [SSY].
-    *   Analyze (based *only* on verifiable public information about {company_name}'s vendors [SSX] and the **specific, researched capabilities/strengths** of {context_company_name}):
-        *   Where does {context_company_name} possess a **demonstrable, specific differentiator** against these incumbents *in the context of {company_name}'s identified needs and initiatives*? (e.g., "{context_company_name}'s 'Solution A' directly addresses {company_name}'s Initiative X [SSX], whereas Incumbent B focuses elsewhere," "{context_company_name} has certified expertise in Technology Y [based on research] which is critical for {company_name}'s roadmap [SSY], unlike Incumbent C," "{context_company_name}'s local support model better fits {company_name}'s operational footprint [SSZ]").
-        *   Where might incumbents hold advantages ({context_company_name} needs to strategize against)? (e.g., Incumbent's long-term contract, sole-source technology).
-    *   Base the analysis strictly on evidence. Avoid speculation. Silently omit if no verifiable incumbent information is found for {company_name}.
+## 9. Competitive Landscape & {context_company_name}'s Edge ({company_name} Context)
+    *   Identify **{company_name}**'s key incumbent IT vendors/partners *if explicitly mentioned* [SSX, DOCX].
+    *   **Analyze {context_company_name}'s Differentiators (MANDATORY):** Based on {company_name} info [SSX, DOCX] and {context_company_name} capabilities: Explicitly articulate **{context_company_name}'s** competitive advantages *for this specific client*. Focus on 2-3 key differentiators (e.g., unique NEC Group tech synergy relevant to {company_name}'s industry [DOCX], superior local support structure matching {company_name}'s footprint [DOCX], proven SI methodology for their specific challenge [Public Info]). Avoid generic statements. Silently omit if no verifiable competitor context is found.
 
-## 10. Success Metrics & Potential KPIs (for {context_company_name})
-    *   Define 3-5 specific, measurable Key Performance Indicators (KPIs) for **{context_company_name}**'s engagement with **{company_name}** over the 3 years. These should be *internal* {context_company_name} goals reflecting the strategic opportunities identified through verifiable data about {company_name} and the proposed engagement plan.
-        *   **KPI 1: Strategic Initiative Alignment:** Number of qualified opportunities pipeline generated directly mapped to {company_name}'s top 3 strategic initiatives (Sec 4) where {context_company_name} has a researched, differentiated offering. (Target: X opps by FY2026).
-        *   **KPI 2: Solution Portfolio Penetration:** Revenue generated from {context_company_name}'s *strategic/high-priority solution categories* (identified during preliminary research) within {company_name}. (Target: Achieve Y% of total account revenue from strategic solutions by FY2027).
-        *   **KPI 3: Executive Relationship Depth:** Number of C-level / Key Stakeholder (Sec 5) meetings secured per quarter focused on strategic alignment (not just operational updates). (Target: Avg Z per quarter).
-        *   **KPI 4: Competitive Displacement Rate:** Win rate (%) in opportunities where {context_company_name} is directly competing against a major incumbent identified in Sec 9 for a strategic project related to {company_name}'s needs. (Target: > B%).
-        *   **KPI 5: Pilot-to-Production Conversion:** Conversion rate (%) of successful pilot projects (addressing needs in Sec 4/6) into larger-scale production deployments or ongoing managed services. (Target: > C%).
-    *   Briefly explain the rationale: Why are these specific KPIs the best indicators of {context_company_name}'s success in executing this data-driven strategy for {company_name}, based on the analysis?
+## 10. Success Metrics & KPIs (for {context_company_name} Internal Use)
+    *   Define 3-5 specific, measurable Key Performance Indicators (KPIs) for **{context_company_name}** to track this plan's success over 3 years. Base these on opportunities identified from verifiable {company_name} data [DOCX, SSX].
+        *   KPI 1: Number of C-level / Key Stakeholder (Sec 5) meetings secured focusing on strategic initiatives (Sec 4) (Target: X/year).
+        *   KPI 2: Pipeline Value (£/¥/$) generated specifically targeting opportunities identified in Sec 4 & 6 (Target: Y value/year).
+        *   KPI 3: Win Rate for proposals leveraging key differentiators (Sec 9) (Target: Z%).
+        *   KPI 4: Expansion into New {context_company_name} Core Service Areas within {company_name} (Target: Enter A new areas by Year 3).
+        *   KPI 5: Client Satisfaction Score / Net Promoter Score from {company_name} (if measurable) (Target: Maintain/Improve score B).
+    *   Briefly explain the rationale linking these internal KPIs to successful strategy execution based on the {company_name} analysis.
 
-## 11. Final 3-Year Strategy Research Summary ({company_name} Focus, {context_company_name} Opportunity)
-    *   Provide a concise concluding single paragraph (~300–500 words) synthesizing the most critical findings about the **Target Company ({company_name})** (their key strategic imperatives [SSX], major investment areas [SSY], significant business/technology challenges [SSZ], financial context [SSW]) and reiterating the **highest-priority, most specific alignment opportunities** for the **Analyzing Company ({context_company_name})**. Base this summary *only* on the verifiable data presented about {company_name} and the **specific, researched capabilities and named solutions** of {context_company_name}. Use latest available data. Incorporate key quantitative points where impactful.
-    *   Emphasize the data-driven nature of the identified opportunities and construct a compelling narrative for *why* **{context_company_name}** is uniquely positioned to be a strategic partner for **{company_name}**. Example: "Target Company {company_name}'s public commitment to Initiative X [SSX], coupled with their reported struggle with Challenge Y [SSY], creates a clear mandate for a solution like Analyzing Company {context_company_name}'s 'Specific Platform Z'. Our research indicates {context_company_name}'s unique strength in [Verifiable Strength] further differentiates this offering from known competitors [SSZ]. The proposed engagement focuses on demonstrating this specific value proposition early (FY25 Q2) to capture this strategic opportunity..."
-    *   Avoid introducing new data or internal {context_company_name} assumptions not explicitly linked back to the verified {company_name} information [SSX] and the specific, researched {context_company_name} capabilities. Conclude with a clear, ambitious, yet realistic statement of the overall strategic objective for {context_company_name} regarding {company_name} over the next three years.
+## 11. Potential Risks & Mitigation Strategies (for {context_company_name})
+    *   Identify 2-4 key risks **to {context_company_name}** in pursuing this account strategy (e.g., strong incumbent relationship [DOCX/SSX?], budget cuts at client [DOCX/SSX?], internal {context_company_name} resource constraints, misalignment on strategic direction, failure to demonstrate ROI). Cite source if risk is documented.
+    *   For each risk, propose a brief mitigation strategy for the {context_company_name} team (e.g., "Build multi-level relationships beyond IT", "Develop flexible pricing models", "Secure executive sponsorship internally", "Focus on quantifiable business outcomes in proposals").
+
+## 12. Overall Strategic Recommendation & Rationale (for {context_company_name})
+    *   Provide a concluding single paragraph (~300–500 words) synthesizing the most critical findings about **{company_name}** (from web [SSX] + docs [DOCX]) and presenting a clear **strategic recommendation** for {context_company_name}'s 3-year engagement.
+    *   Reiterate the primary alignment opportunities, emphasizing the unique value proposition and differentiators {context_company_name} offers. Incorporate key quantitative points.
+    *   Briefly incorporate the key risks (from Sec 11) and the overall confidence level in the proposed strategy.
+    *   Example structure: "Based on {company_name}'s documented [DOCX] investment in X and stated challenge Y [SSX], the primary strategic thrust for {context_company_name} should be Z, leveraging our differentiated capability in A. Key opportunities lie in B and C over the next 3 years. While risks such as [Risk 1] exist, mitigation through [Mitigation 1] makes this a high-potential strategic account requiring focused executive engagement and resource allocation..."
+    *   This summary is the final strategic directive for the {context_company_name} account team. Do not introduce new data or assumptions.
+
+--- Final Checks & Formatting ---
 
 Source and Accuracy Requirements:
-*   **Accuracy:** All data about the **Target Company ({company_name})** must be grounded in official records [SSX] and reflect the latest available verifiable information. The application of the **Analyzing Company's ({context_company_name})** capabilities must be specific, non-generic, and based on diligent preliminary research of its actual offerings/strengths. Silently omit unverified data about {company_name} after exhaustive search. Verify table data meticulously.
-*   **Traceability:** Each fact or figure about the **Target Company ({company_name})** must include an inline citation [SSX], linking to final source(s).
-*   **Single-Entity Coverage:** Strictly reference the **Target Company ({company_name})**'s data; omit any similarly named entities. Clearly distinguish between the Target Company and the Analyzing Company.
+*   **Accuracy:** All data about **{company_name}** MUST be grounded [SSX] or documented [DOCX]. Reflect latest info. {context_company_name} capability mapping based on provided context/public knowledge. Silently omit unverified data. Verify table data meticulously.
+*   **Traceability:** Each fact/figure includes correct citation (`[SSX]` or `[DOCX, reference]`).
+*   **Single-Entity Coverage:** Strictly reference **{company_name}**; omit similarly named entities.
 
-{formatted_completion_template}
-{formatted_final_review} # Ensure this uses the updated version
-{formatted_final_source_list}
+# MODIFIED: Add enhanced completion checks
+{formatted_completion_base + textwrap.dedent('''\
+        7. Information from provided documents is integrated and cited correctly using `[DOCX, reference]` format.
+        8. Executive Summary (Section 0) and {context_company_name} Risks (Section 11) are included and complete.
+        9. Synthesis between document insights and web grounding is evident throughout the plan.
+'''.format(context_company_name=context_company_name))}
+
+# MODIFIED: Add enhanced review checks
+{formatted_final_review_base + textwrap.dedent('''\
+
+        *   **Document Insight Integration & Implications:**
+            *   Insights AND their implications for {context_company_name} from provided documents are incorporated throughout, especially in Sections 2, 4, 5, 6, 7, 9, 12.
+            *   Document citations `[DOCX, reference]` are used correctly and consistently.
+            *   Web grounding `[SSX]` is used appropriately to supplement/verify public facts and provide context.
+            *   **Synthesis:** The analysis clearly integrates insights from BOTH document and web sources where relevant.
+        *   **{context_company_name} Perspective & Value Proposition:**
+            *   The analysis, recommendations, and language consistently reflect the viewpoint, objectives, and value proposition of {context_company_name}.
+            *   Opportunities clearly link {company_name}'s needs (from web/docs) to specific {context_company_name} capabilities AND differentiators.
+        *   **Actionability & Completeness:**
+            *   Executive Summary (Sec 0) provides a clear overview based on the synthesized analysis.
+            *   Engagement Plan (Sec 8) includes actionable next steps for {context_company_name} and considers potential hurdles.
+            *   {context_company_name} Risks (Sec 11) are identified with mitigation strategies relevant to {context_company_name}.
+            *   Final Recommendation (Sec 12) is clear and synthesizes key findings, opportunities, and risks **from {context_company_name}'s perspective**.
+'''.format(context_company_name=context_company_name, company_name=company_name))}
+
+{formatted_final_source_list} # Reminder this is SSX only
 {formatted_base_formatting}
 """
+
+    # --- Dynamically Enhance Completion & Review Instructions ---
+    # NOTE: The enhancement is now directly embedded above using + operator and f-strings/format method where needed.
+
     return prompt
