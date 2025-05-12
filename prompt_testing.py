@@ -368,7 +368,7 @@ COMPLETION_INSTRUCTION_TEMPLATE = textwrap.dedent("""\
 # --- Prompt Generating Functions ---
 
 # Basic Prompt
-def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for a comprehensive basic company profile with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -474,7 +474,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Financial Prompt
-def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for a detailed financial analysis with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -637,7 +637,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Competitive Landscape Prompt
-def get_competitive_landscape_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_competitive_landscape_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for a detailed competitive analysis with nuanced grounding rules and expanded scope."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -754,7 +754,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Management Strategy Prompt
-def get_management_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_management_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing management strategy and mid-term business plan with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -846,7 +846,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Regulatory Prompt
-def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing the regulatory environment with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -938,7 +938,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Crisis Prompt
-def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing digital crisis management and business continuity with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1007,7 +1007,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Digital Transformation Prompt
-def get_digital_transformation_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_digital_transformation_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing DX strategy and execution with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1091,7 +1091,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Business Structure Prompt
-def get_business_structure_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_business_structure_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing business structure, geographic footprint, ownership, and leadership linkages with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1227,7 +1227,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Vision Prompt
-def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt focused on company vision and strategic purpose with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1276,7 +1276,7 @@ Conduct in-depth research using official sources for **{company_name}** such as 
     *   ***Stakeholder Focus:*** Analyze how the vision statement and its supporting pillars for {company_name} explicitly address or prioritize key stakeholder groups (e.g., customers, employees, shareholders, society, environment) based on the language used in official communications [SSX]. Provide specific examples or quotes [SSY].
 
 ## 2. General Discussion:
-    *   Provide a concluding single paragraph (300-500 words) synthesizing the information in Section 1 regarding **{company_name}**. Evaluate the clarity, ambition, distinctiveness, and internal coherence of the stated vision and its components. Use inline citations to link back to specific elements (e.g., "The vision's focus on sustainability [SSX] is clearly measured by the CO2 reduction KPI [SSY], demonstrating commitment... However, the link between the 'Innovation' pillar and specific KPIs appears less defined [SSZ] based on available public disclosures..."). Incorporate key quantitative points if available.
+    *   Provide a concluding single paragraph (300-500 words) that synthesizes the information in Section 1 regarding **{company_name}**. Evaluate the clarity, ambition, distinctiveness, and internal coherence of the stated vision and its components. Use inline citations to link back to specific elements (e.g., "The vision's focus on sustainability [SSX] is clearly measured by the CO2 reduction KPI [SSY], demonstrating commitment... However, the link between the 'Innovation' pillar and specific KPIs appears less defined [SSZ] based on available public disclosures..."). Incorporate key quantitative points if available.
     *   Structure the analysis logically—start with an overall summary of the vision's core message, discuss the strength and measurability of its components and stakeholder considerations, and finally evaluate its potential effectiveness in guiding strategy and its relevance for a Japanese audience assessing long-term direction.
     *   Do not introduce new claims beyond the synthesized findings from Section 1 and citations about **{company_name}**.
 
@@ -1293,7 +1293,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Management Message Prompt
-def get_management_message_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None):
+def get_management_message_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for collecting strategic quotes from leadership with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1382,7 +1382,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # --- Enhanced Account Strategy Prompt Function ---
-def get_account_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_strategy_research_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """
     Generates the BEST POSSIBLE prompt for creating a comprehensive, actionable 3-Year Account Strategy Action Plan
     FOR {context_company_name} TARGETING {company_name}. It leverages PROVIDED DOCUMENTS as PRIMARY context,
