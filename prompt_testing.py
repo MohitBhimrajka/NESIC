@@ -16,7 +16,7 @@ from typing import Optional
 NO_THINKING_INSTRUCTION = textwrap.dedent("""\
     **Direct Response Requirement:**
     
-    Provide your response in a structured, final format without showing your thinking or planning process. Do not include any preliminary analysis, reasoning, or step-by-step thinking in your output. Present only the final, polished answer directly using the requested format and sections. Your output should start with my first requested section heading as this is a proffesional report.
+    Provide your response in a structured, final format without showing your thinking or planning process. Do not include any preliminary analysis, reasoning, or step-by-step thinking in your output. Present only the final, polished answer directly using the requested format and sections. Your output should start with my first requested section heading as this is a professional report.
 """)
 
 ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
@@ -43,12 +43,14 @@ Before producing the final answer, confirm:
 - Ensure header separator lines (`|---|---|`) match the number of columns precisely.
 - If data for a specific cell is missing *in the source* after exhaustive search, use a simple hyphen (-) as a placeholder *only if necessary* to maintain table structure and alignment. Do not add explanatory text.
 - Always include an inline citation [SSX] if referencing factual numbers within a table cell or in a note below the table referencing the table's data. Verify the cited data matches the source.
+- Maintain proper spacing between cell content and pipe separators (e.g., `| Cell content |` not `|Cell content|`).
 
 **Quotes with Inline Citations:**
 - Any verbatim quote must include:
     1. The speaker's name and date or document reference in parentheses.
     2. An inline citation [SSX] immediately following.
 - This ensures clarity on who said it, when they said it, and the exact source.
+- For quotes longer than one line, ensure each line begins with the quote marker (>).
 
 **Exactness of Hyperlinks in Sources:**
 - The final "Sources" section must use the format "* [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Brief annotation [SSX]."
@@ -58,6 +60,13 @@ Before producing the final answer, confirm:
 
 **Do Not Summarize Sources:**
 - In each source annotation, reference only the specific claim(s) the link supports, not a broad summary.
+
+**Emphasis and Formatting:**
+- Ensure proper spacing around emphasis markers:
+  - Correct: Text with **bold words** in it.
+  - Incorrect: Text with**bold words**in it. 
+- Be careful with asterisks in regular text - escape them with backslash when needed.
+- Do not place emphasis markers directly adjacent to punctuation.
 
 **High-Priority Checklist (Must Not Be Violated):**
 1. No fabrication: Silently omit rather than invent ungrounded data after exhaustive search.
@@ -218,6 +227,73 @@ AUDIENCE_CONTEXT_REMINDER = textwrap.dedent("""\
 def get_language_instruction(language: str) -> str:
     return f"Output Language: The final research output must be presented entirely in **{language}**."
 
+# Create a detailed table formatting guidelines constant
+TABLE_FORMATTING_GUIDELINES = textwrap.dedent("""\
+**Table Formatting Best Practices (CRITICAL FOR RENDERING):**
+
+1. **Perfect Pipe Alignment:**
+   * Every row MUST have exactly the same number of pipe (`|`) separators
+   * Every row MUST begin and end with a pipe separator
+   * Ensure the separator row (with hyphens) matches the header row exactly
+
+2. **Column Spacing:**
+   * Maintain consistent spacing between pipe separators and cell content
+   * Correct: `| Cell content |` 
+   * Incorrect: `|Cell content|` or `|  Cell content|`
+
+3. **Column Width Consistency:**
+   * Try to maintain consistent column widths to improve readability
+   * For numeric columns, right-align values (add spaces before numbers)
+   * For text columns, left-align (add spaces after text)
+
+4. **Separator Row Requirements:**
+   * Use at least 3 hyphens in each cell of the separator row (e.g., `|---|---|`)
+   * Make sure the separator row has exactly the same number of columns as the header
+
+5. **CORRECT Table Example:**
+```
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Data 1   | Data 2   | Data 3   |
+| Data 4   | Data 5   | Data 6   |
+```
+
+6. **INCORRECT Examples to Avoid:**
+
+   Wrong: Missing beginning/ending pipes
+```
+Column 1 | Column 2 | Column 3
+----------|----------|----------
+Data 1   | Data 2   | Data 3
+```
+
+   Wrong: Inconsistent column counts
+```
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Data 1   | Data 2   |
+| Data 4   | Data 5   | Data 6   | Extra |
+```
+
+   Wrong: Missing separator row
+```
+| Column 1 | Column 2 | Column 3 |
+| Data 1   | Data 2   | Data 3   |
+```
+
+   Wrong: Misaligned separator row
+```
+| Column 1 | Column 2 | Column 3 |
+|---------|-----------|----------|
+| Data 1   | Data 2   | Data 3   |
+```
+
+7. **Handling Missing Data:**
+   * Use a single hyphen (`-`) for missing data, not empty space or "N/A"
+   * Ensure the hyphen has proper spacing: `| - |` not `|-|`
+""")
+
+# Now modify BASE_FORMATTING_INSTRUCTIONS to include the table formatting guidelines
 BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Output Format & Quality Requirements:
 
@@ -241,8 +317,9 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     - Every row (header, separator, data) MUST have the exact same number of columns with pipe (`|`) separators
     - Every row MUST begin with a pipe (`|`) and end with a pipe (`|`)
     - The separator line MUST match the number of header columns exactly
-    - For missing data, use a hyphen (`-`) as placeholder if required for table structure
+    - For missing data, use a single hyphen (`-`) as placeholder if required for table structure
     - Never use code blocks for tables
+    - Ensure all table cells have adequate spacing between content and pipe separators
     
     Example of proper table format:
 
@@ -254,12 +331,14 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
 
     **Financial Table Example:**
 
-    | Metric                | FY2023   | FY2024   | FY2025   | Source(s) |
-    |------------------------|----------|----------|----------|-----------|
-    | Revenue (JPY Millions) | 123,456  | 134,567  | 145,678  | [SS1]     |
-    | Operating Profit       | 12,345   | 13,456   | 14,567   | [SS1]     |
-    | Net Income             | 8,765    | 9,876    | 10,987   | [SS2]     |
-    | EBITDA                 | -        | 18,765   | 19,876   | [SS3]     |
+    | Metric                  | FY2023   | FY2024   | FY2025   | Source(s) |
+    |-------------------------|----------|----------|----------|-----------|
+    | Revenue (JPY Millions)  | 123,456  | 134,567  | 145,678  | [SS1]     |
+    | Operating Profit        | 12,345   | 13,456   | 14,567   | [SS1]     |
+    | Net Income              | 8,765    | 9,876    | 10,987   | [SS2]     |
+    | EBITDA                  | -        | 18,765   | 19,876   | [SS3]     |
+
+    {TABLE_FORMATTING_GUIDELINES}
 
     **Code Blocks:** When including code or structured content, use standard Markdown code blocks with triple backticks.
 
@@ -269,6 +348,12 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     
     > "This is a direct quote from the CEO." [SS1]
     > (Source: Annual Report 2023, p.5)
+
+    **Emphasis & Formatting:** 
+    - Ensure proper spacing around asterisks/underscores used for italics or bold formatting
+    - Use **bold text** for emphasis (with spaces between content and asterisks)
+    - Use *italics* for secondary emphasis (with spaces between content and asterisks)
+    - Never run formatting markers directly into text without spaces
 
     **WHAT NOT TO DO - COMMON FORMATTING ERRORS TO AVOID:**
 
@@ -299,6 +384,96 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     |---------|------------|
     | ABC Inc | * Point 1  |
     |         | * Point 2  |
+
+    6. **Do NOT run formatting markers directly into text.** This is incorrect:
+    The company's **revenue**increased by 10% and *profit*margin improved.
+
+    7. **Do NOT use inconsistent spacing in tables.** This is incorrect:
+    |Header 1|Header 2|
+    |---|---|
+    |Data 1|Data 2|
+
+    **Optimal Structure & Readability:**
+    - Present numerical data in tables with proper alignment and headers
+    - Use bullet points for lists of items or characteristics
+    - Use paragraphs for narrative descriptions and analysis
+    - Maintain consistent formatting across similar elements
+    - Ensure logical sequence within each section
+    - Provide detailed yet concise language—be specific without unnecessary verbosity
+    - Where summary paragraphs are requested, integrate key figures and quantitative trends
+
+    **Data Formatting Consistency:**
+    - Use appropriate thousands separators for numbers per the target language: **{language}**
+    - Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period
+    - Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language)
+    - Use consistent percentage formatting (e.g., 12.5%)
+
+    **Timeframe Instructions:**
+    - When instructed to use "the last 3 fiscal years", always use the 3 most recent COMPLETED fiscal years with available data
+    - Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms
+    - For trends analysis, explicitly state the period covered
+    - Always state the "as of" date for point-in-time data
+    - Clearly state fiscal year end dates when first mentioned
+
+    **Handling Missing Data:**
+    - After thorough research, if data is genuinely missing in the source, use only a single hyphen (-) when structurally necessary for tables
+    - Never use "N/A", "Not Available", or explanatory text in place of missing data
+    - Do not comment on missing data - simply present what is verifiable
+    - For sections where no verifiable data exists, retain headings but minimize content
+""") + TABLE_FORMATTING_GUIDELINES + textwrap.dedent("""\
+
+    **Code Blocks:** When including code or structured content, use standard Markdown code blocks with triple backticks.
+
+    **Quotes:** Use standard Markdown quote syntax (`>`) for direct quotations.
+    
+    Example of proper quote format:
+    
+    > "This is a direct quote from the CEO." [SS1]
+    > (Source: Annual Report 2023, p.5)
+
+    **Emphasis & Formatting:** 
+    - Ensure proper spacing around asterisks/underscores used for italics or bold formatting
+    - Use **bold text** for emphasis (with spaces between content and asterisks)
+    - Use *italics* for secondary emphasis (with spaces between content and asterisks)
+    - Never run formatting markers directly into text without spaces
+
+    **WHAT NOT TO DO - COMMON FORMATTING ERRORS TO AVOID:**
+
+    1. **Do NOT use code blocks for tables.** This is incorrect:
+    ```
+    | Header 1 | Header 2 |
+    |----------|----------|
+    | Data 1   | Data 2   |
+    ```
+
+    2. **Do NOT indent tables or quotes with spaces or asterisks.** This is incorrect:
+    * | Header 1 | Header 2 |
+      |----------|----------|
+      | Data 1   | Data 2   |
+
+    3. **Do NOT omit the header separator row in tables.** This is incorrect:
+    | Header 1 | Header 2 |
+    | Data 1   | Data 2   |
+
+    4. **Do NOT use inconsistent column counts.** This is incorrect:
+    | Header 1 | Header 2 | Header 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   |
+    | Data 3   | Data 4   | Data 5   | Extra |
+
+    5. **Do NOT use asterisks or bullet points inside tables.** This is incorrect:
+    | Company | Key Points |
+    |---------|------------|
+    | ABC Inc | * Point 1  |
+    |         | * Point 2  |
+
+    6. **Do NOT run formatting markers directly into text.** This is incorrect:
+    The company's **revenue**increased by 10% and *profit*margin improved.
+
+    7. **Do NOT use inconsistent spacing in tables.** This is incorrect:
+    |Header 1|Header 2|
+    |---|---|
+    |Data 1|Data 2|
 
     **Optimal Structure & Readability:**
     - Present numerical data in tables with proper alignment and headers
@@ -611,11 +786,11 @@ For each section, provide verifiable data with inline citations [SSX] and specif
         
         **Example shareholders table format (replace with actual data):**
         
-        | Shareholder Name | Ownership % | As of Date   | Source(s) |
-        |------------------|-------------|--------------|-----------|
-        | Example Corp Ltd | 10.2%       | 2023-12-31   | [SSX]     |
-        | Investment Bank  | 8.5%        | 2023-12-31   | [SSX]     |
-        | Trust Fund       | -           | 2023-12-31   | [SSY]     |
+        | Shareholder Name        | Ownership % | As of Date   | Source(s) |
+        |-------------------------|-------------|--------------|-----------|
+        | Example Corp Ltd        | 10.2%       | 2023-12-31   | [SSX]     |
+        | Investment Bank         | 8.5%        | 2023-12-31   | [SSX]     |
+        | Trust Fund              | -           | 2023-12-31   | [SSY]     |
         
         **NOTE: "Example Corp Ltd", "Investment Bank", etc. are fictional placeholders. Replace with actual top shareholders of {company_name}.**
     *   Briefly comment on the stability or influence of the ownership structure on the financial strategy of {company_name} [SSX].
@@ -625,30 +800,30 @@ For each section, provide verifiable data with inline citations [SSX] and specif
         
         **Example financial metrics table format (replace with actual data):**
         
-        | Metric                                          | FY2023 | FY2024 | FY2025 | Notes / Calculation Basis | Source(s) |
-        |-------------------------------------------------|--------|--------|--------|---------------------------|-----------|
-        | Total Revenue / Net Sales / Premium Income etc. | 123,456| 135,789| 142,853| As reported              | [SSX]     |
-        | Gross Profit                                    | 45,678 | 48,567 | 52,321 | Rev [SSX] - COGS [SSY]   | [SSX, SSY]|
-        | Gross Profit Margin (%)                         | 37.0%  | 35.8%  | 36.6%  | GP [SSZ] / Rev [SSX]     | [SSX, SSZ]|
-        | EBITDA                                          | 23,456 | 25,678 | 28,543 | As reported              | [SSX]     |
-        | EBITDA Margin (%)                               | 19.0%  | 18.9%  | 20.0%  | EBITDA [SSX] / Rev [SSY] | [SSX, SSY]|
-        | Operating Income / Operating Profit             | 18,765 | 20,543 | 22,876 | As reported              | [SSX]     |
-        | Operating Margin (%)                            | 15.2%  | 15.1%  | 16.0%  | OpInc [SSX] / Rev [SSY]  | [SSX, SSY]|
-        | Ordinary Income / Pre-Tax Income                | 17,654 | 19,876 | 21,987 | As reported              | [SSX]     |
-        | Ordinary Income Margin (%)                      | 14.3%  | 14.6%  | 15.4%  | OrdInc [SSX] / Rev [SSY] | [SSX, SSY]|
-        | Net Income attributable to Parent               | 12,345 | 14,567 | 15,678 | As reported              | [SSX]     |
-        | Net Income Margin (%)                           | 10.0%  | 10.7%  | 11.0%  | NetInc [SSX] / Rev [SSY] | [SSX, SSY]|
-        | ROE (%)                                         | 8.7%   | 9.5%   | 9.8%   | NI [SSX] / Avg Eq [SSY]  | [SSX, SSY]|
-        | ROA (%)                                         | 4.3%   | 4.8%   | 5.0%   | NI [SSX] / Avg As [SSY]  | [SSX, SSY]|
-        | Total Assets                                    | 245,678| 267,890| 285,430| As reported              | [SSX]     |
-        | Total Shareholders' Equity                      | 145,678| 156,789| 167,890| As reported              | [SSX]     |
-        | Equity Ratio (%)                                | 59.3%  | 58.5%  | 58.8%  | Eq [SSX] / Assets [SSY]  | [SSX, SSY]|
-        | Total Interest-Bearing Debt                     | 45,678 | 48,765 | 50,123 | As reported              | [SSX]     |
-        | Debt-to-Equity Ratio (x)                        | 0.31   | 0.31   | 0.30   | Debt [SSX] / Eq [SSY]    | [SSX, SSY]|
-        | Net Cash from Operations                        | 24,567 | 26,789 | 28,976 | As reported              | [SSX]     |
-        | Net Cash from Investing                         | -15,678| -18,765| -19,876| As reported              | [SSX]     |
-        | Net Cash from Financing                         | -7,654 | -8,765 | -9,876 | As reported              | [SSX]     |
-        | (Add other key metrics like Premiums In-Force if needed) | -     | -      | -      |                  | [SSX]     |
+        | Metric                                           | FY2023  | FY2024  | FY2025  | Notes / Calculation Basis | Source(s) |
+        |--------------------------------------------------|---------|---------|---------|---------------------------|-----------|
+        | Total Revenue / Net Sales / Premium Income etc.  | 123,456 | 135,789 | 142,853 | As reported               | [SSX]     |
+        | Gross Profit                                     | 45,678  | 48,567  | 52,321  | Rev [SSX] - COGS [SSY]    | [SSX, SSY]|
+        | Gross Profit Margin (%)                          | 37.0%   | 35.8%   | 36.6%   | GP [SSZ] / Rev [SSX]      | [SSX, SSZ]|
+        | EBITDA                                           | 23,456  | 25,678  | 28,543  | As reported               | [SSX]     |
+        | EBITDA Margin (%)                                | 19.0%   | 18.9%   | 20.0%   | EBITDA [SSX] / Rev [SSY]  | [SSX, SSY]|
+        | Operating Income / Operating Profit              | 18,765  | 20,543  | 22,876  | As reported               | [SSX]     |
+        | Operating Margin (%)                             | 15.2%   | 15.1%   | 16.0%   | OpInc [SSX] / Rev [SSY]   | [SSX, SSY]|
+        | Ordinary Income / Pre-Tax Income                 | 17,654  | 19,876  | 21,987  | As reported               | [SSX]     |
+        | Ordinary Income Margin (%)                       | 14.3%   | 14.6%   | 15.4%   | OrdInc [SSX] / Rev [SSY]  | [SSX, SSY]|
+        | Net Income attributable to Parent                | 12,345  | 14,567  | 15,678  | As reported               | [SSX]     |
+        | Net Income Margin (%)                            | 10.0%   | 10.7%   | 11.0%   | NetInc [SSX] / Rev [SSY]  | [SSX, SSY]|
+        | ROE (%)                                          | 8.7%    | 9.5%    | 9.8%    | NI [SSX] / Avg Eq [SSY]   | [SSX, SSY]|
+        | ROA (%)                                          | 4.3%    | 4.8%    | 5.0%    | NI [SSX] / Avg As [SSY]   | [SSX, SSY]|
+        | Total Assets                                     | 245,678 | 267,890 | 285,430 | As reported               | [SSX]     |
+        | Total Shareholders' Equity                       | 145,678 | 156,789 | 167,890 | As reported               | [SSX]     |
+        | Equity Ratio (%)                                 | 59.3%   | 58.5%   | 58.8%   | Eq [SSX] / Assets [SSY]   | [SSX, SSY]|
+        | Total Interest-Bearing Debt                      | 45,678  | 48,765  | 50,123  | As reported               | [SSX]     |
+        | Debt-to-Equity Ratio (x)                         | 0.31    | 0.31    | 0.30    | Debt [SSX] / Eq [SSY]     | [SSX, SSY]|
+        | Net Cash from Operations                         | 24,567  | 26,789  | 28,976  | As reported               | [SSX]     |
+        | Net Cash from Investing                          | -15,678 | -18,765 | -19,876 | As reported               | [SSX]     |
+        | Net Cash from Financing                          | -7,654  | -8,765  | -9,876  | As reported               | [SSX]     |
+        | (Add other key metrics like Premiums In-Force)    | -       | -       | -       |                           | [SSX]     |
     *   **Analyze** key trends observed in the table for {company_name} (YoY changes, CAGR). Explain the *drivers* behind these trends based on source commentary [SSX]. Identify any standout performance aspects (positive or negative) [SSY].
 
 ## 3. Profitability Analysis (3-Year Trend):
@@ -659,17 +834,17 @@ For each section, provide verifiable data with inline citations [SSX] and specif
         
         **IMPORTANT: The table below uses EXAMPLE SEGMENT NAMES AND FICTIONAL VALUES FOR ILLUSTRATION ONLY. Replace with actual segments and verified financial data from {company_name}'s reports.**
         
-        | Segment Name | Metric           | FY2023 | FY2024 | FY2025 | Source(s) |
-        |--------------|------------------|--------|--------|--------|-----------|
-        | Segment A    | Revenue (JPY M)  | 45,678 | 48,765 | 52,345 | [SSX]     |
-        | Segment A    | Operating Income | 7,654  | 8,123  | 8,765  | [SSX]     |
-        | Segment A    | Operating Margin%| 16.8%  | 16.7%  | 16.7%  | [SSX]     |
-        | Segment B    | Revenue (JPY M)  | 34,567 | 38,765 | 42,345 | [SSY]     |
-        | Segment B    | Operating Income | 5,678  | 6,123  | 7,654  | [SSY]     |
-        | Segment B    | Operating Margin%| 16.4%  | 15.8%  | 18.1%  | [SSY]     |
-        | Segment C    | Revenue (JPY M)  | 15,678 | 16,543 | -      | [SSZ]     |
-        | Segment C    | Operating Income | 2,345  | 2,678  | -      | [SSZ]     |
-        | Segment C    | Operating Margin%| 15.0%  | 16.2%  | -      | [SSZ]     |
+        | Segment Name | Metric            | FY2023  | FY2024  | FY2025  | Source(s) |
+        |--------------|-------------------|---------|---------|---------|-----------|
+        | Segment A    | Revenue (JPY M)   | 45,678  | 48,765  | 52,345  | [SSX]     |
+        | Segment A    | Operating Income  | 7,654   | 8,123   | 8,765   | [SSX]     |
+        | Segment A    | Operating Margin% | 16.8%   | 16.7%   | 16.7%   | [SSX]     |
+        | Segment B    | Revenue (JPY M)   | 34,567  | 38,765  | 42,345  | [SSY]     |
+        | Segment B    | Operating Income  | 5,678   | 6,123   | 7,654   | [SSY]     |
+        | Segment B    | Operating Margin% | 16.4%   | 15.8%   | 18.1%   | [SSY]     |
+        | Segment C    | Revenue (JPY M)   | 15,678  | 16,543  | -       | [SSZ]     |
+        | Segment C    | Operating Income  | 2,345   | 2,678   | -       | [SSZ]     |
+        | Segment C    | Operating Margin% | 15.0%   | 16.2%   | -       | [SSZ]     |
         
         **NOTE: "Segment A/B/C" are placeholders. Use the actual segment names from {company_name}'s financial reports.**
     *   Analyze trends, growth drivers, and the relative contribution/profitability of each segment of {company_name}, citing specific figures [SSX]. Identify key profit-driving segments based on available data [SSY].
@@ -679,13 +854,13 @@ For each section, provide verifiable data with inline citations [SSX] and specif
         
         **IMPORTANT: The table below contains FICTIONAL EXAMPLE COST DATA. Never use these specific amounts or percentages in your response. Replace with actual cost data from {company_name}'s financial reports.**
         
-        | Cost Item        | FY2023 (JPY M) | FY2023 (% of Rev) | FY2024 (JPY M) | FY2024 (% of Rev) | FY2025 (JPY M) | FY2025 (% of Rev) | Source(s) |
-        |------------------|----------------|-------------------|----------------|-------------------|----------------|-------------------|-----------|
-        | COGS             | 77,778         | 63.0%             | 87,222         | 64.2%             | 90,532         | 63.4%             | [SSX]     |
-        | SG&A Expenses    | 27,111         | 22.0%             | 28,024         | 20.6%             | 29,444         | 20.6%             | [SSY]     |
-        |  - R&D (if sep)  | 5,432          | 4.4%              | 6,120          | 4.5%              | 6,780          | 4.7%              | [SSZ]     |
-        |  - Personnel     | 8,600          | 7.0%              | 8,925          | 6.6%              | 9,100          | 6.4%              | [SSW]     |
-        |  - Other SG&A    | 13,079         | 10.6%             | 12,979         | 9.6%              | 13,564         | 9.5%              | [SSV]     |
+        | Cost Item           | FY2023 (JPY M) | FY2023 (% of Rev) | FY2024 (JPY M) | FY2024 (% of Rev) | FY2025 (JPY M) | FY2025 (% of Rev) | Source(s) |
+        |--------------------|----------------|-------------------|----------------|-------------------|----------------|-------------------|-----------|
+        | COGS               | 77,778         | 63.0%             | 87,222         | 64.2%             | 90,532         | 63.4%             | [SSX]     |
+        | SG&A Expenses      | 27,111         | 22.0%             | 28,024         | 20.6%             | 29,444         | 20.6%             | [SSY]     |
+        |  - R&D (if sep)    | 5,432          | 4.4%              | 6,120          | 4.5%              | 6,780          | 4.7%              | [SSZ]     |
+        |  - Personnel       | 8,600          | 7.0%              | 8,925          | 6.6%              | 9,100          | 6.4%              | [SSW]     |
+        |  - Other SG&A      | 13,079         | 10.6%             | 12,979         | 9.6%              | 13,564         | 9.5%              | [SSV]     |
         
         **NOTE: All figures above are examples only. Your response must use actual cost data from {company_name}'s financial documents.**
 
@@ -903,7 +1078,7 @@ Conduct in-depth research from official sources for **{company_name}** (IR docum
         
         **Example MTP targets table format (replace with actual data):**
         
-        | KPI Category | KPI Name                     | Target Value (by FYZZZZ) | Baseline (FYXXXX) (if stated) | Source(s) |
+        | KPI Category | KPI Name                      | Target Value (by FYZZZZ) | Baseline (FYXXXX) (if stated) | Source(s) |
         |--------------|------------------------------|--------------------------|-------------------------------|-----------|
         | Financial    | Revenue (JPY Billions)       | 500                      | 350                           | [SSX]     |
         | Financial    | Operating Margin (%)         | 10%                      | 7.5%                          | [SSX]     |
@@ -925,12 +1100,12 @@ Conduct in-depth research from official sources for **{company_name}** (IR docum
         
         **Example progress tracking table format (replace with actual data):**
         
-        | KPI Name                     | Target (by FYZZZZ) | Latest Actual/Forecast (as of YYYY-MM-DD) | Progress Notes                                  | Source(s) |
-        |------------------------------|--------------------|-------------------------------------------|-------------------------------------------------|-----------|
-        | Revenue (JPY Billions)       | 500                | 410 (FYYYYY Actual)                       | On track / Slightly below forecast              | [SSX]     |
-        | Operating Margin (%)         | 10%                | 8.2% (FYYYYY Actual)                      | Facing cost pressures, countermeasures underway | [SSY]     |
-        | CO2 Emissions Reduction (%)  | 30%                | 15% (Achieved YYYY)                       | Progressing as planned                          | [SSZ]     |
-        | Customer Satisfaction Score  | 90                 | -                                         | -                                               |           |
+        | KPI Name                      | Target (by FYZZZZ) | Latest Actual/Forecast (as of YYYY-MM-DD) | Progress Notes                                   | Source(s) |
+        |-------------------------------|--------------------|--------------------------------------------|--------------------------------------------------|-----------|
+        | Revenue (JPY Billions)        | 500                | 410 (FYYYYY Actual)                       | On track / Slightly below forecast              | [SSX]     |
+        | Operating Margin (%)          | 10%                | 8.2% (FYYYYY Actual)                      | Facing cost pressures, countermeasures underway  | [SSY]     |
+        | CO2 Emissions Reduction (%)   | 30%                | 15% (Achieved YYYY)                       | Progressing as planned                           | [SSZ]     |
+        | Customer Satisfaction Score   | 90                 | -                                          | -                                                |           |
     *   Highlight any significant strategic adjustments or MTP revisions announced by {company_name} in response to performance or external events (e.g., "Revised revenue target downwards in Q2 FYYYYY due to market slowdown [SSX]"), with inline citations [SSY].
 
 ## 5. General Discussion:
@@ -1392,11 +1567,11 @@ Conduct in-depth research using official sources for **{company_name}** such as 
         
         **Example KPI table format (replace with actual data):**
         
-        | Vision Pillar      | Linked KPI                    | Target/Goal (if specified)     | Source(s) |
-        |--------------------|-------------------------------|--------------------------------|-----------|
-        | Sustainability     | Scope 1+2 CO2 Reduction       | 50% reduction by 2030 vs 2020  | [SSX]     |
-        | Innovation         | % Revenue from New Products   | -                              | [SSY]     |
-        | Customer Centricity| Net Promoter Score (NPS)      | > 50 by 2027                   | [SSZ]     |
+        | Vision Pillar       | Linked KPI                     | Target/Goal (if specified)      | Source(s) |
+        |--------------------|--------------------------------|--------------------------------|-----------|
+        | Sustainability      | Scope 1+2 CO2 Reduction        | 50% reduction by 2030 vs 2020  | [SSX]     |
+        | Innovation          | % Revenue from New Products    | -                              | [SSY]     |
+        | Customer Centricity | Net Promoter Score (NPS)       | > 50 by 2027                   | [SSZ]     |
     *   ***Stakeholder Focus:*** Analyze how the vision statement and its supporting pillars for {company_name} explicitly address or prioritize key stakeholder groups (e.g., customers, employees, shareholders, society, environment) based on the language used in official communications [SSX]. Provide specific examples or quotes [SSY].
 
 ## 2. General Discussion:
@@ -1567,6 +1742,7 @@ def get_strategy_research_prompt(
        * Align numerical data for readability (right-aligned).
        * Include unit descriptions (e.g., "Revenue (USD M)") in column headers.
        * Ensure all tables have appropriate header separator lines.
+       * Maintain proper spacing between cell content and pipe separators (e.g., `| Cell content |` not `|Cell content|`).
     
     3. **Data Point Precision:**
        * Each financial figure must be accompanied by currency and timeframe.
