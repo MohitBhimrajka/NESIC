@@ -3,8 +3,21 @@
 import textwrap
 from typing import Optional
 
+# IMPORTANT INSTRUCTION FOR ALL PROMPT TEMPLATES:
+# All example values (financial figures, dates, company names, etc.) provided in these prompts are 
+# purely illustrative and should NEVER be used as actual data in responses. All tables with example 
+# data are meant to demonstrate format only. When executing these prompts, replace ALL example values 
+# with actual verified data from reliable sources about the specific company being analyzed.
+
 # --- Standard Instruction Blocks ---
 # (Updated with placeholders for formatting)
+
+# New instruction to skip thinking process
+NO_THINKING_INSTRUCTION = textwrap.dedent("""\
+    **Direct Response Requirement:**
+    
+    Provide your response in a structured, final format without showing your thinking or planning process. Do not include any preliminary analysis, reasoning, or step-by-step thinking in your output. Present only the final, polished answer directly using the requested format and sections. Your output should start with my first requested section heading as this is a proffesional report.
+""")
 
 ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
     **Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage:**
@@ -102,7 +115,7 @@ HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
         *   **Grounding Requirement for Inclusion:** Information is included only if:
             1. The information is located in a reliable source document.
             2. A corresponding, verifiable Vertex AI grounding URL (matching the pattern `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`) is provided in the search results for this query.
-        *   **Strict Silent Omission Policy:** If information cannot meet both conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only `-` without explanation (verify data is missing *in the source*).
+        *   **Strict Silent Omission Policy:** If information cannot meet both conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only a single hyphen (`-`) without explanation, and only after confirming the data is genuinely missing *in the source*.
         *   **No Inference/Fabrication:** Do not infer, guess, or estimate ungrounded information. Do not fabricate grounding URLs.
         *   **Cross-Language Search:** If necessary, check other language results; if found, translate only the necessary information and list the corresponding grounding URL.
     """)
@@ -182,7 +195,12 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
         *   Use valid and consistent Markdown throughout the entire document.
         *   **Section Formatting:** Sections MUST be numbered exactly as specified in the prompt (e.g., `## 1. Core Corporate Information`). Use `##` for main sections.
         *   **Subsection Formatting:** Use `###` for subsections and maintain hierarchical structure.
-        *   **List Formatting:** Use asterisks (`*`) or hyphens (`-`) for bullets with consistent indentation (use 4 spaces for sub-bullets relative to the parent bullet).
+        *   **List Formatting:** Use hyphens (`-`) for bullets with consistent indentation (use 4 spaces for sub-bullets relative to the parent bullet).
+            Example:
+            - Main point one
+                - Sub-point 1.1 (4 spaces indent)
+                    - Sub-point 1.1.1 (8 spaces indent)
+            - Main point two
         *   **Tables (CRITICAL FOR RENDERING):** Format all tables with *perfect* Markdown table syntax. Pay meticulous attention to:
             *   **Exact Column Count:** Every single row (header, separator, data) **MUST** have the *exact same number of columns* delimited by pipes (`|`).
             *   **Mandatory Start/End Pipes:** Every single row **MUST** begin with a pipe (`|`) and end with a pipe (`|`).
@@ -190,14 +208,36 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
             *   **Alignment (Visual Aid):** While not strictly required by all parsers, using spaces within cells to visually align pipes in the raw Markdown source significantly helps prevent errors.
             *   **Table Data Integrity:** Every data point within a table cell MUST be verified against the cited source [SSX] for accuracy and correct reporting period.
             *   **Missing Data Placeholder:** If data for a specific cell is missing *in the source* after exhaustive search, use only a hyphen (`-`) as a placeholder if required for table structure. Do not add explanatory text.
-            *   **Example of Perfect Table (Re-emphasized):**
-                | Header 1        | Header 2      | Header 3          | Source(s) | <--- Ends with pipe
-                |-----------------|---------------|-------------------|-----------| <--- Matches 4 columns, ends with pipe
-                | Data Item 1     | 123.45        | Long text content | [SS1]     | <--- Matches 4 columns, ends with pipe
-                | Another Item    | -             | More text here    | [SS2]     | <--- Matches 4 columns, ends with pipe
-                | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]| <--- Matches 4 columns, ends with pipe
-            *   **Consequence of Error:** Even a single missing pipe or mismatched column count will likely cause the table to render incorrectly or not at all. Double-check every table before output.
-        *   **Code Blocks:** Use triple backticks (```) for code blocks.
+            *   **Example of Perfect Table:**
+                
+                **IMPORTANT: The following values are PURELY ILLUSTRATIVE EXAMPLES. Never use these specific numbers, item names, or data points in your actual response. Replace with real data from verifiable sources.**
+                
+                | Header 1        | Header 2      | Header 3          | Source(s) |
+                |-----------------|---------------|-------------------|-----------| 
+                | Data Item 1     | 123.45        | Long text content | [SS1]     |
+                | Another Item    | -             | More text here    | [SS2]     |
+                | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
+                
+                Rendered as:
+                | Header 1        | Header 2      | Header 3          | Source(s) |
+                |-----------------|---------------|-------------------|-----------| 
+                | Data Item 1     | 123.45        | Long text content | [SS1]     |
+                | Another Item    | -             | More text here    | [SS2]     |
+                | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
+                
+            *   **Financial Table Example:**
+                
+                **IMPORTANT: The following values are PURELY ILLUSTRATIVE EXAMPLES. Never use these specific numbers, metrics, years, or data points in your actual response. Replace with real verified data from sources about the company.**
+                
+                | Metric                | FY2023   | FY2024   | FY2025   | Source(s) |
+                |------------------------|----------|----------|----------|-----------|
+                | Revenue (JPY Millions) | 123,456  | 134,567  | 145,678  | [SS1]     |
+                | Operating Profit       | 12,345   | 13,456   | 14,567   | [SS1]     |
+                | Net Income             | 8,765    | 9,876    | 10,987   | [SS2]     |
+                | EBITDA                 | -        | 18,765   | 19,876   | [SS3]     |
+                
+                **Remember: These figures are fictional examples only and should not appear in your response.**
+        *   **Code Blocks:** When including code or structured content, preface with "Example:" rather than using triple backticks.
         *   **Quotes:** Use Markdown quote syntax (`>`) for direct quotations.
 
     *   **Optimal Structure & Readability:**
@@ -215,25 +255,19 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
         *   Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language for official reports).
         *   Use consistent percentage formatting (e.g., 12.5%).
 
-    *   **Section Completion Verification:**
-        *   Every section requested in the prompt MUST be included in the output.
-        *   Sections must appear in the exact order specified.
-        *   Each section must be properly labeled with the exact heading.
-        *   If verifiable data for an entire subsection is missing after exhaustive research, omit the *content* of that subsection, but **retain the subsection heading** (e.g., `### Subsection Title`) to maintain the document's structure as requested by the prompt. Do not state that data is missing.
+    *   **Timeframe Instructions:**
+        *   When instructed to use "the last 3 fiscal years" or similar, always use the 3 most recent COMPLETED fiscal years with available data, not partial/in-progress years.
+        *   Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms like "last 3 years" or "recent years".
+        *   For trends analysis, explicitly state the period covered (e.g., "FY2023-FY2025 data shows an increasing trend...").
+        *   Always state the "as of" date for point-in-time data (e.g., "As of March 31, 2025").
+        *   Clearly state fiscal year end dates when first mentioned (e.g., "FY2023 ended March 31, 2024").
 
-    *   **Tone and Detail Level:**
-        *   Maintain a professional, objective, and analytical tone suited for a Japanese corporate strategy audience.
-        *   Provide granular detail (e.g., figures, dates, metrics) while avoiding promotional language.
-
-    *   **Completeness and Verification:**
-        *   Address all requested points in each section by providing the information or silently omitting it if ungrounded after exhaustive search.
-        *   Verify that every section, the General Discussion, and the Sources list are present and adhere to the instructions.
-        *   Perform a final internal review before output.
-
-    *   **Sources List:** The Sources list must be present at the very end and adhere strictly to the instructions (see `FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE`). Format: `* [Supervity Source X](URL) - Annotation [SSX].`
-
-    *   **Inline Citation & Specificity:** Incorporate the inline citation [SSX] for every factual claim (see Inline Citation Requirement) and include specific dates/definitions (see Specificity and Granularity).
-    """)
+    *   **Handling Missing Data:**
+        *   After thorough research across multiple primary sources, if data is genuinely missing in the source, use only a single hyphen (-) when structurally necessary for tables.
+        *   Never use "N/A", "Not Available", or explanatory text in place of missing data.
+        *   Do not comment on missing data - simply present what is verifiable.
+        *   For sections where no verifiable data exists, retain headings but minimize content.
+""")
 
 ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
     **Mandatory Preliminary Research: Understanding the Analyzing Company ({context_company_name})**
@@ -341,6 +375,7 @@ def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Opti
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Absolutely DO NOT include information about any other similarly named companies (e.g., entertainment, unrelated industries). Verify the identity of the company for all sourced information.
 
 Comprehensive Corporate Profile, Strategic Overview, and Organizational Analysis of {company_name}
@@ -404,9 +439,14 @@ Conduct in-depth research using {company_name}'s official sources. Perform exhau
 
 ## 6. Subsidiaries List:
     *   List *major* direct subsidiaries (global where applicable) based solely on official documentation (e.g., list in Annual Report Appendix). Acknowledge this may not be exhaustive. For each subsidiary, include primary business activity, country of operation, and, if available, ownership percentage as stated in the source [SSX]. Present this in a **perfectly formatted Markdown table** for clarity. Use '-' for missing data points only if needed for table structure. Note any recent major M&A impacting the subsidiary structure if verifiable [SSY].
+        
+        **IMPORTANT: The table below provides an EMPTY FORMAT EXAMPLE. Do not invent any subsidiary data. Populate only with actual verified subsidiaries of {company_name} from official documents.**
+        
         | Subsidiary Name | Primary Business | Country | Ownership % (if stated) | Source(s) |
         |-----------------|------------------|---------|-------------------------|-----------|
         |                 |                  |         | -                       |           |
+        
+        **NOTE: This empty table should be filled with actual verified subsidiaries of {company_name} from official sources, not fictional examples.**
 
 ## 7. Leadership Strategic Outlook (Verbatim Quotes):
     *   **CEO & Chairman:** Provide at least four direct, meaningful quotes focusing on long-term vision, key challenges, growth strategies, and market outlook. Each quote must be followed immediately by its source citation in parentheses (e.g., "(Source: Annual Report 2023, p.5)"), and an inline citation [SSX] must confirm the quote's origin.
@@ -448,10 +488,12 @@ def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: 
 
     enhanced_financial_research_instructions = textwrap.dedent(f"""\
     *   **Mandatory Deep Search & Calculation:** Conduct an exhaustive search within **{company_name}**'s official financial disclosures for the last 3 full fiscal years, including Annual Reports, Financial Statements (Income Statement, Balance Sheet, Cash Flow Statement), **Footnotes**, Supplementary Data Packs (Databases, Tanshin), official filings, and IR materials. Do not rely solely on summary tables; examine detailed statements and notes for definitions and components [SSX]. Cross-verify figures across multiple sources. Verify table data accuracy meticulously. **Crucially, every single financial figure, ratio, or data point presented, whether in text or tables, MUST be directly supported by a verifiable Vertex AI grounding URL provided *for this query* [SSX] related to {context_str}.**
+    *   **Time Period Clarity:** Always use the 3 most recently COMPLETED fiscal years with available data (not partial/in-progress years). Clearly label the specific fiscal years in all tables and text (e.g., "FY2023, FY2024, FY2025" rather than just "last 3 years"). Include end dates where appropriate (e.g., "FY2025 ending March 31, 2026").
     *   **Calculation Obligation & Citation:** For financial metrics such as Margins, ROE, ROA, Debt-to-Equity, and ROIC: if not explicitly stated, calculate them using standard formulas only if all necessary base data is available and verifiable from grounded sources for {company_name}. Clearly state the formula used [SSX]. **When reporting a calculated metric, cite the sources for all underlying base data points used in the calculation** (e.g., "ROE (Calculated: NI [SS1] / Avg Equity [SS2]) [SS1, SS2]").
     *   **Strict Silent Omission Policy:** If a metric cannot be found or reliably calculated from verifiable sources after exhaustive search, omit that specific line item entirely. Do not use placeholders like 'N/A' or state that data is missing.
     *   **Industry Specific Metrics:** Be aware of industry nuances (e.g., for Insurance, distinguish between flow metrics like 'premium income' and stock metrics like 'annualized premiums in-force' if both are reported and used strategically, e.g., in MTP targets). If including non-standard metrics, briefly explain their definition/relevance based on the source [SSX].
     *   **Data Sparsity Acknowledgement (Internal):** For non-listed subsidiaries or complex groups, acknowledge internally that certain detailed metrics might be unavailable at the subsidiary level and analysis will rely on available consolidated or segment data for {company_name}.
+    *   **Missing Data Presentation:** In tables, use a single hyphen ('-') as a placeholder ONLY when needed for table structure, and ONLY when you've confirmed the data is genuinely missing in the source after thorough searching. DO NOT use 'N/A', blank cells, or explanatory text in table cells.
     """)
 
     analytical_depth_instructions = textwrap.dedent("""\
@@ -471,6 +513,7 @@ def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: 
     """)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Absolutely DO NOT include information about any other similarly named companies. Verify the identity for all financial data sourced.
 
 Comprehensive Strategic Financial Analysis of {company_name} (Last 3 Fiscal Years)
@@ -496,37 +539,47 @@ For each section, provide verifiable data with inline citations [SSX] and specif
 
 ## 1. Top Shareholders:
     *   List major shareholders of {company_name} (typically the top 5-10, with exact ownership percentages, reporting dates, and source references) in a **perfectly formatted Markdown table** [SSX]. Use '-' for missing data points only if needed for table structure.
-        | Shareholder Name | Ownership % | As of Date | Source(s) |
-        |------------------|-------------|------------|-----------|
-        |                  |             |            |           |
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE SHAREHOLDERS. Never use these specific names, percentages, or dates in your response. Replace with actual verified shareholder information for {company_name}.**
+        
+        | Shareholder Name | Ownership % | As of Date   | Source(s) |
+        |------------------|-------------|--------------|-----------|
+        | Example Corp Ltd | 10.2%       | 2023-12-31   | [SSX]     |
+        | Investment Bank  | 8.5%        | 2023-12-31   | [SSX]     |
+        | Trust Fund       | -           | 2023-12-31   | [SSY]     |
+        
+        **NOTE: "Example Corp Ltd", "Investment Bank", etc. are fictional placeholders. Replace with actual top shareholders of {company_name}.**
     *   Briefly comment on the stability or influence of the ownership structure on the financial strategy of {company_name} [SSX].
 
 ## 2. Key Financial Metrics (3-Year Trend in a Table):
-    *   Present the following metrics for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table**. Specify currency (e.g., JPY millions) and fiscal year (e.g., FY2021, FY2022, FY2023) for each value. Verify data accuracy. If calculated, note this below the table or in a 'Notes' column and cite base data sources. Cite sources for all data [SSX]. Use '-' for missing data points only if needed for table structure. *Consider adding industry-specific metrics if relevant and reported (see instructions).*
-        | Metric                                          | FYXXXX | FYYYYY | FYZZZZ | Notes / Calculation Basis (Cite Base Data) | Source(s) |
-        |-------------------------------------------------|--------|--------|--------|---------------------------------------------|-----------|
-        | Total Revenue / Net Sales / Premium Income etc. |        |        |        | (Specify metric used)                       | [SSX]     |
-        | Gross Profit                                    |        |        |        | (Calc: Rev [SSX] - COGS [SSY])              | [SSX, SSY]|
-        | Gross Profit Margin (%)                         |        |        |        | (Calc: GP [SSZ] / Rev [SSX])                | [SSX, SSZ]|
-        | EBITDA                                          |        |        |        | (If available/calculable)                   | [SSX]     |
-        | EBITDA Margin (%)                               |        |        |        | (Calc: EBITDA [SSX] / Rev [SSY])            | [SSX, SSY]|
-        | Operating Income / Operating Profit             |        |        |        |                                             | [SSX]     |
-        | Operating Margin (%)                            |        |        |        | (Calc: OpInc [SSX] / Rev [SSY])             | [SSX, SSY]|
-        | Ordinary Income / Pre-Tax Income                |        |        |        |                                             | [SSX]     |
-        | Ordinary Income Margin (%)                      |        |        |        | (Calc: OrdInc [SSX] / Rev [SSY])            | [SSX, SSY]|
-        | Net Income attributable to Parent               |        |        |        |                                             | [SSX]     |
-        | Net Income Margin (%)                           |        |        |        | (Calc: NetInc [SSX] / Rev [SSY])            | [SSX, SSY]|
-        | ROE (%)                                         |        |        |        | (Calc: NI [SSX] / Avg Equity [SSY])         | [SSX, SSY]|
-        | ROA (%)                                         |        |        |        | (Calc: NI [SSX] / Avg Assets [SSY])         | [SSX, SSY]|
-        | Total Assets                                    |        |        |        |                                             | [SSX]     |
-        | Total Shareholders' Equity                      |        |        |        |                                             | [SSX]     |
-        | Equity Ratio (%)                                |        |        |        | (Calc: Equity [SSX] / Assets [SSY])         | [SSX, SSY]|
-        | Total Interest-Bearing Debt                     |        |        |        |                                             | [SSX]     |
-        | Debt-to-Equity Ratio (x)                        |        |        |        | (Calc: Debt [SSX] / Equity [SSY])           | [SSX, SSY]|
-        | Net Cash from Operations                        |        |        |        |                                             | [SSX]     |
-        | Net Cash from Investing                         |        |        |        |                                             | [SSX]     |
-        | Net Cash from Financing                         |        |        |        |                                             | [SSX]     |
-        | (Add other key metrics like Premiums In-Force if needed) |       |        |        |                                             | [SSX]     |
+    *   Present the following metrics for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table**. Specify currency (e.g., JPY millions) and fiscal year (e.g., FY2023, FY2024, FY2025) for each value. Verify data accuracy. If calculated, note this below the table or in a 'Notes' column and cite base data sources. Cite sources for all data [SSX]. Use '-' for missing data points only if needed for table structure. *Consider adding industry-specific metrics if relevant and reported (see instructions).*
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE VALUES ONLY. Never copy these specific numbers in your response. Replace ALL values with actual verified data from reliable sources about {company_name}.**
+        
+        | Metric                                          | FY2023 | FY2024 | FY2025 | Notes / Calculation Basis | Source(s) |
+        |-------------------------------------------------|--------|--------|--------|---------------------------|-----------|
+        | Total Revenue / Net Sales / Premium Income etc. | 123,456| 135,789| 142,853| As reported              | [SSX]     |
+        | Gross Profit                                    | 45,678 | 48,567 | 52,321 | Rev [SSX] - COGS [SSY]   | [SSX, SSY]|
+        | Gross Profit Margin (%)                         | 37.0%  | 35.8%  | 36.6%  | GP [SSZ] / Rev [SSX]     | [SSX, SSZ]|
+        | EBITDA                                          | 23,456 | 25,678 | 28,543 | As reported              | [SSX]     |
+        | EBITDA Margin (%)                               | 19.0%  | 18.9%  | 20.0%  | EBITDA [SSX] / Rev [SSY] | [SSX, SSY]|
+        | Operating Income / Operating Profit             | 18,765 | 20,543 | 22,876 | As reported              | [SSX]     |
+        | Operating Margin (%)                            | 15.2%  | 15.1%  | 16.0%  | OpInc [SSX] / Rev [SSY]  | [SSX, SSY]|
+        | Ordinary Income / Pre-Tax Income                | 17,654 | 19,876 | 21,987 | As reported              | [SSX]     |
+        | Ordinary Income Margin (%)                      | 14.3%  | 14.6%  | 15.4%  | OrdInc [SSX] / Rev [SSY] | [SSX, SSY]|
+        | Net Income attributable to Parent               | 12,345 | 14,567 | 15,678 | As reported              | [SSX]     |
+        | Net Income Margin (%)                           | 10.0%  | 10.7%  | 11.0%  | NetInc [SSX] / Rev [SSY] | [SSX, SSY]|
+        | ROE (%)                                         | 8.7%   | 9.5%   | 9.8%   | NI [SSX] / Avg Eq [SSY]  | [SSX, SSY]|
+        | ROA (%)                                         | 4.3%   | 4.8%   | 5.0%   | NI [SSX] / Avg As [SSY]  | [SSX, SSY]|
+        | Total Assets                                    | 245,678| 267,890| 285,430| As reported              | [SSX]     |
+        | Total Shareholders' Equity                      | 145,678| 156,789| 167,890| As reported              | [SSX]     |
+        | Equity Ratio (%)                                | 59.3%  | 58.5%  | 58.8%  | Eq [SSX] / Assets [SSY]  | [SSX, SSY]|
+        | Total Interest-Bearing Debt                     | 45,678 | 48,765 | 50,123 | As reported              | [SSX]     |
+        | Debt-to-Equity Ratio (x)                        | 0.31   | 0.31   | 0.30   | Debt [SSX] / Eq [SSY]    | [SSX, SSY]|
+        | Net Cash from Operations                        | 24,567 | 26,789 | 28,976 | As reported              | [SSX]     |
+        | Net Cash from Investing                         | -15,678| -18,765| -19,876| As reported              | [SSX]     |
+        | Net Cash from Financing                         | -7,654 | -8,765 | -9,876 | As reported              | [SSX]     |
+        | (Add other key metrics like Premiums In-Force if needed) | -     | -      | -      |                  | [SSX]     |
     *   **Analyze** key trends observed in the table for {company_name} (YoY changes, CAGR). Explain the *drivers* behind these trends based on source commentary [SSX]. Identify any standout performance aspects (positive or negative) [SSY].
 
 ## 3. Profitability Analysis (3-Year Trend):
@@ -534,25 +587,38 @@ For each section, provide verifiable data with inline citations [SSX] and specif
 
 ## 4. Segment-Level Performance (if applicable, Last 3 Fiscal Years):
     *   If segment data is available for {company_name} (e.g., Mobility, Safety, Entertainment), present revenue, operating profit, and margin percentages for each segment in a **perfectly formatted Markdown table** (include currency and fiscal year, verify data) [SSX]. Use '-' for missing data points only if needed for table structure.
-        | Segment Name | Metric           | FYXXXX | FYYYYY | FYZZZZ | Source(s) |
+        
+        **IMPORTANT: The table below uses EXAMPLE SEGMENT NAMES AND FICTIONAL VALUES FOR ILLUSTRATION ONLY. Replace with actual segments and verified financial data from {company_name}'s reports.**
+        
+        | Segment Name | Metric           | FY2023 | FY2024 | FY2025 | Source(s) |
         |--------------|------------------|--------|--------|--------|-----------|
-        | Segment A    | Revenue          |        |        |        | [SSX]     |
-        | Segment A    | Operating Income |        |        |        | [SSX]     |
-        | Segment A    | Operating Margin%|        |        |        | [SSX]     |
-        | Segment B    | Revenue          |        |        |        | [SSY]     |
-        | ...          | ...              |        |        |        |           |
+        | Segment A    | Revenue (JPY M)  | 45,678 | 48,765 | 52,345 | [SSX]     |
+        | Segment A    | Operating Income | 7,654  | 8,123  | 8,765  | [SSX]     |
+        | Segment A    | Operating Margin%| 16.8%  | 16.7%  | 16.7%  | [SSX]     |
+        | Segment B    | Revenue (JPY M)  | 34,567 | 38,765 | 42,345 | [SSY]     |
+        | Segment B    | Operating Income | 5,678  | 6,123  | 7,654  | [SSY]     |
+        | Segment B    | Operating Margin%| 16.4%  | 15.8%  | 18.1%  | [SSY]     |
+        | Segment C    | Revenue (JPY M)  | 15,678 | 16,543 | -      | [SSZ]     |
+        | Segment C    | Operating Income | 2,345  | 2,678  | -      | [SSZ]     |
+        | Segment C    | Operating Margin%| 15.0%  | 16.2%  | -      | [SSZ]     |
+        
+        **NOTE: "Segment A/B/C" are placeholders. Use the actual segment names from {company_name}'s financial reports.**
     *   Analyze trends, growth drivers, and the relative contribution/profitability of each segment of {company_name}, citing specific figures [SSX]. Identify key profit-driving segments based on available data [SSY].
 
 ## 5. Cost Structure Analysis (3-Year Trend):
     *   Detail the composition and trends of major operating costs for {company_name} using data from financial statements [SSX]. Present in a **perfectly formatted Markdown table** if helpful and data is verifiable. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
-        | Cost Item        | FYXXXX (JPY M) | FYXXXX (% of Rev) | FYYYYY (JPY M) | FYYYYY (% of Rev) | FYZZZZ (JPY M) | FYZZZZ (% of Rev) | Source(s) |
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE COST DATA. Never use these specific amounts or percentages in your response. Replace with actual cost data from {company_name}'s financial reports.**
+        
+        | Cost Item        | FY2023 (JPY M) | FY2023 (% of Rev) | FY2024 (JPY M) | FY2024 (% of Rev) | FY2025 (JPY M) | FY2025 (% of Rev) | Source(s) |
         |------------------|----------------|-------------------|----------------|-------------------|----------------|-------------------|-----------|
-        | COGS             |                |                   |                |                   |                |                   | [SSX]     |
-        | SG&A Expenses    |                |                   |                |                   |                |                   | [SSY]     |
-        |  - R&D (if sep)  |                |                   |                |                   |                |                   | [SSZ]     |
-        |  - Personnel     |                |                   |                |                   |                |                   | [SSW]     |
-        |  - Other SG&A    |                |                   |                |                   |                |                   | [SSV]     |
-    *   Analyze drivers behind {company_name}'s cost trends (e.g., raw material prices, personnel costs, restructuring effects) and comment on cost control effectiveness based on commentary in reports [SSX]. Look for fixed vs variable cost commentary if available [SSY].
+        | COGS             | 77,778         | 63.0%             | 87,222         | 64.2%             | 90,532         | 63.4%             | [SSX]     |
+        | SG&A Expenses    | 27,111         | 22.0%             | 28,024         | 20.6%             | 29,444         | 20.6%             | [SSY]     |
+        |  - R&D (if sep)  | 5,432          | 4.4%              | 6,120          | 4.5%              | 6,780          | 4.7%              | [SSZ]     |
+        |  - Personnel     | 8,600          | 7.0%              | 8,925          | 6.6%              | 9,100          | 6.4%              | [SSW]     |
+        |  - Other SG&A    | 13,079         | 10.6%             | 12,979         | 9.6%              | 13,564         | 9.5%              | [SSV]     |
+        
+        **NOTE: All figures above are examples only. Your response must use actual cost data from {company_name}'s financial documents.**
 
 ## 6. Cash Flow Statement Analysis (3-Year Trend):
     *   Analyze trends in Operating Cash Flow (OCF) for {company_name}. Explain key drivers, differentiating between changes in profit and changes in working capital components (receivables, payables, inventory) based on the cash flow statement details [SSX].
@@ -617,9 +683,12 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
     3.  **Synthesis & Attribution:** When synthesizing competitive positioning or SWOT for {company_name}, clearly attribute claims. If based on {company_name}'s statements, use [SSX]. If based on grounded third-party data about the industry or a competitor, use [SSY], [SSZ]. Avoid unsourced analysis.
     4.  **Silent Omission Rule:** Silently omit any industry or competitor claim that cannot be traced back to either {company_name}'s statements [SSX] or a grounded third-party source [SSY, SSZ] after exhaustive search.
     5.  **Final Source List Integrity:** The final "Sources" list MUST include only the Vertex AI grounding URLs provided for this query (which may include links to {company_name}'s site or grounded third-party sites). Inline citations [SSX, SSY, SSZ] must match these sources.
+    6.  **Timeframe Clarity:** For competitor and market data, always specify the exact timeframe (e.g., "As of FY2023" or "Data from Q2 2023") and ensure you're using the most recently available complete data. For trend analysis, specify the period covered (e.g., "Market share trends from 2021-2023 show...").
+    7.  **Missing Data Handling:** In tables, use a single hyphen ('-') as a placeholder ONLY when needed for table structure and ONLY when you've confirmed the data is truly unavailable in reliable sources after thorough searching. DO NOT use 'N/A', blank cells, or explanatory text in table cells.
     """)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str} and its competitive landscape. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 Detailed Competitive Analysis and Strategic Positioning of {company_name}
@@ -649,11 +718,16 @@ Use **perfect Markdown tables**. Adhere strictly to grounding rules outlined bel
 ### 2. Major Competitors Identification & Profiling
     *   Identify primary global and key regional competitors of {company_name} based on {company_name}'s official statements [SSX] or grounded third-party reports [SSY]. Provide specific names.
     *   Present competitor information in a **perfectly formatted Markdown table** where possible, clearly indicating source for each piece of data. Use '-' for missing data points only if needed for table structure. Verify data accuracy.
+        
+        **IMPORTANT: The following table contains FICTIONAL COMPETITOR EXAMPLES for illustration only. Do not use these specific competitors, market shares, or moves in your response. Replace with actual verified competitors of {company_name} from reliable sources.**
+        
         | Competitor Name | Primary Business Area(s) of Overlap with {company_name} | Estimated Market Share (Market, Year) | Key Geographic Overlap | Recent Key Moves (Date) | Source(s) |
         |-----------------|----------------------------------------------------------|---------------------------------------|------------------------|-------------------------|-----------|
-        | Competitor A    | Describe relevant business [SSX]                         | X% (Specific Market, YYYY) [SSY]      | e.g., Japan, N. America [SSX] | Acquired Co. Z (YYYY-MM) [SSZ] | [SSX, SSY, SSZ] |
-        | Competitor B    | Describe relevant business [SSX]                         | Y% (Specific Market, YYYY) [SSW]      | e.g., Global [SSX]     | Launched Product P (YYYY-MM) [SSV] | [SSX, SSW, SSV] |
-        | Competitor C    | ...                                                      | -                                     | ...                    | ...                     |           |
+        | Competitor A    | Cloud Services, IT Consulting                            | 15.2% (Cloud Market, 2023) [SSY]      | Japan, SE Asia [SSX]   | Acquired DevOps Co (2023-05) [SSZ] | [SSX, SSY, SSZ] |
+        | Competitor B    | Network Solutions, Security                              | 8.7% (Security Market, 2023) [SSW]    | Global [SSX]           | Launched Platform X (2022-11) [SSV] | [SSX, SSW, SSV] |
+        | Competitor C    | IT Infrastructure                                        | -                                     | EMEA, APAC [SSX]       | New CEO appointed (2023-09) [SST]   | [SSX, SST]      |
+        
+        **NOTE: "Competitor A/B/C" are placeholders. Replace with actual competitor names of {company_name}. All market share figures, geographic data, and key moves must be verified from reliable sources.**
     *   For key competitors identified, briefly analyze their relative positioning versus {company_name} on dimensions like technology, product range, price point, or regional strength, based *only* on grounded data [SSX, SSY]. Note strategic weaknesses if explicitly mentioned in sources [SSZ].
 
 ### 3. {company_name}'s Competitive Positioning
@@ -727,6 +801,7 @@ def get_management_strategy_prompt(company_name: str, language: str = "Japanese"
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 Comprehensive Analysis of {company_name}'s Management Strategy and Mid-Term Business Plan: Focus, Execution, and Progress
@@ -819,6 +894,7 @@ def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker:
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f'''
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 In-Depth Analysis of the Regulatory Environment for {company_name}
@@ -911,6 +987,7 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Opt
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f'''
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 In-Depth Analysis of {company_name}'s Digital Crisis Management and Business Continuity
@@ -980,6 +1057,7 @@ def get_digital_transformation_prompt(company_name: str, language: str = "Japane
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 In-Depth Analysis of {company_name}'s Digital Transformation (DX) Strategy and Execution
@@ -1082,6 +1160,7 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese",
     """)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 In-Depth Analysis of {company_name}'s Business Structure, Geographic Footprint, Ownership, and Strategic Vision Linkages
@@ -1105,6 +1184,9 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
 
 ## 1. Business Segment Analysis (Last 3 Fiscal Years):
     *   List the reported business segments for **{company_name}** using official descriptions. Identify the primary metric used for segmentation (e.g., Revenue, Premiums In-Force). Include a **perfectly formatted Markdown table** with consolidated figures for that metric (specify metric, currency, and fiscal year) and composition ratios (%), with each data point referenced [SSX]. Ensure totals sum correctly if verifiable. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
+        
+        **IMPORTANT: The table below contains a FICTIONAL EXAMPLE FORMAT with placeholder segment names. Never use these specific segments or values in your response. Replace with actual verified business segments and data from {company_name}'s reports.**
+        
         | Segment Name | FYXXXX Metric Value (Unit) | FYXXXX (%) | FYYYYY Metric Value (Unit) | FYYYYY (%) | FYZZZZ Metric Value (Unit) | FYZZZZ (%) | Source(s) |
         |--------------|--------------------------|------------|--------------------------|------------|--------------------------|------------|-----------|
         | Segment A    |                          |            |                          |            |                          |            | [SSX]     |
@@ -1112,11 +1194,15 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
         | Segment C    |                          |            | -                      | -          |                          |            | [SSZ]     |
         | Adjustments  |                          |            |                          |            |                          |            | [SSW]     |
         | **Total**    |                          | **100%**   |                          | **100%**   |                          | **100%**   | [SSV]     |
-        *(Note: Clearly label the 'Metric Value' column header with the specific metric used, e.g., "FYXXXX Revenue (JPY M)" or "FYXXXX Premiums In-Force (JPY Bn)")*
+        
+        **NOTE: "Segment A/B/C" are placeholder examples only. Use the actual business segments reported by {company_name}. Replace FYXXXX/YYYY/ZZZZ with the actual fiscal years.**
     *   For each major segment of {company_name}, briefly describe its products/services [SSX] and analyze significant trends (e.g., growth/decline rates YoY calculated from table data, changes in contribution ratio) with specific percentages and dates [SSY]. Identify the fastest growing and/or most profitable segments based on available data (growth in the reported metric, operating income/margin if reported per segment in source documents) [SSZ].
 
 ## 2. Geographic Segment Analysis (Last 3 Fiscal Years):
     *   List the geographic regions or segments as reported by **{company_name}** (e.g., Japan, North America, Europe, Asia). Identify the primary metric used for geographic segmentation. Include a **perfectly formatted Markdown table** with corresponding figures (specify metric, currency, fiscal year) and composition ratios (%), ensuring totals sum correctly if verifiable [SSX]. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
+        
+        **IMPORTANT: The table below contains FICTIONAL GEOGRAPHIC REGIONS as examples. Never use these specific regions or values in your response. Replace with actual verified geographic segments from {company_name}'s reports.**
+        
         | Geographic Region | FYXXXX Metric Value (Unit) | FYXXXX (%) | FYYYYY Metric Value (Unit) | FYYYYY (%) | FYZZZZ Metric Value (Unit) | FYZZZZ (%) | Source(s) |
         |-------------------|--------------------------|------------|--------------------------|------------|--------------------------|------------|-----------|
         | Japan             |                          |            |                          |            |                          |            | [SSX]     |
@@ -1126,31 +1212,41 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
         | Other             |                          |            | -                      | -          |                          |            | [SSV]     |
         | Adjustments       |                          |            |                          |            |                          |            | [SSU]     |
         | **Total**         |                          | **100%**   |                          | **100%**   |                          | **100%**   | [SST]     |
-        *(Note: Clearly label the 'Metric Value' column header with the specific metric used, e.g., "FYXXXX Revenue (JPY M)" or "FYXXXX Premiums In-Force (JPY Bn)")*
+        
+        **NOTE: These regions are examples only. Use the actual geographic segments as reported by {company_name}. Replace FYXXXX/YYYY/ZZZZ with the actual fiscal years.**
     *   Analyze regional trends for {company_name} (growth/decline YoY calculated from table data, changes in contribution) with specific supporting data [SSX]. Identify key growth markets and declining markets with specific figures [SSY]. Note any stated plans for geographic expansion or contraction with dates and details mentioned in reports [SSZ].
 
 ## 3. Major Shareholders & Ownership Structure:
     *   Describe the overall ownership type for **{company_name}** (e.g., publicly traded on TSE Prime [SSX], privately held) with specific details [SSY].
     *   List the top 5-10 major shareholders of {company_name} in a **perfectly formatted Markdown table** with exact names (as reported, e.g., trust banks), precise ownership percentages, shareholder type (institutional, individual, government, etc.), and the 'as of' date for the data [SSX]. Note any significant changes in top holders over the past year if reported [SSY]. Verify data. Use '-' for missing data points only if needed for table structure.
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE SHAREHOLDERS. Never use these specific names, percentages, or types in your response. Replace with actual verified shareholders of {company_name}.**
+        
         | Shareholder Name          | Ownership % | Shareholder Type     | As of Date   | Source(s) |
         |---------------------------|-------------|----------------------|--------------|-----------|
         | The Master Trust Bank ... | 9.8%        | Institutional (Trust)| YYYY-MM-DD   | [SSX]     |
         | Custody Bank of Japan ... | 7.5%        | Institutional (Trust)| YYYY-MM-DD   | [SSX]     |
         | [Individual Name]         | -           | Individual (Founder) | YYYY-MM-DD   | [SSY]     |
         | ...                       | ...         | ...                  | ...          |           |
+        
+        **NOTE: These shareholder names and details are examples only. Replace with actual verified shareholders of {company_name}.**
     *   Include key figures for {company_name} like Total Shares Outstanding [SSX], Treasury Stock [SSY], and Free Float percentage (if available) [SSZ], all with 'as of' dates. Mention controlling shareholders or parent company relationships if applicable [SSX]. Discuss any known cross-shareholdings with major business partners if material and reported [SSY].
     *   Comment briefly on ownership concentration for {company_name} and potential implications (e.g., high institutional ownership suggests focus on governance [SSX], stable founder ownership may influence long-term strategy [SSY]).
 
 ## 4. Corporate Group Structure:
     *   Describe the parent-subsidiary relationships and overall corporate group structure for **{company_name}** based on official filings or reports (e.g., list of major subsidiaries in Annual Report Appendix [SSX]). Note existence/location of group structure charts if found [SSY].
     *   List key operating subsidiaries of {company_name} in a **perfectly formatted Markdown table**, including their official names, primary business functions/segments they operate in, country/region of incorporation, and ownership percentage by the parent company (if stated) [SSX]. Verify data. Use '-' for missing data points only if needed for table structure.
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE SUBSIDIARIES. Never use these specific names, businesses, or data in your response. Replace with actual verified subsidiaries of {company_name}.**
+        
         | Subsidiary Name             | Primary Business Function / Segment | Country/Region | Ownership % | Source(s) |
         |-----------------------------|-------------------------------------|----------------|-------------|-----------|
         | [Company Name] USA Inc.     | Sales & Marketing (Segment A)       | USA            | 100%        | [SSX]     |
         | [Company Name] Europe GmbH  | R&D, Manufacturing (Segment B)      | Germany        | -           | [SSX]     |
         | Joint Venture XYZ Co., Ltd. | Specific Technology Development     | Japan          | 50%         | [SSY]     |
         | ...                         | ...                                 | ...            | ...         |           |
-    *   Note any recent major restructuring, mergers, divestitures, or acquisitions impacting the group structure of {company_name}, providing specific dates and transaction details if available and material [SSY].
+        
+        **NOTE: These subsidiary examples are purely fictional. Replace with actual verified subsidiaries of {company_name} from official sources.**
 
 ## 5. Leadership Strategic Outlook & Vision (Verbatim Quotes - Linkages):
     *   Provide verbatim quotes from key executives of **{company_name}** (CEO, Chairman, and optionally CFO/CSO) that specifically address:
@@ -1162,7 +1258,7 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
     *   Where possible, explicitly connect a quote to a specific finding in Sections 1-4 (e.g., "Reflecting the growth in the Asian market shown in Section 2 [SSY], the CEO stated, '...' [SSX]").
 
 ## 6. General Discussion:
-    *   Provide a single concluding paragraph (300-500 words) synthesizing the findings from Sections 1-5 regarding **{company_name}**. Clearly link analytical insights and comparisons using inline citations (e.g., "The shift in segment focus towards Segment B [SSX] aligns with the CEO's stated focus [SSY], but geographic concentration in Japan [SSZ] remains a key factor influencing growth prospects..."). Incorporate key quantitative points.
+    *   Provide a single concluding paragraph (300-500 words) that synthesizes the findings from Sections 1-5 regarding **{company_name}**. Clearly link analytical insights and comparisons using inline citations (e.g., "The shift in segment focus towards Segment B [SSX] aligns with the CEO's stated focus [SSY], but geographic concentration in Japan [SSZ] remains a key factor influencing growth prospects..."). Incorporate key quantitative points.
     *   Address specifically:
         * The alignment (or misalignment) between the business/geographic structure (using the relevant metric) and the stated strategic vision/MTP for {company_name} [SSX, SSY].
         * How the ownership structure may influence business decisions or governance at {company_name} [SSZ].
@@ -1200,6 +1296,7 @@ def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Opt
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 Analysis of {company_name}'s Strategic Vision and Purpose
@@ -1224,12 +1321,17 @@ Conduct in-depth research using official sources for **{company_name}** such as 
     *   **Vision/Purpose/Mission Statement:** Present **{company_name}**'s official statement(s) verbatim (e.g., "Our Purpose is to...") with an inline citation [SSX] identifying the source document and date (e.g., Integrated Report 2023 [SSX]). Explain its core message and intended timescale (e.g., Vision 2030) [SSY].
     *   **Strategic Vision Components/Pillars:** List and explain the key strategic themes, values, or pillars that underpin the vision for {company_name} (e.g., "Innovation", "Sustainability", "Customer Centricity") as defined in official documents [SSX]. Provide brief definitions or explanations for each pillar based on the source [SSY].
     *   **Vision Measures / KPIs:** Identify specific measures or Key Performance Indicators (KPIs) that **{company_name}** explicitly links to tracking progress towards its overall vision or purpose (these might be high-level MTP targets or specific ESG goals mentioned in the vision context). Present these in a list or **perfectly formatted Markdown table** if multiple and verifiable, including the KPI name, the target (if specified, with date/period), and how it relates to the vision pillar [SSX]. Verify data. Use '-' for missing data points only if needed for table structure.
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE KPIs. Do not use these specific goals or metrics in your response. Replace with actual verified KPIs from {company_name}'s vision statements and documents.**
+        
         | Vision Pillar      | Linked KPI                    | Target/Goal (if specified)     | Source(s) |
         |--------------------|-------------------------------|--------------------------------|-----------|
         | Sustainability     | Scope 1+2 CO2 Reduction       | 50% reduction by 2030 vs 2020  | [SSX]     |
         | Innovation         | % Revenue from New Products   | -                              | [SSY]     |
         | Customer Centricity| Net Promoter Score (NPS)      | > 50 by 2027                   | [SSZ]     |
         | ...                | ...                           | ...                            |           |
+        
+        **NOTE: The pillar names, KPIs, and targets above are fictional examples only. Replace with actual verified vision metrics and targets from {company_name}'s documents.**
     *   ***Stakeholder Focus:*** Analyze how the vision statement and its supporting pillars for {company_name} explicitly address or prioritize key stakeholder groups (e.g., customers, employees, shareholders, society, environment) based on the language used in official communications [SSX]. Provide specific examples or quotes [SSY].
 
 ## 2. General Discussion:
@@ -1266,6 +1368,7 @@ def get_management_message_prompt(company_name: str, language: str = "Japanese",
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company and the speaker for all sourced information. Do not include unrelated entities.
 
 Detailed Leadership Strategic Outlook (Verbatim Quotes) for {company_name}
@@ -1372,8 +1475,38 @@ def get_strategy_research_prompt(
         context_company_name=context_company_name, # Analyzing Company
         company_name=company_name # Target Company
     )
+    
+    # Add enhanced time period and table formatting instructions
+    enhanced_time_and_formatting = textwrap.dedent(f"""\
+    **Critical Time Period and Formatting Clarity:**
+    
+    1. **Financial & Trend Data:**
+       * Always use the most recent **completed fiscal years** with available data for {company_name}. Clearly label specific fiscal years in all tables and text (e.g., "FY2023, FY2024, FY2025" rather than just "last 3 years").
+       * Include end dates where appropriate (e.g., "FY2025 ending March 31, 2026").
+       * For forecasts or targets, clearly state the timeframe with specific end years.
+    
+    2. **Table Formatting Excellence:**
+       * Every table must have consistent column counts across all rows.
+       * Every row must begin and end with pipes (|).
+       * Use a single hyphen (-) for missing values only when needed for table structure and confirmed missing after thorough research.
+       * Align numerical data for readability (right-aligned).
+       * Include unit descriptions (e.g., "Revenue (USD M)") in column headers.
+       * Ensure all tables have appropriate header separator lines.
+    
+    3. **Data Point Precision:**
+       * Each financial figure must be accompanied by currency and timeframe.
+       * Each date must be in consistent format (YYYY-MM-DD or explicit period end dates).
+       * Each percentage should include the % symbol.
+       * Each source citation [SSX] must correspond to a valid entry in the final Sources list.
+    
+    4. **Silent Omission Implementation:**
+       * After thorough research, silently omit data points about {company_name} that cannot be verified with grounding URLs.
+       * Never explain data is "missing" or "not available" - simply exclude the unverifiable point.
+       * For key sections where no verifiable data exists, retain the headings but provide minimalist content based only on verified information.
+    """)
 
     prompt = f"""
+{NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This Strategy Research is *exclusively* about the specific Target Company: {context_str}. Verify the identity of the Target Company for all sourced information [SSX]. Do not include unrelated entities. This plan leverages public data about the Target Company ({company_name}) to inform a strategic account plan for the Analyzing Company ({context_company_name}).
 
 Comprehensive 3-Year Strategy Research & Action Plan: Targeting {company_name} for {context_company_name}
@@ -1397,6 +1530,7 @@ Research Requirements (Target Company - {company_name}):
 {SPECIFICITY_INSTRUCTION}
 {INLINE_CITATION_INSTRUCTION}
 {ANALYSIS_SYNTHESIS_INSTRUCTION} # Focus analysis on identifying needs {context_company_name} could meet & explaining *why* with specifics
+{enhanced_time_and_formatting}
 
 {formatted_additional_instructions}
 
@@ -1412,21 +1546,27 @@ Research Requirements (Target Company - {company_name}):
     *   *(Note: Avoid speculation on {context_company_name}-{company_name} relationship history unless verifiable via grounding URLs [SSZ]. Focus analysis on {company_name}.)*
 
 ## 2. Target Company Revenue Analysis & Growth Drivers ({company_name})
-    *   Present Revenue for {company_name} for the last 3 full fiscal years (FYXXXX, FYYYYY, FYZZZZ) in a **perfectly formatted Markdown table**, specifying currency (e.g., JPY Millions) [SSX]. Calculate YoY Growth Rate (%). Verify data. Use '-' for missing data points only if needed for table structure.
-        | Metric                  | FYXXXX | FYYYYY | FYZZZZ | Source(s) |
-        |-------------------------|--------|--------|--------|-----------|
-        | Total Revenue (Unit)    |        |        |        | [SSX]     |
-        | YoY Growth Rate (%)     | N/A    |  X.X%  |  Y.Y%  | (Calc)    |
+    *   Present Revenue for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table**, specifying currency (e.g., JPY Millions) [SSX]. Calculate YoY Growth Rate (%). Verify data. Use '-' for missing data points only if needed for table structure.
+        
+        **IMPORTANT: The table below contains FICTIONAL EXAMPLE VALUES. The specific numbers and years shown are for format illustration only. Replace with actual verified revenue data from {company_name}'s financial reports.**
+        
+        | Metric                  | FY2023  | FY2024  | FY2025  | Source(s) |
+        |-------------------------|---------|---------|---------|-----------|
+        | Total Revenue (JPY M)   | 123,456 | 135,789 | 145,678 | [SSX]     |
+        | YoY Growth Rate (%)     | -       | 10.0%   | 7.3%    | (Calc)    |
     *   Identify key business segments or geographic regions driving **{company_name}**'s revenue growth or decline, based on sourced segment data [SSY]. Analyze trends using specific figures (% change, contribution shift) from the latest available data [SSZ]. Explain the *reasons* for these trends if stated in sources [SSW].
     *   **Strategic Implications for {context_company_name}:** Where are the verifiable growth areas within {company_name} [SSY, SSZ] that align with {context_company_name}'s specific, researched capabilities and target industries? (e.g., "Target's growth in Sector X [SSY] aligns with Analyzing Co.'s 'Solution Suite for Sector X'"). Where are the verifiable challenges (e.g., declining segment needing efficiency gains [SSW]) that {context_company_name}'s specific solutions (e.g., "Named Automation Platform Y," "Specific Managed Service Z") could address? Explain the connection clearly and specifically.
 
 ## 3. Target Company Financial Performance & Investment Capacity ({company_name})
     *   Present Net Income (Attributable to Parent), Operating Margin (%), and Capital Expenditures (CapEx) for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table** [SSX, SSY, SSZ]. Verify data. Use '-' for missing data points only if needed for table structure.
-        | Metric                           | FYXXXX | FYYYYY | FYZZZZ | Source(s) |
-        |----------------------------------|--------|--------|--------|-----------|
-        | Net Income (Parent) (Unit)       |        |        |        | [SSX]     |
-        | Operating Margin (%)             |        |        |        | [SSY]     |
-        | Capital Expenditures (CapEx) (Unit)|        |        |        | [SSZ]     |
+        
+        **IMPORTANT: The following table contains FICTIONAL EXAMPLE VALUES for illustration purposes only. Do not use these specific numbers in your response. Replace with actual verified financial data from {company_name}'s reports.**
+        
+        | Metric                           | FY2023   | FY2024   | FY2025   | Source(s) |
+        |----------------------------------|----------|----------|----------|-----------|
+        | Net Income (Parent) (JPY M)      | 12,345   | 14,567   | 15,789   | [SSX]     |
+        | Operating Margin (%)             | 12.5%    | 13.2%    | 14.0%    | [SSY]     |
+        | Capital Expenditures (CapEx) (JPY M)| 8,765 | 9,876    | 11,234   | [SSZ]     |
     *   Note key profitable divisions/segments of {company_name} if identifiable from sourced data [SSW]. Analyze trends in profitability and investment levels, explaining drivers if possible [SSX, SSY, SSZ]. Look for commentary on investment priorities [SSV].
     *   **Strategic Implications for {context_company_name}:** Does {company_name}'s financial health [SSX] and CapEx trend/priorities [SSZ, SSV] suggest capacity and appetite for significant strategic investments aligning with {context_company_name}'s high-value offerings (e.g., large DX/SI projects)? Are margin pressures [SSY] creating a verifiable need for specific cost optimization solutions (e.g., "{context_company_name}'s Managed Cloud Cost Optimization Service," "{context_company_name}'s RPA Implementation for Finance Processes") from {context_company_name}'s researched portfolio? Justify the assessment with evidence.
 
@@ -1463,16 +1603,20 @@ Research Requirements (Target Company - {company_name}):
 
 ## 8. Strategic Engagement Plan Outline (FY2025–2027)
     *   Provide a high-level quarterly engagement plan concept for {context_company_name} to approach {company_name}. Focus on **strategic themes** derived from {company_name}'s verified needs and initiatives, directly aligned with **specific, researched {context_company_name} capabilities/solutions**. Use a **perfectly formatted Markdown table**. Verify data links. Prioritize themes based on potential impact and alignment strength.
-        | Fiscal Year / Quarter | Engagement Theme / Focus Area (Derived from {company_name}'s verified needs/initiatives) | Specific {context_company_name} Capabilities/Solutions to Propose (Use researched names/details) | Target Dept/Stakeholder ({company_name} - Informed Guess based on Sec 5) | Supporting {company_name} Data Point Citation | Rationale / Goal for {context_company_name} |
-        |-----------------------|------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|-----------------------------------------------|---------------------------------------------|
-        | FY2025 Q1             | Aligning on Strategic DX Goals & Showcasing Relevant Expertise                           | Workshop on {context_company_name}'s 'DX Framework for {industry}', Case studies of 'Solution X' success | CIO, Head of Digital, Strategy Team                                     | Initiative Sec 4 [SSX], Vision Sec 1          | Establish credibility, understand priorities|
-        | FY2025 Q2             | Addressing Top Challenge: Cybersecurity in the Cloud Era                                 | Executive Briefing on {context_company_name}'s 'Cloud Security Suite', Assessment offer           | CISO, Cloud Architecture Team                                           | Challenge Sec 6 [SSY], Tech Env Sec 7         | Position as trusted security partner        |
-        | FY2025 Q3             | Deep Dive: Enabling Initiative Y with {context_company_name}'s 'Platform Z'                 | Technical demo of 'Platform Z', Co-creation workshop for Initiative Y                             | Relevant BU Lead, IT Project Lead                                       | Initiative Sec 4 [SSZ]                        | Identify pilot opportunity                  |
-        | FY2025 Q4             | Demonstrating ROI for Operational Efficiency Challenge                                   | Business value assessment using {context_company_name}'s 'Managed Service ABC', ROI calculator      | CFO, COO, IT Operations Head                                            | Challenge Sec 6 [SSW], Financials Sec 3       | Build financial case for solution           |
-        | FY2026 Q1-Q2          | Formal Proposal Development for Prioritized Pilot Projects                               | Detailed SOWs for selected {context_company_name} solutions addressing specific {company_name} needs | Key Decision Makers identified in Sec 5                                 | Based on FY25 Engagement Outcomes             | Secure initial project wins                 |
-        | FY2026 Q3-Q4          | Executing Pilots & Expanding Value Discussion                                            | Pilot delivery, QBRs focused on results & next steps, Introduce complementary services           | Project Sponsors, BU Leads                                              | Based on Pilot Success                        | Demonstrate value, identify upsell        |
-        | FY2027 onwards        | Transitioning to Strategic Partner & Roadmap Co-Development                              | Joint strategy sessions, Long-term support models, Exploring new innovation areas                 | C-Suite, Strategy Department                                            | Based on Established Trust                  | Achieve preferred partner status            |
-    *   Ensure each proposed engagement theme directly links back to a verified need, challenge, or initiative identified for **{company_name}** in earlier sections [SSX, SSY, SSZ] and clearly aligns with **specific, researched {context_company_name} capabilities/solutions**. Provide brief rationale for timing/sequencing based on likely {company_name} priorities.
+        
+        **IMPORTANT: The table below shows EXAMPLE FORMAT AND CONTENT ONLY. The specific themes, solutions, stakeholders and goals are ILLUSTRATIVE PLACEHOLDERS. Replace with actual strategic themes based on verified information about {company_name} and researched capabilities of {context_company_name}.**
+        
+        | Period         | Engagement Theme      | {context_company_name} Solutions | Target Stakeholder    | Citation Source | Business Goal       |
+        |----------------|----------------------|----------------------------------|----------------------|----------------|---------------------|
+        | FY2025 Q1      | DX Strategy Alignment | 'DX Framework', Case Studies     | CIO, Digital Head    | Initiative [SSX]| Establish credibility |
+        | FY2025 Q2      | Cloud Security        | 'Cloud Security Suite', Assessment| CISO, Architecture   | Challenge [SSY] | Security partnership |
+        | FY2025 Q3      | Enable Initiative Y   | 'Platform Z' demo and workshop   | BU Lead, Project Lead| Initiative [SSZ]| Identify pilot      |
+        | FY2025 Q4      | Efficiency ROI        | 'Managed Service ABC' Assessment | CFO, IT Operations   | Challenge [SSW] | Build financial case|
+        | FY2026 Q1-Q2   | Pilot Projects        | Detailed SOWs for solutions      | Decision Makers      | FY25 outcomes  | Secure initial wins |
+        | FY2026 Q3-Q4   | Execution & Expansion | Delivery, QBRs, upsell services  | Project Sponsors     | Pilot success  | Demonstrate value   |
+        | FY2027 onwards | Strategic Partnership | Joint roadmap, innovation plans  | C-Suite, Strategy    | Track record   | Preferred partner   |
+        
+        **NOTE: Terms like 'DX Framework', 'Cloud Security Suite', 'Platform Z' are generic examples. Replace with actual researched solutions/offerings from {context_company_name}.**
 
 ## 9. Competitive Landscape ({company_name}'s Perspective) & {context_company_name}'s Differentiated Positioning
     *   Identify **{company_name}**'s existing major IT service providers, consultants, system integrators, or key technology vendors *if explicitly mentioned* in verifiable, recent sources [SSX]. Note the specific scope of their engagement if stated [SSY].

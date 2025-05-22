@@ -151,7 +151,7 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
         if invalid_files:
             status_text.text(f"Re-running {len(invalid_files)} prompts with invalid content...")
 
-            # Create API client
+            # Create API client with the new format
             api_key = os.getenv("GEMINI_API_KEY")
             if not api_key:
                 raise ValueError("GEMINI_API_KEY not found in .env file")

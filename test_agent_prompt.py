@@ -87,32 +87,40 @@ def generate_content(client: genai.Client, prompt: str, output_path: Path) -> Di
     """Generate content for a single prompt and save to file. Returns token counts and timing."""
     start_time = time.time()
     try:
+        # Create output directory if it doesn't exist
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Count input tokens
+        input_tokens = count_tokens(prompt)
+        
+        # Create the contents with the prompt
         contents = [
             types.Content(
                 role="user",
                 parts=[types.Part.from_text(text=prompt)],
             ),
         ]
-        tools = [types.Tool(google_search=types.GoogleSearch())]
+        
+        # Setup tools (Google Search)
+        tools = [
+            types.Tool(google_search=types.GoogleSearch()),
+        ]
+        
+        # Configure the generation
         generate_content_config = types.GenerateContentConfig(
             temperature=LLM_TEMPERATURE,
             tools=tools,
             response_mime_type="text/plain",
         )
 
-        # Create output directory if it doesn't exist
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Count input tokens
-        input_tokens = count_tokens(prompt)
-
         # Collect output text
         full_output = ""
 
         # Open file for writing
         with open(output_path, 'w', encoding='utf-8') as f:
+            # Use the specified model and stream the response
             response = client.models.generate_content_stream(
-                model=LLM_MODEL,
+                model="gemini-2.5-pro-preview-05-06",
                 contents=contents,
                 config=generate_content_config,
             )
@@ -213,6 +221,7 @@ def generate_all_prompts(company_name: str, language: str, selected_prompts: lis
     if not api_key:
         raise ValueError("GEMINI_API_KEY not found in .env file")
 
+    # Initialize the client
     client = genai.Client(api_key=api_key)
 
     # Create timestamp for the directory
@@ -238,7 +247,7 @@ def generate_all_prompts(company_name: str, language: str, selected_prompts: lis
         "language": language,
         "timestamp": datetime.now().isoformat(),
         "sections": [section[0] for section in selected_prompts],  # Only selected sections
-        "model": LLM_MODEL,
+        "model": "gemini-2.5-pro-preview-05-06",
         "temperature": LLM_TEMPERATURE,
         "context_company_name": context_company_name
     }
@@ -340,7 +349,7 @@ def generate_all_prompts(company_name: str, language: str, selected_prompts: lis
             "ticker": ticker,
             "industry": industry,
             "language": language,
-            "model": LLM_MODEL,
+            "model": "gemini-2.5-pro-preview-05-06",
             "temperature": LLM_TEMPERATURE,
             "context_company_name": context_company_name,
             "successful_prompts": sum(1 for r in results.values() if r.get("status") == "success"),
@@ -369,7 +378,7 @@ def main():
         for language_key in language_keys:
             language = AVAILABLE_LANGUAGES[language_key]
             console.print(f"\nGenerating prompts for {company_name} (Ticker: {ticker or 'N/A'}, Industry: {industry or 'N/A'}) in {language}...")
-            console.print(f"Using model: {LLM_MODEL} with temperature: {LLM_TEMPERATURE}")
+            console.print(f"Using model: gemini-2.5-pro-preview-05-06 with temperature: {LLM_TEMPERATURE}")
             console.print(f"Context Company: {context_company_name}")
             console.print("Output will be saved in the 'output' directory.\n")
             # Store identifiers with the task
