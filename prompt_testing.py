@@ -20,60 +20,79 @@ NO_THINKING_INSTRUCTION = textwrap.dedent("""\
 """)
 
 ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
-    **Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage:**
+**Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage:**
 
-    *   **Mandatory Self-Check Before Final Output:**
-        - Before producing the final answer, confirm:
-            1. All requested sections are fully included with correct headings.
-            2. All factual statements have inline citations [SSX] pointing to valid Vertex AI URLs in the final Sources list.
-            3. Only the permitted Vertex AI grounding URLs are used—no external or fabricated links.
-            4. Markdown headings and tables follow the specified format (##, ###, consistent columns, **strict pipe alignment**). Ensure data within tables is accurate against the source.
-            5. A single "Sources" section is present, properly labeled, and each source is on its own line.
-            6. Inline citations appear before punctuation where feasible.
-            7. No data or sources are invented. If information is omitted due to lack of verifiable grounding after exhaustive search, this is done silently without comment.
-            8.  **Strict Single-Entity Focus:** Strictly reference only the **exact** company named: **'{company_name}'** (with identifiers like Ticker: '{ticker}', Industry: '{industry}' if provided). **Crucially verify** you are NOT including data from similarly named but unrelated entities (e.g., if the target is 'Marvell Technology, Inc.', absolutely DO NOT include 'Marvel Entertainment' or data related to comics/movies). Confirm if data relates to the parent/consolidated entity or a specific subsidiary, and report accordingly based ONLY on the source [SSX].
-            9. Verify recency of all primary sources used (AR, MTP, website data, etc.).
-            10. Confirm key financial figures and table data points against cited sources. **Verify specifically that all financial data has valid [SSX] citations linked to provided grounding URLs.**
-            11. Ensure lists (KPIs, Officers, Subsidiaries) are complete based on source availability.
-            12. Confirm analytical depth provided where requested (explaining 'why' and drivers).
+**Mandatory Self-Check Before Final Output:**
+Before producing the final answer, confirm:
+1. All requested sections are fully included with correct headings.
+2. All factual statements have inline citations [SSX] pointing to valid Vertex AI URLs in the final Sources list.
+3. Only the permitted Vertex AI grounding URLs are used—no external or fabricated links.
+4. Markdown headings and tables follow the specified format (##, ###, consistent columns, **strict pipe alignment**). Ensure data within tables is accurate against the source.
+5. A single "Sources" section is present, properly labeled, and each source is on its own line.
+6. Inline citations appear before punctuation where feasible.
+7. No data or sources are invented. If information is omitted due to lack of verifiable grounding after exhaustive search, this is done silently without comment.
+8. **Strict Single-Entity Focus:** Strictly reference only the **exact** company named: **'{company_name}'** (with identifiers like Ticker: '{ticker}', Industry: '{industry}' if provided). **Crucially verify** you are NOT including data from similarly named but unrelated entities (e.g., if the target is 'Marvell Technology, Inc.', absolutely DO NOT include 'Marvel Entertainment' or data related to comics/movies). Confirm if data relates to the parent/consolidated entity or a specific subsidiary, and report accordingly based ONLY on the source [SSX].
+9. Verify recency of all primary sources used (AR, MTP, website data, etc.).
+10. Confirm key financial figures and table data points against cited sources. **Verify specifically that all financial data has valid [SSX] citations linked to provided grounding URLs.**
+11. Ensure lists (KPIs, Officers, Subsidiaries) are complete based on source availability.
+12. Confirm analytical depth provided where requested (explaining 'why' and drivers).
 
-    *   **Exactness of Table Columns:**
-        - Each row in any table **MUST** have the exact same number of columns as the header row, delimited by pipes (`|`).
-        - Use exactly one pipe (`|`) at the beginning and end of each row.
-        - Ensure header separator lines (`|---|---|`) match the number of columns precisely.
-        - If data for a specific cell is missing *in the source* after exhaustive search, use a simple hyphen (-) as a placeholder *only if necessary* to maintain table structure and alignment. Do not add explanatory text.
-        - Always include an inline citation [SSX] if referencing factual numbers within a table cell or in a note below the table referencing the table's data. Verify the cited data matches the source.
+**Exactness of Table Columns:**
+- Each row in any table **MUST** have the exact same number of columns as the header row, delimited by pipes (`|`).
+- Use exactly one pipe (`|`) at the beginning and end of each row.
+- Ensure header separator lines (`|---|---|`) match the number of columns precisely.
+- If data for a specific cell is missing *in the source* after exhaustive search, use a simple hyphen (-) as a placeholder *only if necessary* to maintain table structure and alignment. Do not add explanatory text.
+- Always include an inline citation [SSX] if referencing factual numbers within a table cell or in a note below the table referencing the table's data. Verify the cited data matches the source.
 
-    *   **Quotes with Inline Citations:**
-        - Any verbatim quote must include:
-            1. The speaker's name and date or document reference in parentheses.
-            2. An inline citation [SSX] immediately following.
-        - This ensures clarity on who said it, when they said it, and the exact source.
+**Quotes with Inline Citations:**
+- Any verbatim quote must include:
+    1. The speaker's name and date or document reference in parentheses.
+    2. An inline citation [SSX] immediately following.
+- This ensures clarity on who said it, when they said it, and the exact source.
 
-    *   **Exactness of Hyperlinks in Sources:**
-        - The final "Sources" section must use the format "* [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Brief annotation [SSX]."
-        - Number sources sequentially without skipping.
-        - Provide no additional domain expansions or transformations beyond what is given.
-        - Do not summarize entire documents—only note which facts the source supports.
+**Exactness of Hyperlinks in Sources:**
+- The final "Sources" section must use the format "* [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Brief annotation [SSX]."
+- Number sources sequentially without skipping.
+- Provide no additional domain expansions or transformations beyond what is given.
+- Do not summarize entire documents—only note which facts the source supports.
 
-    *   **Do Not Summarize Sources:**
-        - In each source annotation, reference only the specific claim(s) the link supports, not a broad summary.
+**Do Not Summarize Sources:**
+- In each source annotation, reference only the specific claim(s) the link supports, not a broad summary.
 
-    *   **High-Priority Checklist (Must Not Be Violated):**
-        1. No fabrication: Silently omit rather than invent ungrounded data after exhaustive search.
-        2. Adhere strictly to the specified Markdown formats (headings, lists, **perfect tables**).
-        3. Use inline citations [SSX] matching final sources exactly.
-        4. Provide only one "Sources" section at the end.
-        5. Do not use any URLs outside "vertexaisearch.cloud.google.com/..." pattern if not explicitly provided.
-        6.  **Enforce Single-Entity Coverage (CRITICAL):** If '{company_name}' is the focus, DO NOT include other similarly named but unrelated entities. Verify target entity identity throughout.
-        7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
+**High-Priority Checklist (Must Not Be Violated):**
+1. No fabrication: Silently omit rather than invent ungrounded data after exhaustive search.
+2. Adhere strictly to the specified Markdown formats (headings, lists, **perfect tables**).
+3. Use inline citations [SSX] matching final sources exactly.
+4. Provide only one "Sources" section at the end.
+5. Do not use any URLs outside "vertexaisearch.cloud.google.com/..." pattern if not explicitly provided.
+6. **Enforce Single-Entity Coverage (CRITICAL):** If '{company_name}' is the focus, DO NOT include other similarly named but unrelated entities. Verify target entity identity throughout.
+7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
 """)
 
 FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
-    **Final Source List Requirements:**
+**Final Source List Requirements:**
 
-    Conclude the *entire* research output, following the 'General Discussion' paragraph, with a clearly marked section titled "**Sources**". This section is critical for verifying the information grounding process AND for document generation.
+Conclude the *entire* research output, following the 'General Discussion' paragraph, with a clearly marked section titled "**Sources**". This section is critical for verifying the information grounding process AND for document generation.
 
+**1. Content - MANDATORY URL Type & Source Integrity:**
+- **Exclusive Source Type:** This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
+- **URL Pattern:** These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`. **Only URLs matching this exact pattern are permitted.**
+- **Strict Filtering:** Absolutely **DO NOT** include any other type of URL (direct website links, news, PDFs, etc.).
+- **CRITICAL - No Hallucination:** **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/...` URLs** from previous queries or general knowledge if they were not explicitly provided as grounding results *for this query*. If a fact is identified but lacks a corresponding provided grounding URL after exhaustive search, it must be silently omitted from the report body AND no source should be listed for it.
+- **Purpose:** This list verifies the specific grounding data provided by Vertex AI Search for this request—not external knowledge or other URLs.
+
+**2. Formatting and Annotation (CRITICAL FOR PARSING):**
+- **Source Line Format:** Present each source on a completely new line. Each line **MUST** start with a Markdown list indicator (`* ` or `- `) followed by the hyperlink in Markdown format and then its annotation.
+- **REQUIRED Format:**
+    * [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Annotation explaining exactly what information is supported (e.g., supports CEO details and FY2023 revenue [SSX]).
+- **Sequential Labeling:** The visible hyperlink text **MUST** be labeled sequentially "Supervity Source 1", "Supervity Source 2", etc. Do not skip numbers.
+- **Annotation Requirement:** The annotation MUST be:
+    * Included immediately after the hyperlink on the same line, separated by " - ".
+    * Brief and specific, explaining exactly which piece(s) of information in the main body (and referenced with inline citation [SSX]) that grounding URL supports.
+    * Written in the target output language: **{language}**.
+
+**3. Quantity and Linkage:**
+- **List All Verifiable Used Sources:** List ***every distinct***, verifiable Vertex AI grounding URL provided for this specific query that directly supports content presented in the report body via an inline citation [SSX]. Do *not* include provided grounding URLs if they were not ultimately used to support any statement in the report.
     **1. Content - MANDATORY URL Type & Source Integrity:**
     *   **Exclusive Source Type:** This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
     *   **URL Pattern:** These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`. **Only URLs matching this exact pattern are permitted.**
@@ -110,78 +129,91 @@ FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
     """)
 
 HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
-    *   **Handling Missing or Ungrounded Information:**
-        *   **Exhaustive Research First:** Conduct exhaustive research using primarily official company sources (see `RESEARCH_DEPTH_INSTRUCTION`). Search diligently across *multiple relevant primary sources* (e.g., latest AR, previous AR, Financial Statements + Footnotes, Supplementary Data Packs, Tanshin/Filings, MTP docs, IR presentations, Results Overviews, specific website sections) for *each data point* before concluding information is unavailable. Check document publication dates for recency.
-        *   **Grounding Requirement for Inclusion:** Information is included only if:
-            1. The information is located in a reliable source document.
-            2. A corresponding, verifiable Vertex AI grounding URL (matching the pattern `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`) is provided in the search results for this query.
-        *   **Strict Silent Omission Policy:** If information cannot meet both conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only a single hyphen (`-`) without explanation, and only after confirming the data is genuinely missing *in the source*.
-        *   **No Inference/Fabrication:** Do not infer, guess, or estimate ungrounded information. Do not fabricate grounding URLs.
-        *   **Cross-Language Search:** If necessary, check other language results; if found, translate only the necessary information and list the corresponding grounding URL.
-    """)
+**Handling Missing or Ungrounded Information:**
+- **Exhaustive Research First:** Conduct exhaustive research using primarily official company sources (see `RESEARCH_DEPTH_INSTRUCTION`). Search diligently across *multiple relevant primary sources* (e.g., latest AR, previous AR, Financial Statements + Footnotes, Supplementary Data Packs, Tanshin/Filings, MTP docs, IR presentations, Results Overviews, specific website sections) for *each data point* before concluding information is unavailable. Check document publication dates for recency.
+- **Grounding Requirement for Inclusion:** Information is included only if:
+    1. The information is located in a reliable source document.
+    2. A corresponding, verifiable Vertex AI grounding URL (matching the pattern `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`) is provided in the search results for this query.
+- **Strict Silent Omission Policy:** If information cannot meet both conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only a single hyphen (`-`) without explanation, and only after confirming the data is genuinely missing *in the source*.
+- **No Inference/Fabrication:** Do not infer, guess, or estimate ungrounded information. Do not fabricate grounding URLs.
+- **Cross-Language Search:** If necessary, check other language results; if found, translate only the necessary information and list the corresponding grounding URL.
+""")
 
 RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
-    *   **Research Depth & Source Prioritization:**
-        *   **Exhaustive Search & Recency:** Conduct thorough research for all requested information points. Dig beyond surface-level summaries. **MANDATORY: Prioritize and use the absolute *latest* available official sources.** Check document/website publication dates. Critically, cross-verify information across *multiple relevant primary sources* before accepting it.
-        *   **Multi-Document Search Strategy:** For each key data point (e.g., specific financials, KPIs, management names, strategic initiatives), search across *different types* of official documents (e.g., Annual Report, Financial Statements + Footnotes, Supplementary Data/Databooks, Official Filings like Tanshin/EDINET/SEC, Investor Relations Presentations, Mid-Term Plans, Strategy Day materials, Earnings Call Transcripts & Presentations, official Corporate Website sections, specific Policy documents, official Press Releases).
-        *   **Primary Source Focus (MANDATORY):** Use official company sources primarily, including:
-            *   Latest Annual / Integrated Reports (and previous years *only* for trends/baselines)
-            *   Official Financial Statements (Income Statement, Balance Sheet, Cash Flow) & **Crucially: Footnotes**
-            *   Supplementary Financial Data, Investor Databooks, Official Filings (e.g., Tanshin, EDINET, SEC filings, local equivalents)
-            *   Investor Relations Presentations & Materials (including Mid-Term Plans, Strategy Day presentations)
-            *   Earnings Call Transcripts & Presentations (focus on Q&A sections)
-            *   Official Corporate Website sections (e.g., "About Us", "Investor Relations", "Strategy", "Governance", "Sustainability/ESG", "Management/Directors") - check for "last updated" dates.
-            *   Official Press Releases detailing strategy, financials, organizational structure, or significant events.
-        *   **Forbidden Sources:** Do NOT use:
-            *   Wikipedia
-            *   Generic blogs, forums, or social media posts
-            *   Press release aggregation sites (unless linking directly to an official release)
-            *   Outdated market reports (unless historical context is explicitly requested)
-            *   Competitor websites/reports (except in competitive analysis with extreme caution and strict grounding rules)
-            *   Generic news articles unless they report specific, verifiable events from highly reputable sources (e.g., Nikkei, Bloomberg, Reuters, FT, WSJ) AND can be **cross-verified against primary sources** and have grounding URLs.
-        *   **Data Verification:** Cross-verify critical figures (e.g., revenue, profit, key KPIs, management names/titles) between sources where possible (e.g., AR summary vs. detailed financials vs. website).
-        *   **Group Structure Handling:** Clearly identify if data refers to the consolidated parent group (**{company_name}**) or a specific target subsidiary mentioned *in the source*. If the prompt focuses on the parent, report consolidated data unless segment data is explicitly requested and available. If focusing on a subsidiary mentioned in the source, clearly label it. Actively search for subsidiary-specific sections, appendices, or footnotes within parent company reports. Acknowledge (internally for decision-making) potential data limitations for non-publicly listed subsidiaries. **Do not report on subsidiaries unless directly relevant to the parent's structure or segment reporting as per the source [SSX].**
-        *   **Noting Charts/Figures:** If relevant visual information (org charts, strategy frameworks, process diagrams) is found in sources, note its existence and location (e.g., "An organizational chart is provided on page X of the 2023 Annual Report [SSX]"). Do not attempt to recreate complex visuals textually.
-        *   **Management Commentary:** Actively incorporate direct management commentary and analysis from these sources to explain trends and rationale.
-        *   **Recency:** Focus on the most recent 1-2 years for qualitative analysis; use the last 3 full fiscal years for financial trends. Clearly state the reporting period for all data.
-        *   **Secondary Sources:** Use reputable secondary sources sparingly *only* for context (e.g., credit ratings, widely accepted industry trends) or verification, always with clear attribution **and cross-reference with primary sources and grounding URLs.**
-        *   **Handling Conflicts:** If conflicting information is found between official sources, prioritize the most recent, definitive source. Note discrepancies with dual citations if significant (e.g., [SSX, SSY]).
-        *   **Calculation Guidelines:** If metrics are not explicitly reported but must be calculated:
-            *   Calculate only if all necessary base data (e.g., Net Income, Revenue, Equity, Assets, Debt) is available and verifiable from grounded sources.
-            *   Clearly state the formula used, and if averages are used, mention that (e.g., "ROE (Calculated: Net Income / Average Shareholders' Equity)") [SSX]. **Cite the sources for all base data points used in the calculation.**
-        *   **Confirmation of Unavailability (Internal):** Only conclude information is unavailable *internally* after a diligent, confirmed search across *multiple* relevant primary source *types* fails to yield verifiable, grounded data. **Do not state this conclusion in the output.**
-    """)
+**Research Depth & Source Prioritization:**
+- **Exhaustive Search & Recency:** Conduct thorough research for all requested information points. Dig beyond surface-level summaries. **MANDATORY: Prioritize and use the absolute *latest* available official sources.** Check document/website publication dates. Critically, cross-verify information across *multiple relevant primary sources* before accepting it.
+- **Multi-Document Search Strategy:** For each key data point (e.g., specific financials, KPIs, management names, strategic initiatives), search across *different types* of official documents (e.g., Annual Report, Financial Statements + Footnotes, Supplementary Data/Databooks, Official Filings like Tanshin/EDINET/SEC, Investor Relations Presentations, Mid-Term Plans, Strategy Day materials, Earnings Call Transcripts & Presentations, official Corporate Website sections, specific Policy documents, official Press Releases).
+- **Primary Source Focus (MANDATORY):** Use official company sources primarily, including:
+    - Latest Annual / Integrated Reports (and previous years *only* for trends/baselines)
+    - Official Financial Statements (Income Statement, Balance Sheet, Cash Flow) & **Crucially: Footnotes**
+    - Supplementary Financial Data, Investor Databooks, Official Filings (e.g., Tanshin, EDINET, SEC filings, local equivalents)
+    - Investor Relations Presentations & Materials (including Mid-Term Plans, Strategy Day presentations)
+    - Earnings Call Transcripts & Presentations (focus on Q&A sections)
+    - Official Corporate Website sections (e.g., "About Us", "Investor Relations", "Strategy", "Governance", "Sustainability/ESG", "Management/Directors") - check for "last updated" dates.
+    - Official Press Releases detailing strategy, financials, organizational structure, or significant events.
+- **Forbidden Sources:** Do NOT use:
+    - Wikipedia
+    - Generic blogs, forums, or social media posts
+    - Press release aggregation sites (unless linking directly to an official release)
+    - Outdated market reports (unless historical context is explicitly requested)
+    - Competitor websites/reports (except in competitive analysis with extreme caution and strict grounding rules)
+    - Generic news articles unless they report specific, verifiable events from highly reputable sources (e.g., Nikkei, Bloomberg, Reuters, FT, WSJ) AND can be **cross-verified against primary sources** and have grounding URLs.
+- **Data Verification:** Cross-verify critical figures (e.g., revenue, profit, key KPIs, management names/titles) between sources where possible (e.g., AR summary vs. detailed financials vs. website).
+- **Group Structure Handling:** Clearly identify if data refers to the consolidated parent group (**{company_name}**) or a specific target subsidiary mentioned *in the source*. If the prompt focuses on the parent, report consolidated data unless segment data is explicitly requested and available. If focusing on a subsidiary mentioned in the source, clearly label it. Actively search for subsidiary-specific sections, appendices, or footnotes within parent company reports. Acknowledge (internally for decision-making) potential data limitations for non-publicly listed subsidiaries. **Do not report on subsidiaries unless directly relevant to the parent's structure or segment reporting as per the source [SSX].**
+- **Noting Charts/Figures:** If relevant visual information (org charts, strategy frameworks, process diagrams) is found in sources, note its existence and location (e.g., "An organizational chart is provided on page X of the 2023 Annual Report [SSX]"). Do not attempt to recreate complex visuals textually.
+- **Management Commentary:** Actively incorporate direct management commentary and analysis from these sources to explain trends and rationale.
+- **Recency:** Focus on the most recent 1-2 years for qualitative analysis; use the last 3 full fiscal years for financial trends. Clearly state the reporting period for all data.
+- **Secondary Sources:** Use reputable secondary sources sparingly *only* for context (e.g., credit ratings, widely accepted industry trends) or verification, always with clear attribution **and cross-reference with primary sources and grounding URLs.**
+- **Handling Conflicts:** If conflicting information is found between official sources, prioritize the most recent, definitive source. Note discrepancies with dual citations if significant (e.g., [SSX, SSY]).
+- **Calculation Guidelines:** If metrics are not explicitly reported but must be calculated:
+    - Calculate only if all necessary base data (e.g., Net Income, Revenue, Equity, Assets, Debt) is available and verifiable from grounded sources.
+    - Clearly state the formula used, and if averages are used, mention that (e.g., "ROE (Calculated: Net Income / Average Shareholders' Equity)") [SSX]. **Cite the sources for all base data points used in the calculation.**
+- **Confirmation of Unavailability (Internal):** Only conclude information is unavailable *internally* after a diligent, confirmed search across *multiple* relevant primary source *types* fails to yield verifiable, grounded data. **Do not state this conclusion in the output.**
+""")
 
 ANALYSIS_SYNTHESIS_INSTRUCTION = textwrap.dedent("""\
-    *   **Analysis and Synthesis:**
-        *   Beyond listing factual information, provide concise analysis where requested (e.g., explain trends, discuss implications, identify drivers, assess effectiveness).
-        *   **Explicitly address "why":** For every data point or trend, explain *why* it is occurring or what the key drivers are, based on sourced information or management commentary [SSX]. Quantify trends (e.g., "Revenue increased by 12% YoY [SSX] due to...").
-        *   **Comparative Analysis:** Compare data points (e.g., YoY changes, company performance against MTP targets or baseline values, segment performance differences) where appropriate and insightful, using sourced data [SSX]. Compare against industry benchmarks *only* if reliable, grounded benchmark data is available [SSY].
-        *   **Linking Information:** In the General Discussion, explicitly tie together findings from different sections to present a coherent overall analysis (e.g., link financial performance [SSX] with strategic initiatives [SSY] and competitive pressures [SSZ]).
-        *   **Causal Linkage:** Look for and report management commentary that explains causal relationships (e.g., "Management stated the increase in SG&A was driven by investment in X [SSX]").
-        *   **DX Implications:** In summary/discussion sections, actively consider and mention potential Digital Transformation (DX) implications, opportunities, or challenges arising from the findings in other sections, citing the relevant data (e.g., "The stated need for supply chain efficiency [SSX] presents a clear opportunity for DX solutions like...")
-    """)
+**Analysis and Synthesis:**
+- Beyond listing factual information, provide concise analysis where requested (e.g., explain trends, discuss implications, identify drivers, assess effectiveness).
+- **Explicitly address "why":** For every data point or trend, explain *why* it is occurring or what the key drivers are, based on sourced information or management commentary [SSX]. Quantify trends (e.g., "Revenue increased by 12% YoY [SSX] due to...").
+- **Comparative Analysis:** Compare data points (e.g., YoY changes, company performance against MTP targets or baseline values, segment performance differences) where appropriate and insightful, using sourced data [SSX]. Compare against industry benchmarks *only* if reliable, grounded benchmark data is available [SSY].
+- **Linking Information:** In the General Discussion, explicitly tie together findings from different sections to present a coherent overall analysis (e.g., link financial performance [SSX] with strategic initiatives [SSY] and competitive pressures [SSZ]).
+- **Causal Linkage:** Look for and report management commentary that explains causal relationships (e.g., "Management stated the increase in SG&A was driven by investment in X [SSX]").
+- **DX Implications:** In summary/discussion sections, actively consider and mention potential Digital Transformation (DX) implications, opportunities, or challenges arising from the findings in other sections, citing the relevant data (e.g., "The stated need for supply chain efficiency [SSX] presents a clear opportunity for DX solutions like...")
+""")
 
 INLINE_CITATION_INSTRUCTION = textwrap.dedent("""\
-    *   **Inline Citation Requirement:**
-        *   Every factual claim, data point (including figures in tables), direct quote, and specific summary **MUST** include an inline citation in the format `[SSX]`, where X corresponds exactly to the sequential number of the source in the final Sources list.
-        *   Place the inline citation immediately after the supported statement and **before punctuation** when possible (e.g., "Revenue was ¥100B [SS1].").
-        *   If a single sentence contains multiple distinct facts from different sources, cite each appropriately (e.g., "Revenue was ¥100B [SS1] and net income was ¥10B [SS2].").
-        *   If a single source supports multiple facts within a paragraph or table, reuse the same `[SSX]`.
-        *   This ensures that each fact is directly verifiable against the corresponding "Supervity Source X" in the final Sources list.
-    """)
+**Inline Citation Requirement:**
+- Every factual claim, data point (including figures in tables), direct quote, and specific summary **MUST** include an inline citation in the format `[SSX]`, where X corresponds exactly to the sequential number of the source in the final Sources list.
+- Place the inline citation immediately after the supported statement and **before punctuation** when possible (e.g., "Revenue was ¥100B [SS1].").
+- If a single sentence contains multiple distinct facts from different sources, cite each appropriately (e.g., "Revenue was ¥100B [SS1] and net income was ¥10B [SS2].").
+- If a single source supports multiple facts within a paragraph or table, reuse the same `[SSX]`.
+- This ensures that each fact is directly verifiable against the corresponding "Supervity Source X" in the final Sources list.
+
+**Examples of proper citations:**
+- "The company reported revenue of $1.2 billion in FY2023 [SS1]."
+- "According to the CEO, 'innovation is our top priority' [SS2]."
+- "The board consists of 12 directors [SS3], including 5 independent members [SS3]."
+- "Market share increased to 15% [SS4], while competitor share declined to 10% [SS5]."
+
+**In tables:**
+| Metric      | FY2023 | FY2024 | Source |
+|-------------|--------|--------|--------|
+| Revenue     | $1.2B  | $1.4B  | [SS1]  |
+| Net Income  | $200M  | $250M  | [SS1]  |
+| Market Share| 15%    | 17%    | [SS2]  |
+""")
 
 SPECIFICITY_INSTRUCTION = textwrap.dedent("""\
-    *   **Specificity and Granularity:**
-        *   For all time-sensitive data points (e.g., financials, employee counts, management changes, MTP periods, KPIs, targets), include specific dates or reporting periods (e.g., "as of 2024-03-31", "for FY2023 ended March 31, 2024", "MTP covers FY2024-FY2026").
-        *   Define any industry-specific or company-specific terms or acronyms on their first use.
-        *   Quantify qualitative descriptions with specific numbers or percentages where available (e.g., "significant growth of 12% YoY [SSX]").
-        *   List concrete examples rather than vague categories when describing initiatives, strategies, or risks.
-    """)
+**Specificity and Granularity:**
+- For all time-sensitive data points (e.g., financials, employee counts, management changes, MTP periods, KPIs, targets), include specific dates or reporting periods (e.g., "as of 2024-03-31", "for FY2023 ended March 31, 2024", "MTP covers FY2024-FY2026").
+- Define any industry-specific or company-specific terms or acronyms on their first use.
+- Quantify qualitative descriptions with specific numbers or percentages where available (e.g., "significant growth of 12% YoY [SSX]").
+- List concrete examples rather than vague categories when describing initiatives, strategies, or risks.
+""")
 
 AUDIENCE_CONTEXT_REMINDER = textwrap.dedent("""\
-    *   **Audience Relevance:** Keep the target audience (Japanese corporate strategy professionals) in mind. Frame analysis and the 'General Discussion' to highlight strategic implications, competitive positioning, market opportunities/risks, and operational insights relevant for potential partnership, investment, or competitive assessment. Use terminology common in Japanese business contexts where appropriate and natural for the {language}.
-    """)
+**Audience Relevance:** Keep the target audience (Japanese corporate strategy professionals) in mind. Frame analysis and the 'General Discussion' to highlight strategic implications, competitive positioning, market opportunities/risks, and operational insights relevant for potential partnership, investment, or competitive assessment. Use terminology common in Japanese business contexts where appropriate and natural for the {language}.
+""")
 
 def get_language_instruction(language: str) -> str:
     return f"Output Language: The final research output must be presented entirely in **{language}**."
@@ -189,91 +221,122 @@ def get_language_instruction(language: str) -> str:
 BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Output Format & Quality Requirements:
 
-    *   **Direct Start & No Conversational Text:** Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
+    **Direct Start & No Conversational Text:** Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
 
-    *   **Strict Markdown Formatting Requirements:**
-        *   Use valid and consistent Markdown throughout the entire document.
-        *   **Section Formatting:** Sections MUST be numbered exactly as specified in the prompt (e.g., `## 1. Core Corporate Information`). Use `##` for main sections.
-        *   **Subsection Formatting:** Use `###` for subsections and maintain hierarchical structure.
-        *   **List Formatting:** Use hyphens (`-`) for bullets with consistent indentation (use 4 spaces for sub-bullets relative to the parent bullet).
-            Example:
-            - Main point one
-                - Sub-point 1.1 (4 spaces indent)
-                    - Sub-point 1.1.1 (8 spaces indent)
-            - Main point two
-        *   **Tables (CRITICAL FOR RENDERING):** Format all tables with *perfect* Markdown table syntax. Pay meticulous attention to:
-            *   **Exact Column Count:** Every single row (header, separator, data) **MUST** have the *exact same number of columns* delimited by pipes (`|`).
-            *   **Mandatory Start/End Pipes:** Every single row **MUST** begin with a pipe (`|`) and end with a pipe (`|`).
-            *   **Header Separator Match:** The separator line (`|---|---|...`) **MUST** match the number of header columns exactly.
-            *   **Alignment (Visual Aid):** While not strictly required by all parsers, using spaces within cells to visually align pipes in the raw Markdown source significantly helps prevent errors.
-            *   **Table Data Integrity:** Every data point within a table cell MUST be verified against the cited source [SSX] for accuracy and correct reporting period.
-            *   **Missing Data Placeholder:** If data for a specific cell is missing *in the source* after exhaustive search, use only a hyphen (`-`) as a placeholder if required for table structure. Do not add explanatory text.
-            *   **Example of Perfect Table:**
-                
-                **IMPORTANT: The following values are PURELY ILLUSTRATIVE EXAMPLES. Never use these specific numbers, item names, or data points in your actual response. Replace with real data from verifiable sources.**
-                
-                | Header 1        | Header 2      | Header 3          | Source(s) |
-                |-----------------|---------------|-------------------|-----------| 
-                | Data Item 1     | 123.45        | Long text content | [SS1]     |
-                | Another Item    | -             | More text here    | [SS2]     |
-                | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
-                
-                Rendered as:
-                | Header 1        | Header 2      | Header 3          | Source(s) |
-                |-----------------|---------------|-------------------|-----------| 
-                | Data Item 1     | 123.45        | Long text content | [SS1]     |
-                | Another Item    | -             | More text here    | [SS2]     |
-                | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
-                
-            *   **Financial Table Example:**
-                
-                **IMPORTANT: The following values are PURELY ILLUSTRATIVE EXAMPLES. Never use these specific numbers, metrics, years, or data points in your actual response. Replace with real verified data from sources about the company.**
-                
-                | Metric                | FY2023   | FY2024   | FY2025   | Source(s) |
-                |------------------------|----------|----------|----------|-----------|
-                | Revenue (JPY Millions) | 123,456  | 134,567  | 145,678  | [SS1]     |
-                | Operating Profit       | 12,345   | 13,456   | 14,567   | [SS1]     |
-                | Net Income             | 8,765    | 9,876    | 10,987   | [SS2]     |
-                | EBITDA                 | -        | 18,765   | 19,876   | [SS3]     |
-                
-                **Remember: These figures are fictional examples only and should not appear in your response.**
-        *   **Code Blocks:** When including code or structured content, preface with "Example:" rather than using triple backticks.
-        *   **Quotes:** Use Markdown quote syntax (`>`) for direct quotations.
+    **Strict Markdown Formatting Requirements:**
+    
+    **Section Formatting:** Sections MUST be numbered exactly as specified in the prompt (e.g., `## 1. Core Corporate Information`). Use `##` for main sections.
+    
+    **Subsection Formatting:** Use `###` for subsections and maintain hierarchical structure.
+    
+    **List Formatting:** Use hyphens (`-`) for bullets with consistent indentation (use 4 spaces for sub-bullets relative to the parent bullet).
+    Example:
+    - Main point one
+        - Sub-point 1.1
+            - Sub-point 1.1.1
+    - Main point two
 
-    *   **Optimal Structure & Readability:**
-        *   Present numerical data in tables with proper alignment and headers. Right-align numbers where possible using spaces.
-        *   Use bullet points for lists of items or characteristics.
-        *   Use paragraphs for narrative descriptions and analysis.
-        *   Maintain consistent formatting across similar elements.
-        *   **Content Organization:** Ensure a logical sequence within each section (e.g., chronological for trends, priority for lists).
-        *   **Conciseness:** Provide detailed yet concise language—be specific without unnecessary verbosity.
-        *   **Quantitative Summaries:** Where summary paragraphs are requested (e.g., end of Basic Info, General Discussions), integrate key figures and quantitative trends from the analysis, not just qualitative descriptions.
+    **Tables (CRITICAL FOR RENDERING):** Format all tables with proper Markdown table syntax:
+    
+    - Every row (header, separator, data) MUST have the exact same number of columns with pipe (`|`) separators
+    - Every row MUST begin with a pipe (`|`) and end with a pipe (`|`)
+    - The separator line MUST match the number of header columns exactly
+    - For missing data, use a hyphen (`-`) as placeholder if required for table structure
+    - Never use code blocks for tables
+    
+    Example of proper table format:
 
-    *   **Data Formatting Consistency:**
-        *   Use appropriate thousands separators for numbers per the target language: **{language}**.
-        *   **Currency Specification:** Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period (e.g., "¥1,234 million for FY2023").
-        *   Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language for official reports).
-        *   Use consistent percentage formatting (e.g., 12.5%).
+    | Header 1        | Header 2      | Header 3          | Source(s) |
+    |-----------------|---------------|-------------------|-----------| 
+    | Data Item 1     | 123.45        | Long text content | [SS1]     |
+    | Another Item    | -             | More text here    | [SS2]     |
+    | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
 
-    *   **Timeframe Instructions:**
-        *   When instructed to use "the last 3 fiscal years" or similar, always use the 3 most recent COMPLETED fiscal years with available data, not partial/in-progress years.
-        *   Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms like "last 3 years" or "recent years".
-        *   For trends analysis, explicitly state the period covered (e.g., "FY2023-FY2025 data shows an increasing trend...").
-        *   Always state the "as of" date for point-in-time data (e.g., "As of March 31, 2025").
-        *   Clearly state fiscal year end dates when first mentioned (e.g., "FY2023 ended March 31, 2024").
+    **Financial Table Example:**
 
-    *   **Handling Missing Data:**
-        *   After thorough research across multiple primary sources, if data is genuinely missing in the source, use only a single hyphen (-) when structurally necessary for tables.
-        *   Never use "N/A", "Not Available", or explanatory text in place of missing data.
-        *   Do not comment on missing data - simply present what is verifiable.
-        *   For sections where no verifiable data exists, retain headings but minimize content.
+    | Metric                | FY2023   | FY2024   | FY2025   | Source(s) |
+    |------------------------|----------|----------|----------|-----------|
+    | Revenue (JPY Millions) | 123,456  | 134,567  | 145,678  | [SS1]     |
+    | Operating Profit       | 12,345   | 13,456   | 14,567   | [SS1]     |
+    | Net Income             | 8,765    | 9,876    | 10,987   | [SS2]     |
+    | EBITDA                 | -        | 18,765   | 19,876   | [SS3]     |
+
+    **Code Blocks:** When including code or structured content, use standard Markdown code blocks with triple backticks.
+
+    **Quotes:** Use standard Markdown quote syntax (`>`) for direct quotations.
+    
+    Example of proper quote format:
+    
+    > "This is a direct quote from the CEO." [SS1]
+    > (Source: Annual Report 2023, p.5)
+
+    **WHAT NOT TO DO - COMMON FORMATTING ERRORS TO AVOID:**
+
+    1. **Do NOT use code blocks for tables.** This is incorrect:
+    ```
+    | Header 1 | Header 2 |
+    |----------|----------|
+    | Data 1   | Data 2   |
+    ```
+
+    2. **Do NOT indent tables or quotes with spaces or asterisks.** This is incorrect:
+    * | Header 1 | Header 2 |
+      |----------|----------|
+      | Data 1   | Data 2   |
+
+    3. **Do NOT omit the header separator row in tables.** This is incorrect:
+    | Header 1 | Header 2 |
+    | Data 1   | Data 2   |
+
+    4. **Do NOT use inconsistent column counts.** This is incorrect:
+    | Header 1 | Header 2 | Header 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   |
+    | Data 3   | Data 4   | Data 5   | Extra |
+
+    5. **Do NOT use asterisks or bullet points inside tables.** This is incorrect:
+    | Company | Key Points |
+    |---------|------------|
+    | ABC Inc | * Point 1  |
+    |         | * Point 2  |
+
+    **Optimal Structure & Readability:**
+    - Present numerical data in tables with proper alignment and headers
+    - Use bullet points for lists of items or characteristics
+    - Use paragraphs for narrative descriptions and analysis
+    - Maintain consistent formatting across similar elements
+    - Ensure logical sequence within each section
+    - Provide detailed yet concise language—be specific without unnecessary verbosity
+    - Where summary paragraphs are requested, integrate key figures and quantitative trends
+
+    **Data Formatting Consistency:**
+    - Use appropriate thousands separators for numbers per the target language: **{language}**
+    - Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period
+    - Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language)
+    - Use consistent percentage formatting (e.g., 12.5%)
+
+    **Timeframe Instructions:**
+    - When instructed to use "the last 3 fiscal years", always use the 3 most recent COMPLETED fiscal years with available data
+    - Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms
+    - For trends analysis, explicitly state the period covered
+    - Always state the "as of" date for point-in-time data
+    - Clearly state fiscal year end dates when first mentioned
+
+    **Handling Missing Data:**
+    - After thorough research, if data is genuinely missing in the source, use only a single hyphen (-) when structurally necessary for tables
+    - Never use "N/A", "Not Available", or explanatory text in place of missing data
+    - Do not comment on missing data - simply present what is verifiable
+    - For sections where no verifiable data exists, retain headings but minimize content
 """)
 
 ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
-    **Mandatory Preliminary Research: Understanding the Analyzing Company ({context_company_name})**
+**Mandatory Preliminary Research: Understanding the Analyzing Company ({context_company_name})**
 
-    **CRITICAL Prerequisite:** Before generating the Strategy Research plan for the Target Company ({company_name}), you MUST conduct a **thorough, in-depth preliminary research** step focused *exclusively* on understanding the **Analyzing Company ({context_company_name})**. The goal is to move far beyond generic assumptions and build a specific profile of their offerings and strengths.
+**CRITICAL Prerequisite:** Before generating the Strategy Research plan for the Target Company ({company_name}), you MUST conduct a **thorough, in-depth preliminary research** step focused *exclusively* on understanding the **Analyzing Company ({context_company_name})**. The goal is to move far beyond generic assumptions and build a specific profile of their offerings and strengths.
 
+**Research Depth & Source Prioritization:**
+- **Mandatory Sources:** Prioritize and diligently examine {context_company_name}'s:
+    1. **Official Website:** Specifically the sections detailing "Products," "Services," "Solutions," "Industries," "Case Studies," and "About Us." Look for specific named offerings.
     *   **Research Depth & Source Prioritization:**
         *   **Mandatory Sources:** Prioritize and diligently examine {context_company_name}'s:
             1.  **Official Website:** Specifically the sections detailing "Products," "Services," "Solutions," "Industries," "Case Studies," and "About Us." Look for specific named offerings.
@@ -301,59 +364,59 @@ ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
     """)
 
 FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
-    *   **Internal Final Review:** Before generating the 'Sources' list, review your generated response for:
+**Internal Final Review:** Before generating the 'Sources' list, review your generated response for:
 
-        *   **Completeness Check:**
-            * Every numbered section requested in the prompt is present with the correct heading.
-            * Each section contains all requested subsections and information points for the Target Company ({company_name}), or the content has been silently omitted if ungrounded after exhaustive search (headings retained).
-            * The "Final Strategy Summary" (Section 11) is included.
-            * No sections have been accidentally omitted or truncated.
+**Completeness Check:**
+- Every numbered section requested in the prompt is present with the correct heading.
+- Each section contains all requested subsections and information points for the Target Company ({company_name}), or the content has been silently omitted if ungrounded after exhaustive search (headings retained).
+- The "Final Strategy Summary" (Section 11) is included.
+- No sections have been accidentally omitted or truncated.
 
-        *   **Formatting Verification:**
-            * All line breaks are properly formatted (no literal '\\n').
-            * All section headings use correct Markdown format (`## Number. Title`).
-            * All subsections use proper hierarchical format (`###` or indented bullets).
-            * **Tables are PERFECTLY formatted** (aligned pipes, matching columns, start/end pipes, `-` used sparingly only for missing cell data *confirmed absent in source* for {company_name}, data accuracy check vs source).
-            * Lists use consistent formatting and indentation.
+**Formatting Verification:**
+- All line breaks are properly formatted (no literal '\\n').
+- All section headings use correct Markdown format (`## Number. Title`).
+- All subsections use proper hierarchical format (`###` or indented bullets).
+- **Tables are PERFECTLY formatted** (aligned pipes, matching columns, start/end pipes, `-` used sparingly only for missing cell data *confirmed absent in source* for {company_name}, data accuracy check vs source).
+- Lists use consistent formatting and indentation.
 
-        *   **Citation Integrity (Target Company - {company_name}):**
-            * Every factual claim about **{company_name}** has an inline citation `[SSX]`.
-            * **Specifically verify {company_name}'s financial data points and table entries for correct [SSX] citations.**
-            * Citations are placed immediately after the supported claim, before punctuation.
-            * All citations correspond exactly to entries that WILL BE in the final Sources list.
-            * Every source listed corresponds to at least one inline citation `[SSX]` referring to **{company_name}**.
+**Citation Integrity (Target Company - {company_name}):**
+- Every factual claim about **{company_name}** has an inline citation `[SSX]`.
+- **Specifically verify {company_name}'s financial data points and table entries for correct [SSX] citations.**
+- Citations are placed immediately after the supported claim, before punctuation.
+- All citations correspond exactly to entries that WILL BE in the final Sources list.
+- Every source listed corresponds to at least one inline citation `[SSX]` referring to **{company_name}**.
 
-        *   **Data Precision & Recency (Target Company - {company_name}):**
-            * All monetary values for **{company_name}** specify currency and reporting period.
-            * All dates for **{company_name}** are in consistent format and reflect the latest available grounded data.
-            * Numerical data for **{company_name}** is presented with appropriate precision and units.
-            * Primary sources used for **{company_name}** are confirmed to be the most recent available and grounded.
+**Data Precision & Recency (Target Company - {company_name}):**
+- All monetary values for **{company_name}** specify currency and reporting period.
+- All dates for **{company_name}** are in consistent format and reflect the latest available grounded data.
+- Numerical data for **{company_name}** is presented with appropriate precision and units.
+- Primary sources used for **{company_name}** are confirmed to be the most recent available and grounded.
 
-        *   **Content Quality & Alignment Specificity:**
-            * Direct start with no conversational text.
-            * Professional tone with no placeholders (except the minimal `-` in tables for {company_name} where structurally needed and confirmed absent in source).
-            * Adherence to silent omission handling instructions for {company_name}.
-            * Logical flow within and between sections.
-            * Analytical depth provided where required (explaining 'why').
-            * **Alignment Specificity:** Verify that proposed alignments between the Analyzing Company's ({context_company_name}) capabilities and the Target Company's ({company_name}) needs (Sections 4, 6, 7, 9, 11) are **specific, non-generic, and plausibly based on the Analyzing Company's likely offerings** (reflecting thorough preliminary research). They should reference specific needs/challenges of {company_name} [SSX].
+**Content Quality & Alignment Specificity:**
+- Direct start with no conversational text.
+- Professional tone with no placeholders (except the minimal `-` in tables for {company_name} where structurally needed and confirmed absent in source).
+- Adherence to silent omission handling instructions for {company_name}.
+- Logical flow within and between sections.
+- Analytical depth provided where required (explaining 'why').
+- **Alignment Specificity:** Verify that proposed alignments between the Analyzing Company's ({context_company_name}) capabilities and the Target Company's ({company_name}) needs (Sections 4, 6, 7, 9, 11) are **specific, non-generic, and plausibly based on the Analyzing Company's likely offerings** (reflecting thorough preliminary research). They should reference specific needs/challenges of {company_name} [SSX].
 
-        *   **Single-Entity & Role Clarity (CRITICAL):**
-            *   Ensure that analysis and data strictly pertains to the specified Target Company **'{company_name}'**. Verify no data from similarly named but unrelated entities has crept in.
-            *   Maintain clarity between the Target Company ({company_name}) and the Analyzing Company ({context_company_name}). Ensure proposals clearly articulate *how* {context_company_name} can help {company_name}.
+**Single-Entity & Role Clarity (CRITICAL):**
+- Ensure that analysis and data strictly pertains to the specified Target Company **'{company_name}'**. Verify no data from similarly named but unrelated entities has crept in.
+- Maintain clarity between the Target Company ({company_name}) and the Analyzing Company ({context_company_name}). Ensure proposals clearly articulate *how* {context_company_name} can help {company_name}.
 
-        Proceed to generate the final 'Sources' list only after confirming these conditions are met.
-    """)
+Proceed to generate the final 'Sources' list only after confirming these conditions are met.
+""")
 
 COMPLETION_INSTRUCTION_TEMPLATE = textwrap.dedent("""\
-    **Output Completion Requirements:**
+**Output Completion Requirements:**
 
-    Before concluding your response, verify that:
-    1. Every numbered section requested in the prompt is complete with all required subsections (or content is silently omitted if ungrounded after exhaustive search, retaining headings).
-    2. All content follows **perfect markdown formatting** throughout, especially for tables (check data accuracy and source alignment).
-    3. Each section contains all necessary details based on available grounded information and is not truncated. Check for data recency.
-    4. The response maintains consistent formatting for lists, tables, and code blocks.
-    5. All inline citations `[SSX]` are properly placed, with no extraneous or fabricated URLs. Every fact presented MUST be cited, **especially all financial data**.
-    6. Strictly focus on the exact named company **'{company_name}'** (no confusion with similarly named entities). Verify parent vs. subsidiary context where needed.
+Before concluding your response, verify that:
+1. Every numbered section requested in the prompt is complete with all required subsections (or content is silently omitted if ungrounded after exhaustive search, retaining headings).
+2. All content follows **perfect markdown formatting** throughout, especially for tables (check data accuracy and source alignment).
+3. Each section contains all necessary details based on available grounded information and is not truncated. Check for data recency.
+4. The response maintains consistent formatting for lists, tables, and code blocks.
+5. All inline citations `[SSX]` are properly placed, with no extraneous or fabricated URLs. Every fact presented MUST be cited, **especially all financial data**.
+6. Strictly focus on the exact named company **'{company_name}'** (no confusion with similarly named entities). Verify parent vs. subsidiary context where needed.
 """)
 
 # --- Prompt Generating Functions ---
@@ -440,7 +503,7 @@ Conduct in-depth research using {company_name}'s official sources. Perform exhau
 ## 6. Subsidiaries List:
     *   List *major* direct subsidiaries (global where applicable) based solely on official documentation (e.g., list in Annual Report Appendix). Acknowledge this may not be exhaustive. For each subsidiary, include primary business activity, country of operation, and, if available, ownership percentage as stated in the source [SSX]. Present this in a **perfectly formatted Markdown table** for clarity. Use '-' for missing data points only if needed for table structure. Note any recent major M&A impacting the subsidiary structure if verifiable [SSY].
         
-        **IMPORTANT: The table below provides an EMPTY FORMAT EXAMPLE. Do not invent any subsidiary data. Populate only with actual verified subsidiaries of {company_name} from official documents.**
+        **Example subsidiaries table format (replace with actual data):**
         
         | Subsidiary Name | Primary Business | Country | Ownership % (if stated) | Source(s) |
         |-----------------|------------------|---------|-------------------------|-----------|
@@ -450,6 +513,12 @@ Conduct in-depth research using {company_name}'s official sources. Perform exhau
 
 ## 7. Leadership Strategic Outlook (Verbatim Quotes):
     *   **CEO & Chairman:** Provide at least four direct, meaningful quotes focusing on long-term vision, key challenges, growth strategies, and market outlook. Each quote must be followed immediately by its source citation in parentheses (e.g., "(Source: Annual Report 2023, p.5)"), and an inline citation [SSX] must confirm the quote's origin.
+    
+        **Example quote format:**
+        
+        > "Our strategic vision for the next five years focuses on expanding our digital capabilities while maintaining our commitment to sustainability." [SSX]
+        > (Source: Annual Report 2023, p.5)
+        
     *   **Other Key Executives (e.g., CFO, CSO, CTO, COO, relevant BU Heads):** Provide verifiable quotes (aim for 1-3 per relevant executive if strategically insightful) detailing their perspective on their area of responsibility (e.g., financial strategy, tech roadmap, operational plans) with similar detailed attribution and inline citation [SSX].
 
 ## 8. General Discussion:
@@ -540,7 +609,7 @@ For each section, provide verifiable data with inline citations [SSX] and specif
 ## 1. Top Shareholders:
     *   List major shareholders of {company_name} (typically the top 5-10, with exact ownership percentages, reporting dates, and source references) in a **perfectly formatted Markdown table** [SSX]. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains FICTIONAL EXAMPLE SHAREHOLDERS. Never use these specific names, percentages, or dates in your response. Replace with actual verified shareholder information for {company_name}.**
+        **Example shareholders table format (replace with actual data):**
         
         | Shareholder Name | Ownership % | As of Date   | Source(s) |
         |------------------|-------------|--------------|-----------|
@@ -554,7 +623,7 @@ For each section, provide verifiable data with inline citations [SSX] and specif
 ## 2. Key Financial Metrics (3-Year Trend in a Table):
     *   Present the following metrics for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table**. Specify currency (e.g., JPY millions) and fiscal year (e.g., FY2023, FY2024, FY2025) for each value. Verify data accuracy. If calculated, note this below the table or in a 'Notes' column and cite base data sources. Cite sources for all data [SSX]. Use '-' for missing data points only if needed for table structure. *Consider adding industry-specific metrics if relevant and reported (see instructions).*
         
-        **IMPORTANT: The table below contains FICTIONAL EXAMPLE VALUES ONLY. Never copy these specific numbers in your response. Replace ALL values with actual verified data from reliable sources about {company_name}.**
+        **Example financial metrics table format (replace with actual data):**
         
         | Metric                                          | FY2023 | FY2024 | FY2025 | Notes / Calculation Basis | Source(s) |
         |-------------------------------------------------|--------|--------|--------|---------------------------|-----------|
@@ -719,7 +788,7 @@ Use **perfect Markdown tables**. Adhere strictly to grounding rules outlined bel
     *   Identify primary global and key regional competitors of {company_name} based on {company_name}'s official statements [SSX] or grounded third-party reports [SSY]. Provide specific names.
     *   Present competitor information in a **perfectly formatted Markdown table** where possible, clearly indicating source for each piece of data. Use '-' for missing data points only if needed for table structure. Verify data accuracy.
         
-        **IMPORTANT: The following table contains FICTIONAL COMPETITOR EXAMPLES for illustration only. Do not use these specific competitors, market shares, or moves in your response. Replace with actual verified competitors of {company_name} from reliable sources.**
+        **Example competitors table format (replace with actual data):**
         
         | Competitor Name | Primary Business Area(s) of Overlap with {company_name} | Estimated Market Share (Market, Year) | Key Geographic Overlap | Recent Key Moves (Date) | Source(s) |
         |-----------------|----------------------------------------------------------|---------------------------------------|------------------------|-------------------------|-----------|
@@ -831,13 +900,15 @@ Conduct in-depth research from official sources for **{company_name}** (IR docum
 ## 2. Current Mid-Term Business Plan (MTP) Overview:
     *   Identify the official name and exact time period of the current MTP for {company_name} (e.g., "Mid-Term Plan 'Growth Forward' (FY2024-FY2026)") with source references [SSX].
     *   Detail the main objectives and specific quantitative targets (financial and non-financial) outlined in the MTP for {company_name}. Present **all** stated MTP targets/KPIs clearly in a **perfectly formatted Markdown table**, including KPI category, KPI name, target value (with currency/units), target year/period, and baseline values if available [SSX]. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
+        
+        **Example MTP targets table format (replace with actual data):**
+        
         | KPI Category | KPI Name                     | Target Value (by FYZZZZ) | Baseline (FYXXXX) (if stated) | Source(s) |
         |--------------|------------------------------|--------------------------|-------------------------------|-----------|
         | Financial    | Revenue (JPY Billions)       | 500                      | 350                           | [SSX]     |
         | Financial    | Operating Margin (%)         | 10%                      | 7.5%                          | [SSX]     |
         | Non-Fin      | CO2 Emissions Reduction (%)  | 30%                      | (vs FY2020)                   | [SSY]     |
         | Non-Fin      | Customer Satisfaction Score  | 90                       | -                             | [SSX]     |
-        | (Ensure ALL stated KPIs are listed...) | ... | ...                      | ...                           |           |
     *   Discuss key differences or areas of emphasis compared to the previous MTP for {company_name}, supported by specific examples and inline citations [SSX].
 
 ## 3. Strategic Focus Areas and Initiatives within MTP:
@@ -851,13 +922,15 @@ Conduct in-depth research from official sources for **{company_name}** (IR docum
     *   Identify key internal and external challenges or risks acknowledged by {company_name}'s management that affect MTP execution (e.g., "Supply chain disruptions [SSX]", "Talent acquisition difficulties [SSY]").
     *   Describe the specific countermeasures or adjustments stated by {company_name} to address these challenges [SSZ].
     *   Provide the latest available progress updates against the MTP targets for {company_name} (from Section 2 table). Present progress in a **perfectly formatted Markdown table** showing KPI, Target, and Latest Actual/Forecast (with date) [SSX]. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
+        
+        **Example progress tracking table format (replace with actual data):**
+        
         | KPI Name                     | Target (by FYZZZZ) | Latest Actual/Forecast (as of YYYY-MM-DD) | Progress Notes                                  | Source(s) |
         |------------------------------|--------------------|-------------------------------------------|-------------------------------------------------|-----------|
         | Revenue (JPY Billions)       | 500                | 410 (FYYYYY Actual)                       | On track / Slightly below forecast              | [SSX]     |
         | Operating Margin (%)         | 10%                | 8.2% (FYYYYY Actual)                      | Facing cost pressures, countermeasures underway | [SSY]     |
         | CO2 Emissions Reduction (%)  | 30%                | 15% (Achieved YYYY)                       | Progressing as planned                          | [SSZ]     |
         | Customer Satisfaction Score  | 90                 | -                                         | -                                               |           |
-        | (Track progress for ALL KPIs listed in Sec 2) | ... | ...                                    | ...                                             |           |
     *   Highlight any significant strategic adjustments or MTP revisions announced by {company_name} in response to performance or external events (e.g., "Revised revenue target downwards in Q2 FYYYYY due to market slowdown [SSX]"), with inline citations [SSY].
 
 ## 5. General Discussion:
@@ -1185,42 +1258,37 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
 ## 1. Business Segment Analysis (Last 3 Fiscal Years):
     *   List the reported business segments for **{company_name}** using official descriptions. Identify the primary metric used for segmentation (e.g., Revenue, Premiums In-Force). Include a **perfectly formatted Markdown table** with consolidated figures for that metric (specify metric, currency, and fiscal year) and composition ratios (%), with each data point referenced [SSX]. Ensure totals sum correctly if verifiable. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains a FICTIONAL EXAMPLE FORMAT with placeholder segment names. Never use these specific segments or values in your response. Replace with actual verified business segments and data from {company_name}'s reports.**
+        **Example business segment table format (replace with actual data):**
         
         | Segment Name | FYXXXX Metric Value (Unit) | FYXXXX (%) | FYYYYY Metric Value (Unit) | FYYYYY (%) | FYZZZZ Metric Value (Unit) | FYZZZZ (%) | Source(s) |
         |--------------|--------------------------|------------|--------------------------|------------|--------------------------|------------|-----------|
-        | Segment A    |                          |            |                          |            |                          |            | [SSX]     |
-        | Segment B    |                          |            |                          |            |                          |            | [SSY]     |
-        | Segment C    |                          |            | -                      | -          |                          |            | [SSZ]     |
-        | Adjustments  |                          |            |                          |            |                          |            | [SSW]     |
-        | **Total**    |                          | **100%**   |                          | **100%**   |                          | **100%**   | [SSV]     |
-        
-        **NOTE: "Segment A/B/C" are placeholder examples only. Use the actual business segments reported by {company_name}. Replace FYXXXX/YYYY/ZZZZ with the actual fiscal years.**
+        | Segment A    | 100,000                  | 40%        | 110,000                  | 41%        | 120,000                  | 42%        | [SSX]     |
+        | Segment B    | 80,000                   | 32%        | 85,000                   | 32%        | 90,000                   | 32%        | [SSY]     |
+        | Segment C    | 70,000                   | 28%        | 72,000                   | 27%        | 75,000                   | 26%        | [SSZ]     |
+        | Adjustments  | 0                        | 0%         | 0                        | 0%         | 0                        | 0%         | [SSW]     |
+        | **Total**    | 250,000                  | **100%**   | 267,000                  | **100%**   | 285,000                  | **100%**   | [SSV]     |
     *   For each major segment of {company_name}, briefly describe its products/services [SSX] and analyze significant trends (e.g., growth/decline rates YoY calculated from table data, changes in contribution ratio) with specific percentages and dates [SSY]. Identify the fastest growing and/or most profitable segments based on available data (growth in the reported metric, operating income/margin if reported per segment in source documents) [SSZ].
 
 ## 2. Geographic Segment Analysis (Last 3 Fiscal Years):
     *   List the geographic regions or segments as reported by **{company_name}** (e.g., Japan, North America, Europe, Asia). Identify the primary metric used for geographic segmentation. Include a **perfectly formatted Markdown table** with corresponding figures (specify metric, currency, fiscal year) and composition ratios (%), ensuring totals sum correctly if verifiable [SSX]. Verify data accuracy. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains FICTIONAL GEOGRAPHIC REGIONS as examples. Never use these specific regions or values in your response. Replace with actual verified geographic segments from {company_name}'s reports.**
+        **Example geographic segment table format (replace with actual data):**
         
         | Geographic Region | FYXXXX Metric Value (Unit) | FYXXXX (%) | FYYYYY Metric Value (Unit) | FYYYYY (%) | FYZZZZ Metric Value (Unit) | FYZZZZ (%) | Source(s) |
         |-------------------|--------------------------|------------|--------------------------|------------|--------------------------|------------|-----------|
-        | Japan             |                          |            |                          |            |                          |            | [SSX]     |
-        | North America     |                          |            |                          |            |                          |            | [SSY]     |
-        | Europe            |                          |            |                          |            |                          |            | [SSZ]     |
-        | Asia (ex-Japan)   |                          |            |                          |            |                          |            | [SSW]     |
-        | Other             |                          |            | -                      | -          |                          |            | [SSV]     |
-        | Adjustments       |                          |            |                          |            |                          |            | [SSU]     |
-        | **Total**         |                          | **100%**   |                          | **100%**   |                          | **100%**   | [SST]     |
-        
-        **NOTE: These regions are examples only. Use the actual geographic segments as reported by {company_name}. Replace FYXXXX/YYYY/ZZZZ with the actual fiscal years.**
+        | Japan             | 100,000                  | 40%        | 105,000                  | 39%        | 110,000                  | 39%        | [SSX]     |
+        | North America     | 75,000                   | 30%        | 81,000                   | 30%        | 88,000                   | 31%        | [SSY]     |
+        | Europe            | 50,000                   | 20%        | 54,000                   | 20%        | 57,000                   | 20%        | [SSZ]     |
+        | Asia (ex-Japan)   | 25,000                   | 10%        | 27,000                   | 10%        | 30,000                   | 10%        | [SSW]     |
+        | Other             | 0                        | 0%         | 0                        | 0%         | 0                        | 0%         | [SSV]     |
+        | **Total**         | 250,000                  | **100%**   | 267,000                  | **100%**   | 285,000                  | **100%**   | [SST]     |
     *   Analyze regional trends for {company_name} (growth/decline YoY calculated from table data, changes in contribution) with specific supporting data [SSX]. Identify key growth markets and declining markets with specific figures [SSY]. Note any stated plans for geographic expansion or contraction with dates and details mentioned in reports [SSZ].
 
 ## 3. Major Shareholders & Ownership Structure:
     *   Describe the overall ownership type for **{company_name}** (e.g., publicly traded on TSE Prime [SSX], privately held) with specific details [SSY].
     *   List the top 5-10 major shareholders of {company_name} in a **perfectly formatted Markdown table** with exact names (as reported, e.g., trust banks), precise ownership percentages, shareholder type (institutional, individual, government, etc.), and the 'as of' date for the data [SSX]. Note any significant changes in top holders over the past year if reported [SSY]. Verify data. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains FICTIONAL EXAMPLE SHAREHOLDERS. Never use these specific names, percentages, or types in your response. Replace with actual verified shareholders of {company_name}.**
+        **Example shareholders table format (replace with actual data):**
         
         | Shareholder Name          | Ownership % | Shareholder Type     | As of Date   | Source(s) |
         |---------------------------|-------------|----------------------|--------------|-----------|
@@ -1237,7 +1305,7 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
     *   Describe the parent-subsidiary relationships and overall corporate group structure for **{company_name}** based on official filings or reports (e.g., list of major subsidiaries in Annual Report Appendix [SSX]). Note existence/location of group structure charts if found [SSY].
     *   List key operating subsidiaries of {company_name} in a **perfectly formatted Markdown table**, including their official names, primary business functions/segments they operate in, country/region of incorporation, and ownership percentage by the parent company (if stated) [SSX]. Verify data. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains FICTIONAL EXAMPLE SUBSIDIARIES. Never use these specific names, businesses, or data in your response. Replace with actual verified subsidiaries of {company_name}.**
+        **Example subsidiaries table format (replace with actual data):**
         
         | Subsidiary Name             | Primary Business Function / Segment | Country/Region | Ownership % | Source(s) |
         |-----------------------------|-------------------------------------|----------------|-------------|-----------|
@@ -1322,16 +1390,13 @@ Conduct in-depth research using official sources for **{company_name}** such as 
     *   **Strategic Vision Components/Pillars:** List and explain the key strategic themes, values, or pillars that underpin the vision for {company_name} (e.g., "Innovation", "Sustainability", "Customer Centricity") as defined in official documents [SSX]. Provide brief definitions or explanations for each pillar based on the source [SSY].
     *   **Vision Measures / KPIs:** Identify specific measures or Key Performance Indicators (KPIs) that **{company_name}** explicitly links to tracking progress towards its overall vision or purpose (these might be high-level MTP targets or specific ESG goals mentioned in the vision context). Present these in a list or **perfectly formatted Markdown table** if multiple and verifiable, including the KPI name, the target (if specified, with date/period), and how it relates to the vision pillar [SSX]. Verify data. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains FICTIONAL EXAMPLE KPIs. Do not use these specific goals or metrics in your response. Replace with actual verified KPIs from {company_name}'s vision statements and documents.**
+        **Example KPI table format (replace with actual data):**
         
         | Vision Pillar      | Linked KPI                    | Target/Goal (if specified)     | Source(s) |
         |--------------------|-------------------------------|--------------------------------|-----------|
         | Sustainability     | Scope 1+2 CO2 Reduction       | 50% reduction by 2030 vs 2020  | [SSX]     |
         | Innovation         | % Revenue from New Products   | -                              | [SSY]     |
         | Customer Centricity| Net Promoter Score (NPS)      | > 50 by 2027                   | [SSZ]     |
-        | ...                | ...                           | ...                            |           |
-        
-        **NOTE: The pillar names, KPIs, and targets above are fictional examples only. Replace with actual verified vision metrics and targets from {company_name}'s documents.**
     *   ***Stakeholder Focus:*** Analyze how the vision statement and its supporting pillars for {company_name} explicitly address or prioritize key stakeholder groups (e.g., customers, employees, shareholders, society, environment) based on the language used in official communications [SSX]. Provide specific examples or quotes [SSY].
 
 ## 2. General Discussion:
@@ -1392,37 +1457,47 @@ Conduct focused research on recent (last 1-2 years) official communications from
 ## 1. Leadership Strategic Outlook (Verbatim Quotes):
 
 ### [CEO Full Name], [CEO Title] (of {company_name})
-*   Provide a brief 1-2 sentence summary of the key strategic themes reflected in the CEO's quotes below (e.g., Emphasis on digital transformation and global markets during FY2023 reporting [SSX]). Cite the source range.
-*   **Quote 1 (Theme: e.g., Long-Term Vision):**
-    > "..." [SSX]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   **Quote 2 (Theme: e.g., Key Challenge Response):**
-    > "..." [SSY]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   **Quote 3 (Theme: e.g., Growth Strategy):**
-    > "..." [SSZ]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   **Quote 4 (Theme: e.g., Market Outlook):**
-    > "..." [SSW]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   *(Add more quotes if particularly insightful and verifiable, aim for 3-5 key strategic quotes)*
+- Provide a brief 1-2 sentence summary of the key strategic themes reflected in the CEO's quotes below (e.g., Emphasis on digital transformation and global markets during FY2023 reporting [SSX]). Cite the source range.
+
+**Quote 1 (Theme: e.g., Long-Term Vision):**
+> "..." [SSX]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+**Quote 2 (Theme: e.g., Key Challenge Response):**
+> "..." [SSY]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+**Quote 3 (Theme: e.g., Growth Strategy):**
+> "..." [SSZ]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+**Quote 4 (Theme: e.g., Market Outlook):**
+> "..." [SSW]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+*(Add more quotes if particularly insightful and verifiable, aim for 3-5 key strategic quotes)*
 
 ### [Chairman Full Name], [Chairman Title] (of {company_name}, if distinct from CEO and provides verifiable strategic commentary)
-*   Provide a brief 1-2 sentence summary of key themes in the Chairman's quotes (include date range) [SSX].
-*   **Quote 1 (Theme: e.g., Governance/Sustainability):**
-    > "..." [SSV]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   **Quote 2 (Theme: e.g., Long-term Perspective):**
-    > "..." [SSU]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   *(Add more quotes if available, verifiable, and strategically relevant, aim for 2-3)*
+- Provide a brief 1-2 sentence summary of key themes in the Chairman's quotes (include date range) [SSX].
+
+**Quote 1 (Theme: e.g., Governance/Sustainability):**
+> "..." [SSV]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+**Quote 2 (Theme: e.g., Long-term Perspective):**
+> "..." [SSU]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+*(Add more quotes if available, verifiable, and strategically relevant, aim for 2-3)*
 
 ### [Other Key Executive Name], [Title] (e.g., CFO, CSO, CTO, COO, BU Head of {company_name} - Include significant, verifiable strategic quotes)
-*   Provide a brief 1-2 sentence summary of their strategic focus area reflected in verifiable quotes [SSX].
-*   **Quote 1 (Theme: e.g., Financial Strategy / Tech Roadmap / Operational Excellence):**
-    > "..." [SST]
-    (Source: [Document/Event Name], [Date], [Page/Timestamp if available])
-*   *(Include 1-3 highly relevant, verifiable quotes per key executive if applicable)*
+- Provide a brief 1-2 sentence summary of their strategic focus area reflected in verifiable quotes [SSX].
+
+**Quote 1 (Theme: e.g., Financial Strategy / Tech Roadmap / Operational Excellence):**
+> "..." [SST]
+(Source: [Document/Event Name], [Date], [Page/Timestamp if available])
+
+*(Include 1-3 highly relevant, verifiable quotes per key executive if applicable)*
 
 ## 2. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the key strategic messages, priorities, and tone conveyed *exclusively* through the collected, verifiable quotes from **{company_name}**'s leadership in Section 1. Identify recurring themes, potential shifts in focus, or areas where different executives provide complementary perspectives. Use inline citations to link back to specific quotes or speakers (e.g., "The CEO's emphasis on digital innovation [SSX, SSZ] aligns with the CTO's focus on AI investment [SST], suggesting a unified direction... However, the Chairman's cautionary note on governance [SSV] highlights potential execution risks..."). Consider potential DX opportunities or challenges implied by the leadership messages [SSX].
@@ -1548,7 +1623,7 @@ Research Requirements (Target Company - {company_name}):
 ## 2. Target Company Revenue Analysis & Growth Drivers ({company_name})
     *   Present Revenue for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table**, specifying currency (e.g., JPY Millions) [SSX]. Calculate YoY Growth Rate (%). Verify data. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The table below contains FICTIONAL EXAMPLE VALUES. The specific numbers and years shown are for format illustration only. Replace with actual verified revenue data from {company_name}'s financial reports.**
+        **Example revenue table format (replace with actual data):**
         
         | Metric                  | FY2023  | FY2024  | FY2025  | Source(s) |
         |-------------------------|---------|---------|---------|-----------|
@@ -1560,7 +1635,7 @@ Research Requirements (Target Company - {company_name}):
 ## 3. Target Company Financial Performance & Investment Capacity ({company_name})
     *   Present Net Income (Attributable to Parent), Operating Margin (%), and Capital Expenditures (CapEx) for {company_name} for the last 3 full fiscal years in a **perfectly formatted Markdown table** [SSX, SSY, SSZ]. Verify data. Use '-' for missing data points only if needed for table structure.
         
-        **IMPORTANT: The following table contains FICTIONAL EXAMPLE VALUES for illustration purposes only. Do not use these specific numbers in your response. Replace with actual verified financial data from {company_name}'s reports.**
+        **Example financial table format (replace with actual data):**
         
         | Metric                           | FY2023   | FY2024   | FY2025   | Source(s) |
         |----------------------------------|----------|----------|----------|-----------|
@@ -1604,7 +1679,7 @@ Research Requirements (Target Company - {company_name}):
 ## 8. Strategic Engagement Plan Outline (FY2025–2027)
     *   Provide a high-level quarterly engagement plan concept for {context_company_name} to approach {company_name}. Focus on **strategic themes** derived from {company_name}'s verified needs and initiatives, directly aligned with **specific, researched {context_company_name} capabilities/solutions**. Use a **perfectly formatted Markdown table**. Verify data links. Prioritize themes based on potential impact and alignment strength.
         
-        **IMPORTANT: The table below shows EXAMPLE FORMAT AND CONTENT ONLY. The specific themes, solutions, stakeholders and goals are ILLUSTRATIVE PLACEHOLDERS. Replace with actual strategic themes based on verified information about {company_name} and researched capabilities of {context_company_name}.**
+        **Example engagement plan table format (replace with actual data):**
         
         | Period         | Engagement Theme      | {context_company_name} Solutions | Target Stakeholder    | Citation Source | Business Goal       |
         |----------------|----------------------|----------------------------------|----------------------|----------------|---------------------|
@@ -1615,8 +1690,6 @@ Research Requirements (Target Company - {company_name}):
         | FY2026 Q1-Q2   | Pilot Projects        | Detailed SOWs for solutions      | Decision Makers      | FY25 outcomes  | Secure initial wins |
         | FY2026 Q3-Q4   | Execution & Expansion | Delivery, QBRs, upsell services  | Project Sponsors     | Pilot success  | Demonstrate value   |
         | FY2027 onwards | Strategic Partnership | Joint roadmap, innovation plans  | C-Suite, Strategy    | Track record   | Preferred partner   |
-        
-        **NOTE: Terms like 'DX Framework', 'Cloud Security Suite', 'Platform Z' are generic examples. Replace with actual researched solutions/offerings from {context_company_name}.**
 
 ## 9. Competitive Landscape ({company_name}'s Perspective) & {context_company_name}'s Differentiated Positioning
     *   Identify **{company_name}**'s existing major IT service providers, consultants, system integrators, or key technology vendors *if explicitly mentioned* in verifiable, recent sources [SSX]. Note the specific scope of their engagement if stated [SSY].
