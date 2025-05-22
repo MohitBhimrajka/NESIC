@@ -37,6 +37,131 @@ Before producing the final answer, confirm:
 11. Ensure lists (KPIs, Officers, Subsidiaries) are complete based on source availability.
 12. Confirm analytical depth provided where requested (explaining 'why' and drivers).
 
+**Additional Markdown Formatting Guidelines to Ensure Clean Rendering:**
+
+1. **Tables and Markdown Lists:** 
+   * Never place Markdown lists directly inside table cells.
+   * If a cell must contain multiple points, use semicolons or commas to separate them.
+   * For complex nested data, reference a note below the table.
+
+2. **Emphasis and Special Character Handling:**
+   * Always use proper spacing around emphasis markers: 
+     * Correct: Text with **bold words** in it.
+     * Incorrect: Text with**bold words**in it.
+   * Be careful with asterisks in regular text - escape them with backslash when needed.
+   * Don't place emphasis markers directly adjacent to punctuation.
+
+3. **List Formatting Excellence:**
+   * Maintain consistent indentation (4 spaces for nested items)
+   * Always include a space after the list marker (*, -, or numbers)
+   * Ensure proper nesting hierarchy for multi-level lists
+   * Don't mix different list markers in the same list
+
+4. **Heading Structure:**
+   * Use ## for main sections (e.g., ## 1. Section Title)
+   * Use ### for subsections
+   * Include a space after the # symbols
+   * Maintain logical hierarchy (don't skip levels)
+   * Don't include formatting markers in headings unless absolutely necessary
+
+5. **Paragraph and Line Spacing:**
+   * Separate paragraphs with a blank line
+   * Don't include unnecessary blank lines between list items
+   * Maintain consistent paragraph formatting throughout the document
+   * Don't break sentences across paragraphs without proper punctuation
+
+**Text Formatting Excellence Requirements:**
+
+1. **Spacing Around Formatting Markers (CRITICAL):**
+   * **ALWAYS** include a space before and after formatting markers (asterisks, underscores) unless they are adjacent to punctuation.
+   
+   **CORRECT:**
+   * "The company's **strategic plan** focuses on growth."
+   * "Their *innovative approach* sets them apart."
+   * "The strategy emphasizes **three pillars**: growth, efficiency, and innovation."
+   
+   **INCORRECT:**
+   * "The company's**strategic plan**focuses on growth."
+   * "Their*innovative approach*sets them apart."
+   * "The strategy has **three pillars **for success." (extra space after closing marker)
+   * "The company's** strategic plan **focuses on growth." (extra spaces inside markers)
+
+2. **Bold Text Formatting:**
+   * Use double asterisks (**) for bold text
+   * Ensure consistent formatting: "**bold text**" not "**bold text*" or "* *bold text**"
+   * Don't use bold for entire paragraphs - reserve for emphasis on key points, headings, or important terms
+
+3. **Italic Text Formatting:**
+   * Use single asterisks (*) for italic text
+   * Ensure consistent formatting: "*italic text*" not "*italic text" or "italic text*"
+   * Use italics sparingly for emphasis or to highlight terms, not for entire paragraphs
+
+4. **Escaping Asterisks in Regular Text:**
+   * When using asterisks as actual characters (not for formatting), escape them with backslash: \\*
+   * Example: "The 5\\* rating indicates excellence" (not "The 5* rating")
+
+5. **Handling Adjacent Punctuation:**
+   * Place formatting markers directly adjacent to punctuation but with spaces on the word side:
+   * **CORRECT:** "This strategy (which is **highly effective**) was implemented."
+   * **INCORRECT:** "This strategy (which is** highly effective ** ) was implemented."
+
+6. **Mixed Formatting:**
+   * For text that is both bold and italic, nest them properly: "***important note***"
+   * Ensure all opening markers have corresponding closing markers
+   * **CORRECT:** "This is ***critically important*** for success."
+   * **INCORRECT:** "This is **critically *important** for success."
+
+7. **Final Verification Checklist:**
+   * Search for isolated asterisks (*) that might indicate broken formatting
+   * Check for pairs of asterisks (**) not separated by spaces from regular text
+   * Ensure formatting doesn't break across line breaks
+   * Verify all opening formatting markers have matching closing markers
+
+**Professional Business Writing Standards:**
+
+1. **Sentence Structure Excellence:**
+   * Use clear, direct sentences with a logical subject-verb-object structure
+   * Vary sentence length for better readability (mix short, impactful sentences with more complex ones)
+   * Begin sentences with meaningful subjects rather than weak introductory phrases
+   * Use active voice predominantly (e.g., "The company increased revenue" not "Revenue was increased")
+   * Ensure parallel structure in lists and series (e.g., all items begin with verbs or all are nouns)
+
+2. **Bullet Point Best Practices:**
+   * Start each bullet point with the same part of speech for consistency (e.g., all verbs, all nouns)
+   * Keep bullet points relatively parallel in length and complexity
+   * Begin each bullet with a capital letter
+   * End each bullet consistently (either all with periods or all without)
+   * Use bullets for lists of distinct items, not for connected narrative
+   * Limit bullet hierarchy to maximum 3 levels for readability
+
+3. **Paragraph Construction:**
+   * Begin paragraphs with a clear topic sentence
+   * Keep paragraphs focused on a single main idea
+   * Use transitional phrases between paragraphs to maintain flow
+   * Aim for 3-5 sentences per paragraph in most cases
+   * Use paragraph breaks strategically to emphasize key points
+
+4. **Business Terminology Precision:**
+   * Use industry-standard terminology consistently
+   * Define specialized terms on first use if necessary
+   * Avoid jargon unless it adds precision and clarity
+   * Use consistent terminology throughout the document (don't alternate between synonyms)
+   * Spell out acronyms on first use with the acronym in parentheses
+
+5. **Data Expression:**
+   * Present numerical data with appropriate precision (avoid excessive decimal places)
+   * Always specify units and time periods for measurements
+   * Use consistent number formatting (e.g., million, billion, %)
+   * Compare data points meaningfully (e.g., YoY changes, percentages, CAGR)
+   * Present related numerical data in tables rather than embedding in paragraphs
+
+6. **Final Polish Checklist:**
+   * Eliminate redundancy and wordiness
+   * Replace vague terms with specific ones
+   * Ensure logical flow between sentences and paragraphs
+   * Use proper noun capitalization consistently
+   * Check for consistent tense usage throughout sections
+
 **Exactness of Table Columns:**
 - Each row in any table **MUST** have the exact same number of columns as the header row, delimited by pipes (`|`).
 - Use exactly one pipe (`|`) at the beginning and end of each row.
@@ -78,10 +203,37 @@ Before producing the final answer, confirm:
 7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
 """)
 
+# Create a specific instruction for VertexAI link formatting
+SOURCE_LINK_FORMAT_INSTRUCTION = textwrap.dedent("""\
+**CRITICAL: VertexAI Link Formatting Requirements:**
+
+All source links **MUST** follow this exact pattern:
+- Source text: Must be formatted as "Supervity Source X" (where X is the sequential number)
+- URL format: Must begin with "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
+- Every link must use proper Markdown syntax: [Supervity Source X](https://vertexaisearch.cloud.google.com/grounding-api-redirect/...)
+
+**CORRECT** (do this):
+* [Supervity Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123) - Information about revenue [SS1]
+* [Supervity Source 2](https://vertexaisearch.cloud.google.com/grounding-api-redirect/def456) - Details on business segments [SS2]
+
+**INCORRECT** (never do these):
+* [Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123) - Missing "Supervity" prefix
+* [Supervity Source 1](vertexaisearch.cloud.google.com/grounding-api-redirect/abc123) - Missing https:// prefix
+* [Supervity Source 1](https://example.com/report) - Not using the correct VertexAI URL pattern
+* Supervity Source 1: https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123 - Not using proper link syntax
+
+**VERIFICATION STEP:** Before finalizing, verify all source links:
+1. Confirm every source uses exact pattern: [Supervity Source X](https://vertexaisearch.cloud.google.com/grounding-api-redirect/...)
+2. Ensure sources are numbered sequentially (1, 2, 3...) without gaps
+3. Check every source has a brief annotation after the link
+4. Verify each inline citation [SSX] in the text corresponds to a source in the list
+""")
+
 FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
 **Final Source List Requirements:**
 
 Conclude the *entire* research output, following the 'General Discussion' paragraph, with a clearly marked section titled "**Sources**". This section is critical for verifying the information grounding process AND for document generation.
+""") + SOURCE_LINK_FORMAT_INSTRUCTION + textwrap.dedent("""
 
 **1. Content - MANDATORY URL Type & Source Integrity:**
 - **Exclusive Source Type:** This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
@@ -196,6 +348,7 @@ INLINE_CITATION_INSTRUCTION = textwrap.dedent("""\
 - Place the inline citation immediately after the supported statement and **before punctuation** when possible (e.g., "Revenue was ¥100B [SS1].").
 - If a single sentence contains multiple distinct facts from different sources, cite each appropriately (e.g., "Revenue was ¥100B [SS1] and net income was ¥10B [SS2].").
 - If a single source supports multiple facts within a paragraph or table, reuse the same `[SSX]`.
+- Maintain absolute consistency: Always use [SS1], [SS2], etc. - never use variations like [S1], [Source 1], etc.
 - This ensures that each fact is directly verifiable against the corresponding "Supervity Source X" in the final Sources list.
 
 **Examples of proper citations:**
@@ -293,7 +446,8 @@ Data 1   | Data 2   | Data 3
    * Ensure the hyphen has proper spacing: `| - |` not `|-|`
 """)
 
-# Now modify BASE_FORMATTING_INSTRUCTIONS to include the table formatting guidelines
+# Now include TABLE_FORMATTING_GUIDELINES directly in BASE_FORMATTING_INSTRUCTIONS 
+# without trying to concatenate it in the middle
 BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Output Format & Quality Requirements:
 
@@ -338,7 +492,104 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     | Net Income              | 8,765    | 9,876    | 10,987   | [SS2]     |
     | EBITDA                  | -        | 18,765   | 19,876   | [SS3]     |
 
-    {TABLE_FORMATTING_GUIDELINES}
+    **Table Formatting Best Practices (CRITICAL FOR RENDERING):**
+
+    1. **Perfect Pipe Alignment:**
+       * Every row MUST have exactly the same number of pipe (`|`) separators
+       * Every row MUST begin and end with a pipe separator
+       * Ensure the separator row (with hyphens) matches the header row exactly
+
+    2. **Column Spacing:**
+       * Maintain consistent spacing between pipe separators and cell content
+       * Correct: `| Cell content |` 
+       * Incorrect: `|Cell content|` or `|  Cell content|`
+
+    3. **Column Width Consistency:**
+       * Try to maintain consistent column widths to improve readability
+       * For numeric columns, right-align values (add spaces before numbers)
+       * For text columns, left-align (add spaces after text)
+
+    4. **Separator Row Requirements:**
+       * Use at least 3 hyphens in each cell of the separator row (e.g., `|---|---|`)
+       * Make sure the separator row has exactly the same number of columns as the header
+
+    5. **CORRECT Table Example:**
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   | Data 3   |
+    | Data 4   | Data 5   | Data 6   |
+    ```
+
+    6. **INCORRECT Examples to Avoid:**
+
+       Wrong: Missing beginning/ending pipes
+    ```
+    Column 1 | Column 2 | Column 3
+    ----------|----------|----------
+    Data 1   | Data 2   | Data 3
+    ```
+
+       Wrong: Inconsistent column counts
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   |
+    | Data 4   | Data 5   | Data 6   | Extra |
+    ```
+
+       Wrong: Missing separator row
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    | Data 1   | Data 2   | Data 3   |
+    ```
+
+       Wrong: Misaligned separator row
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    |---------|-----------|----------|
+    | Data 1   | Data 2   | Data 3   |
+    ```
+
+    7. **Handling Missing Data:**
+       * Use a single hyphen (`-`) for missing data, not empty space or "N/A"
+       * Ensure the hyphen has proper spacing: `| - |` not `|-|`
+
+    **Section Formatting Consistency Requirements:**
+
+    1. **Heading Hierarchy Structure:**
+       * Use `##` for main numbered sections (e.g., `## 1. Section Title`)
+       * Use `###` for subsections (e.g., `### Subsection Title`)
+       * Use `####` for nested subsections if needed
+       * Never skip levels in the hierarchy (don't go from ## to ####)
+       * Always include a space after the # symbols
+
+    2. **Section Numbering Format:**
+       * Main sections must follow the pattern: `## N. Title` (where N is the section number)
+       * Include a period after the number and a space before the title
+       * Match exactly the numbering scheme requested in the prompt
+       * Don't add extra numbering not specified in the prompt
+
+    3. **Content Flow Within Sections:**
+       * Begin each section with a brief introductory paragraph if appropriate
+       * Use consistent paragraph breaks between ideas
+       * Maintain logical progression of information
+       * End sections with concluding insights when appropriate
+       * Don't repeat section headings in the content
+
+    4. **Whitespace Management:**
+       * Include exactly one blank line before each heading
+       * Include exactly one blank line after each heading before content begins
+       * Include one blank line between paragraphs
+       * Don't include excessive blank lines that create unnecessary spacing
+       * Maintain consistent indentation for all list items under a section
+
+    5. **Content-Specific Formatting:**
+       * For data-heavy sections: use tables with consistent structure
+       * For list-heavy sections: use consistent bullet formatting
+       * For analysis sections: use clear paragraph structure with topic sentences
+       * For quote sections: use consistent blockquote formatting
+       * Always follow section-specific formatting requirements in the prompt
 
     **Code Blocks:** When including code or structured content, use standard Markdown code blocks with triple backticks.
 
@@ -420,88 +671,31 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     - Never use "N/A", "Not Available", or explanatory text in place of missing data
     - Do not comment on missing data - simply present what is verifiable
     - For sections where no verifiable data exists, retain headings but minimize content
-""") + TABLE_FORMATTING_GUIDELINES + textwrap.dedent("""\
+""")
 
-    **Code Blocks:** When including code or structured content, use standard Markdown code blocks with triple backticks.
+# Create a detailed instruction to prevent example placeholders in reports
+PLACEHOLDER_REPLACEMENT_INSTRUCTION = textwrap.dedent("""\
+**CRITICAL: REPLACE ALL EXAMPLE PLACEHOLDERS IN FINAL OUTPUT:**
 
-    **Quotes:** Use standard Markdown quote syntax (`>`) for direct quotations.
-    
-    Example of proper quote format:
-    
-    > "This is a direct quote from the CEO." [SS1]
-    > (Source: Annual Report 2023, p.5)
+NEVER use placeholder text like "FYXXXX", "FYYYY", "FYZZZZ", "Example Corp Ltd", "Segment A/B/C", or similar placeholders in your final output. These are for format demonstration ONLY.
 
-    **Emphasis & Formatting:** 
-    - Ensure proper spacing around asterisks/underscores used for italics or bold formatting
-    - Use **bold text** for emphasis (with spaces between content and asterisks)
-    - Use *italics* for secondary emphasis (with spaces between content and asterisks)
-    - Never run formatting markers directly into text without spaces
+* **INCORRECT** (do not do this):
+  | Segment Name | FYXXXX Revenue | FYXXXX % | FYYYY Revenue | FYYYY % |
+  |--------------|----------------|----------|---------------|---------|
+  | Segment A    | 100,000        | 40%      | 110,000       | 41%     |
 
-    **WHAT NOT TO DO - COMMON FORMATTING ERRORS TO AVOID:**
+* **CORRECT** (do this instead):
+  | Segment Name        | FY2023 Revenue | FY2023 % | FY2024 Revenue | FY2024 % |
+  |---------------------|----------------|----------|----------------|----------|
+  | Cloud Services      | 100,000        | 40%      | 110,000        | 41%      |
 
-    1. **Do NOT use code blocks for tables.** This is incorrect:
-    ```
-    | Header 1 | Header 2 |
-    |----------|----------|
-    | Data 1   | Data 2   |
-    ```
-
-    2. **Do NOT indent tables or quotes with spaces or asterisks.** This is incorrect:
-    * | Header 1 | Header 2 |
-      |----------|----------|
-      | Data 1   | Data 2   |
-
-    3. **Do NOT omit the header separator row in tables.** This is incorrect:
-    | Header 1 | Header 2 |
-    | Data 1   | Data 2   |
-
-    4. **Do NOT use inconsistent column counts.** This is incorrect:
-    | Header 1 | Header 2 | Header 3 |
-    |----------|----------|----------|
-    | Data 1   | Data 2   |
-    | Data 3   | Data 4   | Data 5   | Extra |
-
-    5. **Do NOT use asterisks or bullet points inside tables.** This is incorrect:
-    | Company | Key Points |
-    |---------|------------|
-    | ABC Inc | * Point 1  |
-    |         | * Point 2  |
-
-    6. **Do NOT run formatting markers directly into text.** This is incorrect:
-    The company's **revenue**increased by 10% and *profit*margin improved.
-
-    7. **Do NOT use inconsistent spacing in tables.** This is incorrect:
-    |Header 1|Header 2|
-    |---|---|
-    |Data 1|Data 2|
-
-    **Optimal Structure & Readability:**
-    - Present numerical data in tables with proper alignment and headers
-    - Use bullet points for lists of items or characteristics
-    - Use paragraphs for narrative descriptions and analysis
-    - Maintain consistent formatting across similar elements
-    - Ensure logical sequence within each section
-    - Provide detailed yet concise language—be specific without unnecessary verbosity
-    - Where summary paragraphs are requested, integrate key figures and quantitative trends
-
-    **Data Formatting Consistency:**
-    - Use appropriate thousands separators for numbers per the target language: **{language}**
-    - Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period
-    - Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language)
-    - Use consistent percentage formatting (e.g., 12.5%)
-
-    **Timeframe Instructions:**
-    - When instructed to use "the last 3 fiscal years", always use the 3 most recent COMPLETED fiscal years with available data
-    - Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms
-    - For trends analysis, explicitly state the period covered
-    - Always state the "as of" date for point-in-time data
-    - Clearly state fiscal year end dates when first mentioned
-
-    **Handling Missing Data:**
-    - After thorough research, if data is genuinely missing in the source, use only a single hyphen (-) when structurally necessary for tables
-    - Never use "N/A", "Not Available", or explanatory text in place of missing data
-    - Do not comment on missing data - simply present what is verifiable
-    - For sections where no verifiable data exists, retain headings but minimize content
+* **VERIFICATION STEP:** Before finalizing your response, search for the following strings and replace them with actual values:
+  - "FYXXXX", "FYYYY", "FYZZZZ" → Use actual fiscal years (e.g., "FY2023", "FY2024", "FY2025")
+  - "Segment A/B/C" → Use actual segment names from the company's reporting
+  - "Example Corp Ltd" → Use actual company names from verifiable sources
+  - Any other placeholder text → Replace with actual, verified data
+  
+If you cannot find actual values after exhaustive search, use generic descriptive terms instead of placeholders (e.g., "Previous Fiscal Year" instead of "FYXXXX").
 """)
 
 ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
@@ -615,6 +809,8 @@ def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Opti
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Absolutely DO NOT include information about any other similarly named companies (e.g., entertainment, unrelated industries). Verify the identity of the company for all sourced information.
+
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
 
 Comprehensive Corporate Profile, Strategic Overview, and Organizational Analysis of {company_name}
 
@@ -759,6 +955,8 @@ def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Absolutely DO NOT include information about any other similarly named companies. Verify the identity for all financial data sourced.
+
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
 
 Comprehensive Strategic Financial Analysis of {company_name} (Last 3 Fiscal Years)
 
@@ -935,6 +1133,8 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str} and its competitive landscape. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
+
 Detailed Competitive Analysis and Strategic Positioning of {company_name}
 
 Objective: To conduct a comprehensive competitive analysis of **{company_name}** including industry overview, competitor identification, analysis of their market presence and strategies, and an assessment of {company_name}'s own competitive positioning, strategy, and detailed capabilities. Conclusions should include a synthesized discussion relevant to a Japanese corporate audience. Focus strictly on {context_str}.
@@ -1048,6 +1248,8 @@ def get_management_strategy_prompt(company_name: str, language: str = "Japanese"
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
+
 Comprehensive Analysis of {company_name}'s Management Strategy and Mid-Term Business Plan: Focus, Execution, and Progress
 
 Objective: To conduct an extensive analysis of **{company_name}**'s management strategy and mid-term business plan (MTP) by evaluating strategic pillars, execution effectiveness, progress against targets, and challenges. Focus on explaining *why* strategic choices were made and *how* progress is tracked using specific data with inline citations [SSX]. Focus strictly on {context_str}.
@@ -1145,6 +1347,8 @@ def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker:
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
+
 In-Depth Analysis of the Regulatory Environment for {company_name}
 
 Objective: To analyze the regulatory environment impacting **{company_name}**, including key laws, licensing, supervisory bodies, market impacts, international comparisons, and recent trends, particularly as they relate to its core business and digital activities. Evaluate the company's stated compliance approaches and any enforcement actions with precise dates and references [SSX]. Focus strictly on {context_str}.
@@ -1238,6 +1442,8 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Opt
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
+
 In-Depth Analysis of {company_name}'s Digital Crisis Management and Business Continuity
 
 Objective: To analyze how **{company_name}** prepares for, manages, and responds to digital crises (e.g., cyberattacks, system outages, data breaches) and its business continuity plans (BCP) related to digital operations. Include details on past incidents with exact dates, impacts (including financial figures with specified currency if reported), company responses, and potential DX-based mitigation strategies linked to identified risks. Use inline citations [SSX]. Focus strictly on {context_str}.
@@ -1307,6 +1513,8 @@ def get_digital_transformation_prompt(company_name: str, language: str = "Japane
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
+
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
 
 In-Depth Analysis of {company_name}'s Digital Transformation (DX) Strategy and Execution
 
@@ -1410,6 +1618,8 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese",
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
+
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
 
 In-Depth Analysis of {company_name}'s Business Structure, Geographic Footprint, Ownership, and Strategic Vision Linkages
 
@@ -1542,6 +1752,8 @@ def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Opt
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
+
 Analysis of {company_name}'s Strategic Vision and Purpose
 
 Objective: To provide a detailed analysis of **{company_name}**'s officially stated vision, mission, or purpose. Break down its core components (pillars, strategic themes), explain how progress is measured using specific KPIs mentioned in relation to the vision, and assess stakeholder focus. Include exact quotes, dates, and reference all information using inline citations [SSX]. Use the latest available sources. Focus strictly on {context_str}.
@@ -1610,6 +1822,8 @@ def get_management_message_prompt(company_name: str, language: str = "Japanese",
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company and the speaker for all sourced information. Do not include unrelated entities.
+
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
 
 Detailed Leadership Strategic Outlook (Verbatim Quotes) for {company_name}
 
@@ -1760,6 +1974,8 @@ def get_strategy_research_prompt(
 {NO_THINKING_INSTRUCTION}
 **CRITICAL FOCUS:** This Strategy Research is *exclusively* about the specific Target Company: {context_str}. Verify the identity of the Target Company for all sourced information [SSX]. Do not include unrelated entities. This plan leverages public data about the Target Company ({company_name}) to inform a strategic account plan for the Analyzing Company ({context_company_name}).
 
+{PLACEHOLDER_REPLACEMENT_INSTRUCTION}
+
 Comprehensive 3-Year Strategy Research & Action Plan: Targeting {company_name} for {context_company_name}
 
 Objective: Create a detailed, data-driven, and highly specific Strategy Research action plan for engaging the Target Company ({company_name}) over the next three fiscal years (e.g., FY2025-FY2027). This plan must be based *exclusively* on verifiable information about the Target Company ({company_name}) obtained through grounded sources [SSX]. Crucially, the analysis must identify **specific, non-generic opportunities** where the **thoroughly researched capabilities, named solutions, and verifiable strengths** of the Analyzing Company ({context_company_name}), determined via mandatory preliminary research (see instructions below), align with the Target Company's ({company_name}) stated needs, initiatives, or challenges. Focus strictly on the Target Company: {context_str}.
@@ -1899,3 +2115,357 @@ Source and Accuracy Requirements:
 {formatted_base_formatting}
 """
     return prompt
+
+# Create comprehensive section formatting guidelines
+SECTION_CONSISTENCY_GUIDELINES = textwrap.dedent("""\
+**Section Formatting Consistency Requirements:**
+
+1. **Heading Hierarchy Structure:**
+   * Use `##` for main numbered sections (e.g., `## 1. Section Title`)
+   * Use `###` for subsections (e.g., `### Subsection Title`)
+   * Use `####` for nested subsections if needed
+   * Never skip levels in the hierarchy (don't go from ## to ####)
+   * Always include a space after the # symbols
+
+2. **Section Numbering Format:**
+   * Main sections must follow the pattern: `## N. Title` (where N is the section number)
+   * Include a period after the number and a space before the title
+   * Match exactly the numbering scheme requested in the prompt
+   * Don't add extra numbering not specified in the prompt
+
+3. **Content Flow Within Sections:**
+   * Begin each section with a brief introductory paragraph if appropriate
+   * Use consistent paragraph breaks between ideas
+   * Maintain logical progression of information
+   * End sections with concluding insights when appropriate
+   * Don't repeat section headings in the content
+
+4. **Whitespace Management:**
+   * Include exactly one blank line before each heading
+   * Include exactly one blank line after each heading before content begins
+   * Include one blank line between paragraphs
+   * Don't include excessive blank lines that create unnecessary spacing
+   * Maintain consistent indentation for all list items under a section
+
+5. **Content-Specific Formatting:**
+   * For data-heavy sections: use tables with consistent structure
+   * For list-heavy sections: use consistent bullet formatting
+   * For analysis sections: use clear paragraph structure with topic sentences
+   * For quote sections: use consistent blockquote formatting
+   * Always follow section-specific formatting requirements in the prompt
+""")
+
+# Update BASE_FORMATTING_INSTRUCTIONS to include SECTION_CONSISTENCY_GUIDELINES
+# First, let's break down the existing BASE_FORMATTING_INSTRUCTIONS to find where to insert it
+BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
+    Output Format & Quality Requirements:
+
+    **Direct Start & No Conversational Text:** Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
+
+    **Strict Markdown Formatting Requirements:**
+    
+    **Section Formatting:** Sections MUST be numbered exactly as specified in the prompt (e.g., `## 1. Core Corporate Information`). Use `##` for main sections.
+    
+    **Subsection Formatting:** Use `###` for subsections and maintain hierarchical structure.
+    
+    **List Formatting:** Use hyphens (`-`) for bullets with consistent indentation (use 4 spaces for sub-bullets relative to the parent bullet).
+    Example:
+    - Main point one
+        - Sub-point 1.1
+            - Sub-point 1.1.1
+    - Main point two
+
+    **Tables (CRITICAL FOR RENDERING):** Format all tables with proper Markdown table syntax:
+    
+    - Every row (header, separator, data) MUST have the exact same number of columns with pipe (`|`) separators
+    - Every row MUST begin with a pipe (`|`) and end with a pipe (`|`)
+    - The separator line MUST match the number of header columns exactly
+    - For missing data, use a single hyphen (`-`) as placeholder if required for table structure
+    - Never use code blocks for tables
+    - Ensure all table cells have adequate spacing between content and pipe separators
+    
+    Example of proper table format:
+
+    | Header 1        | Header 2      | Header 3          | Source(s) |
+    |-----------------|---------------|-------------------|-----------| 
+    | Data Item 1     | 123.45        | Long text content | [SS1]     |
+    | Another Item    | -             | More text here    | [SS2]     |
+    | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
+
+    **Financial Table Example:**
+
+    | Metric                  | FY2023   | FY2024   | FY2025   | Source(s) |
+    |-------------------------|----------|----------|----------|-----------|
+    | Revenue (JPY Millions)  | 123,456  | 134,567  | 145,678  | [SS1]     |
+    | Operating Profit        | 12,345   | 13,456   | 14,567   | [SS1]     |
+    | Net Income              | 8,765    | 9,876    | 10,987   | [SS2]     |
+    | EBITDA                  | -        | 18,765   | 19,876   | [SS3]     |
+
+    **Table Formatting Best Practices (CRITICAL FOR RENDERING):**
+
+    1. **Perfect Pipe Alignment:**
+       * Every row MUST have exactly the same number of pipe (`|`) separators
+       * Every row MUST begin and end with a pipe separator
+       * Ensure the separator row (with hyphens) matches the header row exactly
+
+    2. **Column Spacing:**
+       * Maintain consistent spacing between pipe separators and cell content
+       * Correct: `| Cell content |` 
+       * Incorrect: `|Cell content|` or `|  Cell content|`
+
+    3. **Column Width Consistency:**
+       * Try to maintain consistent column widths to improve readability
+       * For numeric columns, right-align values (add spaces before numbers)
+       * For text columns, left-align (add spaces after text)
+
+    4. **Separator Row Requirements:**
+       * Use at least 3 hyphens in each cell of the separator row (e.g., `|---|---|`)
+       * Make sure the separator row has exactly the same number of columns as the header
+
+    5. **CORRECT Table Example:**
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   | Data 3   |
+    | Data 4   | Data 5   | Data 6   |
+    ```
+
+    6. **INCORRECT Examples to Avoid:**
+
+       Wrong: Missing beginning/ending pipes
+    ```
+    Column 1 | Column 2 | Column 3
+    ----------|----------|----------
+    Data 1   | Data 2   | Data 3
+    ```
+
+       Wrong: Inconsistent column counts
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   |
+    | Data 4   | Data 5   | Data 6   | Extra |
+    ```
+
+       Wrong: Missing separator row
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    | Data 1   | Data 2   | Data 3   |
+    ```
+
+       Wrong: Misaligned separator row
+    ```
+    | Column 1 | Column 2 | Column 3 |
+    |---------|-----------|----------|
+    | Data 1   | Data 2   | Data 3   |
+    ```
+
+    7. **Handling Missing Data:**
+       * Use a single hyphen (`-`) for missing data, not empty space or "N/A"
+       * Ensure the hyphen has proper spacing: `| - |` not `|-|`
+
+    **Section Formatting Consistency Requirements:**
+
+    1. **Heading Hierarchy Structure:**
+       * Use `##` for main numbered sections (e.g., `## 1. Section Title`)
+       * Use `###` for subsections (e.g., `### Subsection Title`)
+       * Use `####` for nested subsections if needed
+       * Never skip levels in the hierarchy (don't go from ## to ####)
+       * Always include a space after the # symbols
+
+    2. **Section Numbering Format:**
+       * Main sections must follow the pattern: `## N. Title` (where N is the section number)
+       * Include a period after the number and a space before the title
+       * Match exactly the numbering scheme requested in the prompt
+       * Don't add extra numbering not specified in the prompt
+
+    3. **Content Flow Within Sections:**
+       * Begin each section with a brief introductory paragraph if appropriate
+       * Use consistent paragraph breaks between ideas
+       * Maintain logical progression of information
+       * End sections with concluding insights when appropriate
+       * Don't repeat section headings in the content
+
+    4. **Whitespace Management:**
+       * Include exactly one blank line before each heading
+       * Include exactly one blank line after each heading before content begins
+       * Include one blank line between paragraphs
+       * Don't include excessive blank lines that create unnecessary spacing
+       * Maintain consistent indentation for all list items under a section
+
+    5. **Content-Specific Formatting:**
+       * For data-heavy sections: use tables with consistent structure
+       * For list-heavy sections: use consistent bullet formatting
+       * For analysis sections: use clear paragraph structure with topic sentences
+       * For quote sections: use consistent blockquote formatting
+       * Always follow section-specific formatting requirements in the prompt
+
+    **Code Blocks:** When including code or structured content, use standard Markdown code blocks with triple backticks.
+
+    **Quotes:** Use standard Markdown quote syntax (`>`) for direct quotations.
+    
+    Example of proper quote format:
+    
+    > "This is a direct quote from the CEO." [SS1]
+    > (Source: Annual Report 2023, p.5)
+
+    **Emphasis & Formatting:** 
+    - Ensure proper spacing around asterisks/underscores used for italics or bold formatting
+    - Use **bold text** for emphasis (with spaces between content and asterisks)
+    - Use *italics* for secondary emphasis (with spaces between content and asterisks)
+    - Never run formatting markers directly into text without spaces
+
+    **WHAT NOT TO DO - COMMON FORMATTING ERRORS TO AVOID:**
+
+    1. **Do NOT use code blocks for tables.** This is incorrect:
+    ```
+    | Header 1 | Header 2 |
+    |----------|----------|
+    | Data 1   | Data 2   |
+    ```
+
+    2. **Do NOT indent tables or quotes with spaces or asterisks.** This is incorrect:
+    * | Header 1 | Header 2 |
+      |----------|----------|
+      | Data 1   | Data 2   |
+
+    3. **Do NOT omit the header separator row in tables.** This is incorrect:
+    | Header 1 | Header 2 |
+    | Data 1   | Data 2   |
+
+    4. **Do NOT use inconsistent column counts.** This is incorrect:
+    | Header 1 | Header 2 | Header 3 |
+    |----------|----------|----------|
+    | Data 1   | Data 2   |
+    | Data 3   | Data 4   | Data 5   | Extra |
+
+    5. **Do NOT use asterisks or bullet points inside tables.** This is incorrect:
+    | Company | Key Points |
+    |---------|------------|
+    | ABC Inc | * Point 1  |
+    |         | * Point 2  |
+
+    6. **Do NOT run formatting markers directly into text.** This is incorrect:
+    The company's **revenue**increased by 10% and *profit*margin improved.
+
+    7. **Do NOT use inconsistent spacing in tables.** This is incorrect:
+    |Header 1|Header 2|
+    |---|---|
+    |Data 1|Data 2|
+
+    **Optimal Structure & Readability:**
+    - Present numerical data in tables with proper alignment and headers
+    - Use bullet points for lists of items or characteristics
+    - Use paragraphs for narrative descriptions and analysis
+    - Maintain consistent formatting across similar elements
+    - Ensure logical sequence within each section
+    - Provide detailed yet concise language—be specific without unnecessary verbosity
+    - Where summary paragraphs are requested, integrate key figures and quantitative trends
+
+    **Data Formatting Consistency:**
+    - Use appropriate thousands separators for numbers per the target language: **{language}**
+    - Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period
+    - Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language)
+    - Use consistent percentage formatting (e.g., 12.5%)
+
+    **Timeframe Instructions:**
+    - When instructed to use "the last 3 fiscal years", always use the 3 most recent COMPLETED fiscal years with available data
+    - Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms
+    - For trends analysis, explicitly state the period covered
+    - Always state the "as of" date for point-in-time data
+    - Clearly state fiscal year end dates when first mentioned
+
+    **Handling Missing Data:**
+    - After thorough research, if data is genuinely missing in the source, use only a single hyphen (-) when structurally necessary for tables
+    - Never use "N/A", "Not Available", or explanatory text in place of missing data
+    - Do not comment on missing data - simply present what is verifiable
+    - For sections where no verifiable data exists, retain headings but minimize content
+""")
+
+# Create professional text and bullet point guidelines
+PROFESSIONAL_TEXT_GUIDELINES = textwrap.dedent("""\
+**Professional Business Writing Standards:**
+
+1. **Sentence Structure Excellence:**
+   * Use clear, direct sentences with a logical subject-verb-object structure
+   * Vary sentence length for better readability (mix short, impactful sentences with more complex ones)
+   * Begin sentences with meaningful subjects rather than weak introductory phrases
+   * Use active voice predominantly (e.g., "The company increased revenue" not "Revenue was increased")
+   * Ensure parallel structure in lists and series (e.g., all items begin with verbs or all are nouns)
+
+2. **Bullet Point Best Practices:**
+   * Start each bullet point with the same part of speech for consistency (e.g., all verbs, all nouns)
+   * Keep bullet points relatively parallel in length and complexity
+   * Begin each bullet with a capital letter
+   * End each bullet consistently (either all with periods or all without)
+   * Use bullets for lists of distinct items, not for connected narrative
+   * Limit bullet hierarchy to maximum 3 levels for readability
+
+3. **Paragraph Construction:**
+   * Begin paragraphs with a clear topic sentence
+   * Keep paragraphs focused on a single main idea
+   * Use transitional phrases between paragraphs to maintain flow
+   * Aim for 3-5 sentences per paragraph in most cases
+   * Use paragraph breaks strategically to emphasize key points
+
+4. **Business Terminology Precision:**
+   * Use industry-standard terminology consistently
+   * Define specialized terms on first use if necessary
+   * Avoid jargon unless it adds precision and clarity
+   * Use consistent terminology throughout the document (don't alternate between synonyms)
+   * Spell out acronyms on first use with the acronym in parentheses
+
+5. **Data Expression:**
+   * Present numerical data with appropriate precision (avoid excessive decimal places)
+   * Always specify units and time periods for measurements
+   * Use consistent number formatting (e.g., million, billion, %)
+   * Compare data points meaningfully (e.g., YoY changes, percentages, CAGR)
+   * Present related numerical data in tables rather than embedding in paragraphs
+
+6. **Final Polish Checklist:**
+   * Eliminate redundancy and wordiness
+   * Replace vague terms with specific ones
+   * Ensure logical flow between sentences and paragraphs
+   * Use proper noun capitalization consistently
+   * Check for consistent tense usage throughout sections
+""")
+
+# Update the ADDITIONAL_MARKDOWN_GUIDELINES to include PROFESSIONAL_TEXT_GUIDELINES
+ADDITIONAL_MARKDOWN_GUIDELINES = textwrap.dedent("""\
+**Additional Markdown Formatting Guidelines to Ensure Clean Rendering:**
+
+1. **Tables and Markdown Lists:** 
+   * Never place Markdown lists directly inside table cells.
+   * If a cell must contain multiple points, use semicolons or commas to separate them.
+   * For complex nested data, reference a note below the table.
+
+2. **Emphasis and Special Character Handling:**
+   * Always use proper spacing around emphasis markers: 
+     * Correct: Text with **bold words** in it.
+     * Incorrect: Text with**bold words**in it.
+   * Be careful with asterisks in regular text - escape them with backslash when needed.
+   * Don't place emphasis markers directly adjacent to punctuation.
+
+3. **List Formatting Excellence:**
+   * Maintain consistent indentation (4 spaces for nested items)
+   * Always include a space after the list marker (*, -, or numbers)
+   * Ensure proper nesting hierarchy for multi-level lists
+   * Don't mix different list markers in the same list
+
+4. **Heading Structure:**
+   * Use ## for main sections (e.g., ## 1. Section Title)
+   * Use ### for subsections
+   * Include a space after the # symbols
+   * Maintain logical hierarchy (don't skip levels)
+   * Don't include formatting markers in headings unless absolutely necessary
+
+5. **Paragraph and Line Spacing:**
+   * Separate paragraphs with a blank line
+   * Don't include unnecessary blank lines between list items
+   * Maintain consistent paragraph formatting throughout the document
+   * Don't break sentences across paragraphs without proper punctuation
+
+{TEXT_FORMATTING_GUIDELINES}
+
+{PROFESSIONAL_TEXT_GUIDELINES}
+""")
