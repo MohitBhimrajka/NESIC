@@ -183,10 +183,88 @@ class EnhancedPDFGenerator:
         processed_lines = []
         i = 0
         
+        # Check if this is a key findings section and apply special preprocessing
+        key_findings_section = False
+        key_findings_start_idx = -1
+        key_findings_end_idx = -1
+        
+        for i, line in enumerate(lines):
+            if "### Key Findings" in line or "## Key Findings" in line:
+                key_findings_section = True
+                key_findings_start_idx = i
+            elif key_findings_section and line.strip().startswith('###'):
+                # Found the end of key findings section (next heading)
+                key_findings_end_idx = i
+                break
+        
+        # If we found the end of key findings by another heading
+        if key_findings_end_idx == -1 and key_findings_section:
+            key_findings_end_idx = len(lines)  # Set to end of file
+        
+        # Special preprocessing for key findings section
+        if key_findings_section and key_findings_start_idx >= 0:
+            # Create a new array for the processed key findings
+            key_findings_lines = []
+            key_findings_lines.append('<div id="key-findings">')
+            key_findings_lines.append(f'<h3>Key Findings</h3>')
+            key_findings_lines.append('<ol>')
+            
+            # Now process the content items
+            idx = key_findings_start_idx + 1
+            item_count = 0
+            extracted_items = []  # Store all items here first
+            
+            while idx < key_findings_end_idx:
+                line = lines[idx].strip()
+                
+                # Skip empty lines
+                if not line:
+                    idx += 1
+                    continue
+                
+                # Match lines starting with a number followed by a period
+                if re.match(r'^\d+\.\s+', line):
+                    # This is a numbered item like "1. **Title:** Content"
+                    # Extract the content after the number
+                    # Check if it contains bold text and description
+                    match = re.match(r'^\d+\.\s+\*\*(.*?):\*\*(.*?)$', line)
+                    if match:
+                        title = match.group(1)
+                        content = match.group(2).strip()
+                        extracted_items.append((title, content))
+                    else:
+                        # Try another pattern where the colon is outside the bold marks
+                        match = re.match(r'^\d+\.\s+\*\*(.*?)\*\*:(.*?)$', line)
+                        if match:
+                            title = match.group(1)
+                            content = match.group(2).strip()
+                            extracted_items.append((title, content))
+                        else:
+                            # Just add as is if no pattern matches
+                            content = line[line.find(' ')+1:]  # Everything after the number+period+space
+                            extracted_items.append((None, content))
+                
+                idx += 1
+            
+            # Now create the list items with sequential numbering
+            for i, (title, content) in enumerate(extracted_items, 1):
+                if title:
+                    key_findings_lines.append(f'<li><strong>{title}</strong><span class="content">{content}</span></li>')
+                else:
+                    key_findings_lines.append(f'<li><span class="content">{content}</span></li>')
+            
+            # Close the ordered list and div
+            key_findings_lines.append('</ol>')
+            key_findings_lines.append('</div>')
+            
+            # Replace the key findings section in the original content
+            lines[key_findings_start_idx:key_findings_end_idx] = key_findings_lines
+        
         # First pass: identify and fix table formatting, preserve list formatting
         in_table = False
         table_lines = []
         
+        i = 0
         while i < len(lines):
             line = lines[i].rstrip()
             
@@ -417,34 +495,53 @@ class EnhancedPDFGenerator:
             # Add classes based on heading level
             h_tag['class'] = h_tag.get('class', []) + [f'heading-{h_tag.name}']
             
-            # Generate an ID from the heading text if it doesn't have one
+            # Check if this is the key findings heading
+            if h_tag.get_text().strip().lower() == 'key findings':
+                # Find the parent section
+                parent = h_tag.parent
+                while parent and parent.name != 'div':
+                    parent = parent.parent
+                
+                # If we found a parent section, mark it with an ID
+                if parent:
+                    parent['id'] = 'key-findings'
+                
+                # Also add an ID to this heading itself
+                h_tag['id'] = 'key-findings-heading'
+                
+                # Process the ordered list that follows
+                next_ol = h_tag.find_next('ol')
+                if next_ol:
+                    next_ol['class'] = next_ol.get('class', []) + ['key-findings-list']
+            
+            # Add ID for navigation if not already present
             if not h_tag.get('id'):
-                heading_text = h_tag.get_text().strip()
-                base_id = re.sub(r'[^\w\s-]', '', heading_text.lower())
-                base_id = re.sub(r'[\s-]+', '-', base_id)
+                # Generate ID from text content
+                text = h_tag.get_text().strip()
+                # Convert to lowercase and replace spaces with hyphens
+                id_base = re.sub(r'[^\w\s-]', '', text.lower())
+                id_base = re.sub(r'[\s-]+', '-', id_base)
                 
-                # Make sure ID is unique
-                heading_id = base_id
-                counter = 1
-                while heading_id in used_ids:
-                    heading_id = f"{base_id}-{counter}"
-                    counter += 1
+                # Ensure unique ID
+                id_text = id_base
+                count = 1
+                while id_text in used_ids:
+                    id_text = f"{id_base}-{count}"
+                    count += 1
                 
-                h_tag['id'] = heading_id
-                used_ids.add(heading_id)
+                h_tag['id'] = id_text
+                used_ids.add(id_text)
             else:
-                # If ID exists, still make sure it's unique
+                # If ID already exists, still track it to avoid duplicates
                 original_id = h_tag['id']
                 if original_id in used_ids:
-                    counter = 1
-                    new_id = f"{original_id}-{counter}"
-                    while new_id in used_ids:
-                        counter += 1
-                        new_id = f"{original_id}-{counter}"
-                    h_tag['id'] = new_id
-                    used_ids.add(new_id)
-                else:
-                    used_ids.add(original_id)
+                    # Append a number to make it unique
+                    count = 1
+                    while f"{original_id}-{count}" in used_ids:
+                        count += 1
+                    h_tag['id'] = f"{original_id}-{count}"
+                
+                used_ids.add(original_id)
 
     def _process_list(self, list_tag, level=1):
         """Process a list and its nested lists recursively."""
@@ -474,6 +571,17 @@ class EnhancedPDFGenerator:
             for nested_list in li.find_all(['ul', 'ol'], recursive=False):
                 self._process_list(nested_list, level=level+1)
                 
+            # Fix empty bullet points that might be followed by numbers in key findings
+            if (li.get_text().strip() == '' or li.get_text().strip() == '•') and list_tag.name == 'ol':
+                # Try to get the next sibling which might contain the actual content
+                next_li = li.find_next_sibling('li')
+                if next_li and not next_li.find(['ul', 'ol'], recursive=False):
+                    # Move content from the next li to this one
+                    for content in next_li.contents:
+                        li.append(content.copy())
+                    # Remove the now-duplicated li
+                    next_li.extract()
+            
             # Ensure specially formatted content within list items is preserved
             # Look for bold or italic markers that might be part of the text node
             for text_node in li.find_all(text=True, recursive=False):

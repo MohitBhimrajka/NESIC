@@ -312,7 +312,7 @@ Before producing the final answer, confirm:
 3. Use inline citations [SSX] matching final sources exactly.
 4. Provide only one "Sources" section at the end.
 5. Do not use any URLs outside "vertexaisearch.cloud.google.com/..." pattern if not explicitly provided.
-6. **Enforce Single-Entity Focus**: Strictly reference only the **exact** company named: **'{company_name}'** (with identifiers like Ticker: '{ticker}', Industry: '{industry}' if provided). **Crucially verify** you are NOT including data from similarly named but unrelated entities (e.g., if the target is 'Marvell Technology, Inc.', absolutely DO NOT include 'Marvel Entertainment' or data related to comics/movies). Confirm if data relates to the parent/consolidated entity or a specific subsidiary, and report accordingly based ONLY on the source [SSX].
+6. **Enforce Single-Entity Coverage (CRITICAL)**: If '{company_name}' is the focus, DO NOT include other similarly named but unrelated entities. Verify target entity identity throughout.
 7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
 """)
 
@@ -595,7 +595,7 @@ Conclude the *entire* research output, following the 'General Discussion' paragr
 -   **Exclusive Source Type**: This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
 -   **URL Pattern**: These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`. **Only URLs matching this exact pattern are permitted.**
 -   **Strict Filtering**: Absolutely **DO NOT** include any other type of URL (direct website links, news, PDFs, etc.).
--   **CRITICAL - No Hallucination**: **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/...` URLs** from previous queries or general knowledge if they were not explicitly provided as grounding results *for this query*. If a fact is identified but lacks a corresponding provided grounding URL after exhaustive search, it must be silently omitted from the report body AND no source should be listed for it.
+-   **CRITICAL - No Hallucination**: **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/...` URLs** from previous queries or general knowledge if they were not explicitly provided by the Vertex AI Search system as grounding results *for this specific query and for the specific fact being cited*. If a fact is identified by the system and a corresponding `vertexaisearch.cloud.google.com/grounding-api-redirect/...` URL is provided by the system as its grounding source, **that specific URL must be used for that fact's citation, even if its direct click-through behavior for a human user is imperfect (e.g., leads to a document's main page instead of a specific anchor).** Your responsibility is to report the grounding URL the system associated with the fact. If a fact is identified but lacks a corresponding system-provided grounding URL after exhaustive search by the system, it must be silently omitted from the report body AND no source should be listed for it.
 -   **Purpose**: This list verifies the specific grounding data provided by Vertex AI Search for this request—not external knowledge or other URLs.
 
 **2. Formatting and Annotation (CRITICAL FOR PARSING)**:
@@ -619,12 +619,12 @@ Conclude the *entire* research output, following the 'General Discussion' paragr
 
 **5. Final Check**:
 -   Before concluding the response, review the entire output. Verify:
-        * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts.
-        * Each source is on a new line and follows the correct format.
-        * Every fact in the report body is supported by an inline citation [SSX] that corresponds to a source in this list.
-        * Every source listed corresponds to at least one inline citation [SSX] in the report body.
+    * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts.
+    * Each source is on a new line and follows the correct format.
+    * Every fact in the report body is supported by an inline citation [SSX] that corresponds to a source in this list.
+    * Every source listed corresponds to at least one inline citation [SSX] in the report body.
 -   The "**Sources**" section must appear only once, at the end of the entire response.
-    """)
+""")
 
 HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
 **Handling Missing or Ungrounded Information**:
@@ -716,250 +716,6 @@ AUDIENCE_CONTEXT_REMINDER = textwrap.dedent("""\
 
 def get_language_instruction(language: str) -> str:
     return f"Output Language: The final research output must be presented entirely in **{language}**."
-
-# Now include TABLE_FORMATTING_GUIDELINES directly in BASE_FORMATTING_INSTRUCTIONS 
-# without trying to concatenate it in the middle
-BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
-    Output Format & Quality Requirements:
-
-    **Direct Start & No Conversational Text**: Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
-
-    **Strict Markdown Formatting Requirements**:
-    
-    **Section Formatting**: Sections MUST be numbered exactly as specified in the prompt (e.g., `## 1. Core Corporate Information`). Use `##` for main sections.
-    
-    **Subsection Formatting**: Use `###` for subsections and maintain hierarchical structure.
-    
-    **List Formatting**: Use hyphens (`-`) for bullets with consistent indentation (use 4 spaces for sub-bullets relative to the parent bullet).
-    Example:
-    - Main point one
-        - Sub-point 1.1
-            - Sub-point 1.1.1
-    - Main point two
-
-    **Tables (CRITICAL FOR RENDERING)**: Format all tables with proper Markdown table syntax:
-    
-    - Every row (header, separator, data) MUST have the exact same number of columns with pipe (`|`) separators
-    - Every row MUST begin with a pipe (`|`) and end with a pipe (`|`)
-    - The separator line MUST match the number of header columns exactly
-    - For missing data, use a single hyphen (`-`) as placeholder if required for table structure
-    - Never use code blocks for tables
-    - Ensure all table cells have adequate spacing between content and pipe separators
-    
-    Example of proper table format:
-
-    | Header 1        | Header 2      | Header 3          | Source(s) |
-    |-----------------|---------------|-------------------|-----------| 
-    | Data Item 1     | 123.45        | Long text content | [SS1]     |
-    | Another Item    | -             | More text here    | [SS2]     |
-    | Final Item Data | 5,000 (JPY M) | Short text        | [SS1, SS3]|
-
-    **Financial Table Example**:
-
-    | Metric                  | FY2023   | FY2024   | FY2025   | Source(s) |
-    |-------------------------|----------|----------|----------|-----------|
-    | Revenue (JPY Millions)  | 123,456  | 134,567  | 145,678  | [SS1]     |
-    | Operating Profit        | 12,345   | 13,456   | 14,567   | [SS1]     |
-    | Net Income              | 8,765    | 9,876    | 10,987   | [SS2]     |
-    | EBITDA                  | -        | 18,765   | 19,876   | [SS3]     |
-
-""" + TABLE_FORMATTING_GUIDELINES + """
-
-""" + SECTION_CONSISTENCY_GUIDELINES + """
-
-    **Code Blocks**: When including code or structured content, use standard Markdown code blocks with triple backticks.
-
-    **Quotes**: Use standard Markdown quote syntax (`>`) for direct quotations.
-    
-    Example of proper quote format:
-    
-    > "This is a direct quote from the CEO." [SS1]
-    > (Source: Annual Report 2025, p.5)
-
-    **Emphasis & Formatting**: 
-    - Ensure proper spacing around asterisks/underscores used for italics or bold formatting
-    - Use **bold text** for emphasis (with spaces between content and asterisks)
-    - Use *italics* for secondary emphasis (with spaces between content and asterisks)
-    - Never run formatting markers directly into text without spaces
-
-    **WHAT NOT TO DO - COMMON FORMATTING ERRORS TO AVOID**:
-
-    1. **Do NOT use code blocks for tables.** This is incorrect:
-    ```
-    | Header 1 | Header 2 |
-    |----------|----------|
-    | Data 1   | Data 2   |
-    ```
-
-    2. **Do NOT indent tables or quotes with spaces or asterisks.** This is incorrect:
-    * | Header 1 | Header 2 |
-      |----------|----------|
-      | Data 1   | Data 2   |
-
-    3. **Do NOT omit the header separator row in tables.** This is incorrect:
-    | Header 1 | Header 2 |
-    | Data 1   | Data 2   |
-
-    4. **Do NOT use inconsistent column counts.** This is incorrect:
-    | Header 1 | Header 2 | Header 3 |
-    |----------|----------|----------|
-    | Data 1   | Data 2   |
-    | Data 3   | Data 4   | Data 5   | Extra |
-
-    5. **Do NOT use asterisks or bullet points inside tables.** This is incorrect:
-    | Company | Key Points |
-    |---------|------------|
-    | ABC Inc | * Point 1  |
-    |         | * Point 2  |
-
-    6. **Do NOT run formatting markers directly into text.** This is incorrect:
-    The company's **revenue**increased by 10% and *profit*margin improved.
-
-    7. **Do NOT use inconsistent spacing in tables.** This is incorrect:
-    |Header 1|Header 2|
-    |---|---|
-    |Data 1|Data 2|
-
-    **Optimal Structure & Readability**:
-    - Present numerical data in tables with proper alignment and headers
-    - Use bullet points for lists of items or characteristics
-    - Use paragraphs for narrative descriptions and analysis
-    - Maintain consistent formatting across similar elements
-    - Ensure logical sequence within each section
-    - Provide detailed yet concise language—be specific without unnecessary verbosity
-    - Where summary paragraphs are requested, integrate key figures and quantitative trends
-
-    **Data Formatting Consistency**:
-    - Use appropriate thousands separators for numbers per the target language: **{language}**
-    - Always specify the currency (e.g., ¥, $, €, JPY, USD, EUR) for all monetary values along with the reporting period
-    - Format dates consistently (e.g., YYYY-MM-DD or as commonly used in the target language)
-    - Use consistent percentage formatting (e.g., 12.5%)
-
-    **Timeframe Instructions**:
-    - When instructed to use "the last 3 fiscal years", always use the 3 most recent COMPLETED fiscal years with available data
-    - Always use specific fiscal year notation (e.g., "FY2023-FY2025") instead of vague terms
-    - For trends analysis, explicitly state the period covered
-    - Always state the "as of" date for point-in-time data
-    - Clearly state fiscal year end dates when first mentioned
-
-    **Handling Missing Data**:
-    - After thorough research, if data is genuinely missing in the source, use only a single hyphen (`-`) when structurally necessary for tables
-    - Never use "N/A", "Not Available", or explanatory text in place of missing data
-    - Do not comment on missing data - simply present what is verifiable
-    - For sections where no verifiable data exists, retain headings but minimize content
-""")
-
-# Create a detailed instruction to prevent example placeholders in reports
-PLACEHOLDER_REPLACEMENT_INSTRUCTION = textwrap.dedent("""\
-**CRITICAL: REPLACE ALL EXAMPLE PLACEHOLDERS IN FINAL OUTPUT**:
-
-NEVER use placeholder text like "FYXXXX", "FYYYY", "FYZZZZ", "Example Corp Ltd", "Segment A/B/C", or similar placeholders in your final output. These are for format demonstration ONLY.
-
-*   **INCORRECT** (do not do this):
-    | Segment Name | FY2025 Revenue | FY2025 % | FY2026 Revenue | FY2026 % |
-    |--------------|----------------|----------|----------------|----------|
-    | Segment A    | 100,000        | 40%      | 110,000        | 41%     |
-
-*   **CORRECT** (do this instead):
-  | Segment Name        | FY2023 Revenue | FY2023 % | FY2024 Revenue | FY2024 % |
-  |---------------------|----------------|----------|----------------|----------|
-  | Cloud Services      | 100,000        | 40%      | 110,000        | 41%      |
-
-*   **VERIFICATION STEP**: Before finalizing your response, search for the following strings and replace them with actual values:
-  - "FYXXXX", "FYYYY", "FYZZZZ" → Use actual fiscal years (e.g., "FY2023", "FY2024", "FY2025")
-  - "Segment A/B/C" → Use actual segment names from the company's reporting
-  - "Example Corp Ltd" → Use actual company names from verifiable sources
-  - Any other placeholder text → Replace with actual, verified data
-  
-If you cannot find actual values after exhaustive search, use generic descriptive terms instead of placeholders (e.g., "Previous Fiscal Year" instead of "FYXXXX").
-""")
-
-ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
-**Mandatory Preliminary Research: Understanding the Analyzing Company ({context_company_name})**:
-
-**CRITICAL Prerequisite**: Before generating the Strategy Research plan for the Target Company ({company_name}), you MUST conduct a **thorough, in-depth preliminary research** step focused *exclusively* on understanding the **Analyzing Company ({context_company_name})**. The goal is to move far beyond generic assumptions and build a specific profile of their offerings and strengths.
-
-**Research Depth & Source Prioritization**:
--   **Mandatory Sources**: Prioritize and diligently examine {context_company_name}'s:
-    1.  **Official Website**: Specifically the sections detailing "Products," "Services," "Solutions," "Industries," "Case Studies," and "About Us." Look for specific named offerings.
-    2.  **Latest Annual/Integrated Report**: Focus on sections describing business segments, strategy, R&D, key investments, and market positioning.
-    3.  **Recent Investor Relations Materials**: (Presentations, Factbooks) Check for strategic priorities, targeted growth areas, and capability highlights.
--   **Supplemental Sources**: Use reputable industry analysis or financial news reports *only* if necessary to clarify specific offerings or market position, but prioritize official self-descriptions.
--   **Timeframe**: Focus on the *current* and *most recently reported* capabilities and strategic direction.
-
-**Information to Extract (Be Specific)**:
-1.  **Core Business Domains & *Named* Solutions**: Identify the *specific, named* products, services, platforms, and solutions {context_company_name} actively markets. (e.g., Instead of "Cloud Services," find "CloudFlex Managed Azure" or "AI-Powered Predictive Maintenance Suite"). List the key domains (e.g., Cybersecurity, Cloud Infrastructure, ERP Implementation, Network Integration, Industry-Specific Software [specify industry]).
-2.  **Key Verifiable Strengths & Differentiators**: What does {context_company_name} claim as its specific advantages? (e.g., "Certified expertise in SAP S/4HANA migration," "Proprietary AI algorithm for X," "Extensive nationwide service network with Y depots," "Decades of experience in the Z vertical," "Unique partnership with TechVendor ABC"). Avoid generic terms like "good service."
-3.  **Primary Target Industries/Verticals**: Which specific industries does {context_company_name} explicitly state it focuses on or has deep expertise in?
-4.  **Technological Focus/Partnerships**: Identify key technologies {context_company_name} emphasizes (e.g., AI/ML, IoT, specific cloud platforms, cybersecurity frameworks) and major strategic technology partnerships mentioned.
-
-**CRITICAL - AVOID GENERICITY**:
--   **Do NOT rely on assumptions or superficial knowledge.** Your understanding must be based on the specific research conducted using the sources above.
--   **Do NOT use generic descriptions** like "offers IT solutions," "provides consulting," or "is good at technology." Be precise and use the specific terminology and offering names found in {context_company_name}'s own materials.
-
-**Purpose & Application**:
--   This preliminary research is **fundamental** to generating a valuable and non-generic Strategy Research plan. The quality and specificity of your proposed alignments in the main report (Sections 4, 6, 7, 9, 11) **directly depend** on the accuracy and depth of this initial research.
--   You will explicitly use the *specific capabilities, named solutions, and verifiable strengths* identified here when analyzing the Target Company ({company_name}) and proposing potential alignments.
--   You do *not* need to cite these preliminary research sources in the final output unless they overlap with provided grounding URLs for the Target Company ({company_name}).
-
-**Internal Verification**: Before proceeding to analyze the Target Company, internally confirm you have identified specific, named offerings and verifiable strengths for {context_company_name}, not just generic categories.
-    """)
-
-FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
-**Internal Final Review**: Before generating the 'Sources' list, review your generated response for:
-
-**Completeness Check**:
-- Every numbered section requested in the prompt is present with the correct heading.
-- Each section contains all requested subsections and information points for the Target Company ({company_name}), or the content has been silently omitted if ungrounded after exhaustive search (headings retained).
-- The "Final Strategy Summary" (Section 11) is included.
-- No sections have been accidentally omitted or truncated.
-
-**Formatting Verification**:
-- All line breaks are properly formatted (no literal '\\n').
-- All section headings use correct Markdown format (`## Number. Title`).
-- All subsections use proper hierarchical format (`###` or indented bullets).
-- **Tables are PERFECTLY formatted** (aligned pipes, matching columns, start/end pipes, `-` used sparingly only for missing cell data *confirmed absent in source* for {company_name}, data accuracy check vs source).
-- Lists use consistent formatting and indentation.
-
-**Citation Integrity (Target Company - {company_name})**:
-- Every factual claim about **{company_name}** has an inline citation `[SSX]`.
-- **Specifically verify {company_name}'s financial data points and table entries for correct [SSX] citations.**
-- Citations are placed immediately after the supported claim, before punctuation.
-- All citations correspond exactly to entries that WILL BE in the final Sources list.
-- Every source listed corresponds to at least one inline citation `[SSX]` referring to **{company_name}**.
-
-**Data Precision & Recency (Target Company - {company_name})**:
-- All monetary values for **{company_name}** specify currency and reporting period.
-- All dates for **{company_name}** are in consistent format and reflect the latest available grounded data.
-- Numerical data for **{company_name}** is presented with appropriate precision and units.
-- Primary sources used for **{company_name}** are confirmed to be the most recent available and grounded.
-
-**Content Quality & Alignment Specificity**:
-- Direct start with no conversational text.
-- Professional tone with no placeholders (except the minimal `-` in tables for {company_name} where structurally needed and confirmed absent in source).
-- Adherence to silent omission handling instructions for {company_name}.
-- Logical flow within and between sections.
-- Analytical depth provided where required (explaining 'why').
-- **Alignment Specificity**: Verify that proposed alignments between the Analyzing Company's ({context_company_name}) capabilities and the Target Company's ({company_name}) needs (Sections 4, 6, 7, 9, 11) are **specific, non-generic, and plausibly based on the Analyzing Company's likely offerings** (reflecting thorough preliminary research). They should reference specific needs/challenges of {company_name} [SSX].
-
-**Single-Entity & Role Clarity (CRITICAL)**:
-- Ensure that analysis and data strictly pertains to the specified Target Company **'{company_name}'**. Verify no data from similarly named but unrelated entities has crept in.
-- Maintain clarity between the Target Company ({company_name}) and the Analyzing Company ({context_company_name}). Ensure proposals clearly articulate *how* {context_company_name} can help {company_name}.
-
-Proceed to generate the final 'Sources' list only after confirming these conditions are met.
-""")
-
-COMPLETION_INSTRUCTION_TEMPLATE = textwrap.dedent("""\
-**Output Completion Requirements**:
-
-Before concluding your response, verify that:
-1. Every numbered section requested in the prompt is complete with all required subsections (or content is silently omitted if ungrounded after exhaustive search, retaining headings).
-2. All content follows **perfect markdown formatting** throughout, especially for tables (check data accuracy and source alignment).
-3. Each section contains all necessary details based on available grounded information and is not truncated. Check for data recency.
-4. The response maintains consistent formatting for lists, tables, and code blocks.
-5. All inline citations `[SSX]` are properly placed, with no extraneous or fabricated URLs. Every fact presented MUST be cited, **especially all financial data**.
-6. Strictly focus on the exact named company **'{company_name}'** (no confusion with similarly named entities). Verify parent vs. subsidiary context where needed.
-""")
 
 # --- Prompt Generating Functions ---
 
@@ -1654,7 +1410,7 @@ Conduct thorough research on **{company_name}**'s crisis management and business
 
 ## 2. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) synthesizing the findings from Section 1 regarding **{company_name}**. Assess its apparent resilience to digital disruptions based on its history of incidents, responses, stated preparedness, and the potential application of DX for mitigation. Use inline citations explicitly (e.g., "The company's response to the 2024 incident [SSX] suggests an established protocol, though the stated RTO [SSY] raises questions... The identified risk of X [SSZ] could potentially be addressed by DX initiatives focused on Y...").
-    *   Structure the discussion logically, starting with a summary of the incident history and response effectiveness, followed by an gravitational of the stated preparedness measures (IRP, BCP) and risk awareness, incorporating the potential role of DX, and concluding with an assessment of overall digital resilience for {company_name}, identifying potential strengths and weaknesses relevant to a Japanese audience considering partnership or investment.
+    *   Structure the discussion logically, starting with a summary of the incident history and response effectiveness, followed by an evaluation of the stated preparedness measures (IRP, BCP) and risk awareness, incorporating the potential role of DX, and concluding with an assessment of overall digital resilience for {company_name}, identifying potential strengths and weaknesses relevant to a Japanese audience considering partnership or investment.
     *   Do not introduce any new claims not supported by the previous analysis and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
@@ -2255,7 +2011,7 @@ Research Requirements (Target Company - {company_name}):
         | FY2025 Q2      | Cloud Security        | 'Cloud Security Suite', Assessment| CISO, Architecture   | Challenge [SS2] | Security partnership |
         | FY2025 Q3      | Enable Initiative Y   | 'Platform Z' demo and workshop   | BU Lead, Project Lead| Initiative [SS3]| Identify pilot      |
         | FY2025 Q4      | Efficiency ROI        | 'Managed Service ABC' Assessment | CFO, IT Operations   | Challenge [SS4] | Build financial case|
-        | FY2026 Q1-Q2   | Pilot Projects        | Detailed SOWs for solutions      | Decision Makers      | FY25 outcomes  | Secure initial wins |
+        | FY2026 Q1-Q2   | Pilot Projects        | Detailed SOWs for solutions      | Decision Makers      | FY2025 outcomes  | Secure initial wins |
         | FY2026 Q3-Q4   | Execution & Expansion | Delivery, QBRs, upsell services  | Project Sponsors     | Pilot success  | Demonstrate value   |
         | FY2027 onwards | Strategic Partnership | Joint roadmap, innovation plans  | C-Suite, Strategy    | Track record   | Preferred partner   |
 
