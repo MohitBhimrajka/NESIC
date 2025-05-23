@@ -22,7 +22,7 @@ class PDFSection(BaseModel):
     html_content: str = "" # Processed HTML content
     intro: str = ""
     key_topics: List[str] = []
-    metadata: Dict = {} # YAML frontmatter metadata
+    metadata: Dict[str, Any] = {}
     reading_time: int = 0 # Estimated reading time in minutes
     subsections: List[Any] = [] # Subsections of this section
 
@@ -92,18 +92,7 @@ class EnhancedPDFGenerator:
         return estimated_time
 
     def _extract_key_topics(self, content: str, max_topics: int = None) -> List[str]:
-        """Extract key topics from the content based on headings.
-        
-        This extracts the subsection headings (h2, h3) from the content to build
-        a table of contents.
-        
-        Args:
-            content: The markdown content to extract topics from
-            max_topics: Optional maximum number of topics to extract
-            
-        Returns:
-            List of topic strings
-        """
+        """Extract key topics from the content based on headings."""
         # First convert the markdown to HTML to get proper heading structure
         temp_html = self._convert_markdown_to_html(content)
         soup = BeautifulSoup(temp_html, 'html.parser')
@@ -132,45 +121,6 @@ class EnhancedPDFGenerator:
                 break
         
         return topics
-
-    def _create_markdown_processor(self):
-        """Create a markdown processor with all necessary extensions."""
-        md = markdown.Markdown(extensions=[
-            'extra',  # Includes tables, fenced_code, footnotes, etc.
-            'meta',
-            'codehilite',
-            'admonition',
-            'attr_list',
-            'toc',
-            'def_list',  # Definition lists
-            'footnotes',  # Footnotes support
-            'abbr',  # Abbreviation support
-            'md_in_html',  # Markdown inside HTML
-            'sane_lists',  # Better list handling
-            'nl2br',  # Convert newlines to <br> tags for proper line breaks
-        ], extension_configs={
-            'codehilite': {'css_class': 'highlight', 'guess_lang': False},
-            'toc': {'permalink': False},  # Disable permalinks to remove ¶
-            'footnotes': {'BACKLINK_TEXT': '↩'}
-        })
-        return md
-        
-    def _process_headings(self, soup):
-        """Add classes and IDs to headings for better navigation without visible permalinks."""
-        # Process all headings for better styling and navigation
-        for h_tag in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
-            # Add classes based on heading level
-            h_tag['class'] = h_tag.get('class', []) + [f'heading-{h_tag.name}']
-            
-            # Generate an ID from the heading text if it doesn't have one
-            if not h_tag.get('id'):
-                heading_text = h_tag.get_text().strip()
-                heading_id = re.sub(r'[^\w\s-]', '', heading_text.lower())
-                heading_id = re.sub(r'[\s-]+', '-', heading_id)
-                h_tag['id'] = heading_id
-            
-            # We no longer add the visible paragraph symbol anchor
-            # Just ensure the heading has an ID for internal linking
 
     def _cleanup_raw_markdown(self, content: str) -> str:
         """Clean up common LLM formatting issues like literal '\n'."""
@@ -227,176 +177,275 @@ class EnhancedPDFGenerator:
         return content
 
     def _convert_markdown_to_html(self, markdown_content):
-        """
-        Convert markdown content to HTML with enhanced styling.
-        """
-        # Pre-process raw table-like structures to ensure proper table rendering
+        """Convert markdown content to HTML with enhanced styling."""
+        # Pre-process markdown to handle tables properly
         lines = markdown_content.split('\n')
         processed_lines = []
         i = 0
         
+        # First pass: identify and fix table formatting, preserve list formatting
+        in_table = False
+        table_lines = []
+        
         while i < len(lines):
-            line = lines[i]
-            # If line has 2+ pipe characters, it might be part of a table
-            if line.count('|') >= 2:
-                # This might be the start of a table
-                table_lines = [line]
-                j = i + 1
+            line = lines[i].rstrip()
+            
+            # Check if this line might be a table row (contains at least 2 pipe characters)
+            if '|' in line and line.count('|') >= 2:
+                # If not already in a table, this could be the start of a table
+                if not in_table:
+                    in_table = True
+                    table_lines = [line]
+                else:
+                    # Continue collecting table lines
+                    table_lines.append(line)
+            elif in_table:
+                # If we're in a table but current line doesn't look like a table row,
+                # we might have reached the end of the table
                 
-                # Collect all consecutive table-like lines
-                while j < len(lines) and lines[j].count('|') >= 2:
-                    table_lines.append(lines[j])
-                    j += 1
-                    
-                # Check if we have at least 2 rows (header + separator)
+                # Process the collected table
                 if len(table_lines) >= 2:
-                    # Ensure we have a proper separator row
+                    # Ensure the table has a proper separator row (second row)
                     if not all(c in '|:-' for c in table_lines[1].strip() if c not in ' '):
-                        # Create a proper separator row based on header
-                        cols = table_lines[0].count('|') - 1
-                        table_lines.insert(1, '|' + '|'.join(['---' for _ in range(cols)]) + '|')
+                        # Create a proper separator row based on the number of columns in the header row
+                        column_count = table_lines[0].count('|') - 1
+                        separator_row = '|' + '|'.join(['---' for _ in range(column_count)]) + '|'
+                        table_lines.insert(1, separator_row)
+                    
+                    # Add an empty line before the table for proper Markdown parsing
+                    if processed_lines and processed_lines[-1].strip():
+                        processed_lines.append('')
+                    
+                    # Add all table lines
+                    processed_lines.extend(table_lines)
+                    
+                    # Add an empty line after the table
+                    processed_lines.append('')
+                else:
+                    # If it doesn't look like a valid table, just add the lines as regular text
+                    processed_lines.extend(table_lines)
                 
-                # Add table with proper line breaks before and after
-                if processed_lines and processed_lines[-1]:
-                    processed_lines.append('')  # Empty line before table
-                processed_lines.extend(table_lines)
-                processed_lines.append('')  # Empty line after table
-                i = j
-            else:
+                # Reset table tracking
+                in_table = False
+                table_lines = []
+                
+                # Don't forget to add the current line
                 processed_lines.append(line)
-                i += 1
+            else:
+                # Check if this is a list item (numbered or bulleted)
+                is_list_item = False
                 
-        # Use the pre-processed markdown
-        markdown_content = '\n'.join(processed_lines)
+                # Check for numbered list patterns (e.g., "1. ")
+                if re.match(r'^\s*\d+\.\s', line):
+                    is_list_item = True
+                # Check for bulleted list patterns (e.g., "* ", "- ")
+                elif re.match(r'^\s*[\*\-\+]\s', line):
+                    is_list_item = True
+                
+                # Process list items carefully to preserve formatting
+                if is_list_item:
+                    # Ensure there's appropriate spacing for proper list rendering
+                    # If the previous line wasn't blank and wasn't a list item, add a blank line
+                    if (processed_lines and processed_lines[-1].strip() and 
+                            not re.match(r'^\s*(\d+\.|[\*\-\+])\s', processed_lines[-1])):
+                        processed_lines.append('')
+                
+                # Regular line, not part of a table
+                processed_lines.append(line)
+            
+            i += 1
         
-        # Create the markdown object with all extensions
-        md = self._create_markdown_processor()
+        # If we ended while still in a table, add those lines too
+        if in_table and table_lines:
+            if len(table_lines) >= 2:
+                # Ensure the table has a proper separator row
+                if not all(c in '|:-' for c in table_lines[1].strip() if c not in ' '):
+                    column_count = table_lines[0].count('|') - 1
+                    separator_row = '|' + '|'.join(['---' for _ in range(column_count)]) + '|'
+                    table_lines.insert(1, separator_row)
+                
+                # Add an empty line before the table
+                if processed_lines and processed_lines[-1].strip():
+                    processed_lines.append('')
+                
+                processed_lines.extend(table_lines)
+                processed_lines.append('')
+            else:
+                processed_lines.extend(table_lines)
         
-        # Convert markdown to HTML
-        html = md.convert(markdown_content)
+        # Join the processed lines back into a single string
+        processed_content = '\n'.join(processed_lines)
         
+        # Additional preprocessing for numbered lists with bold/italic formatting
+        # Ensure proper spacing around formatting markers
+        processed_content = re.sub(r'(\d+\.\s+)(\*\*|\*)([^*]+)(\*\*|\*)(\S)', r'\1\2\3\4 \5', processed_content)
+        
+        # Ensure proper spacing before formatting markers in lists
+        processed_content = re.sub(r'(\d+\.\s+)(\S)(\*\*|\*)([^*]+)(\*\*|\*)', r'\1\2 \3\4\5', processed_content)
+        
+        # Reset the markdown processor and convert to HTML
+        self.md.reset()
+        html = self.md.convert(processed_content)
+        
+        # Use BeautifulSoup to further enhance the HTML
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Check for raw table text that wasn't converted
-        # This is a fallback for tables that weren't properly parsed
+        # Process all ordered lists (ol) to ensure they have proper structure
+        for ol in soup.find_all('ol'):
+            # Check if we need to clean up formatting inside list items
+            for li in ol.find_all('li'):
+                # Check if the list item contains both text and formatted elements
+                # Sometimes the parser doesn't correctly combine formatted elements
+                if len(li.contents) > 1:
+                    # Look for text nodes that might contain asterisks
+                    for idx, child in enumerate(li.contents[:]):
+                        if isinstance(child, str) and ('*' in child or '**' in child):
+                            # We need to properly parse this fragment
+                            md_temp = markdown.Markdown(extensions=['extra'])
+                            html_fragment = md_temp.convert(child)
+                            
+                            # Create a temporary soup to parse the HTML fragment
+                            temp_soup = BeautifulSoup(html_fragment, 'html.parser')
+                            
+                            # Create a placeholder to replace the text node
+                            placeholder = soup.new_tag('span')
+                            child.replace_with(placeholder)
+                            
+                            # Insert the parsed content before the placeholder
+                            for element in temp_soup.body.contents:
+                                placeholder.insert_before(element)
+                            
+                            # Remove the placeholder
+                            placeholder.extract()
+        
+        # Second pass: look for table-like content in paragraphs
         for p in soup.find_all('p'):
             text = p.get_text()
-            # If paragraph contains multiple | characters in a row-like pattern
-            if '|' in text and len(re.findall(r'\|.*\|', text)) > 0:
+            # Check if paragraph text contains multiple | characters that might indicate a table
+            if '|' in text and text.count('|') >= 2:
                 table_lines = text.split('\n')
-                # Only process if we have at least 2 lines with pipes
-                if sum(1 for line in table_lines if '|' in line) >= 2:
-                    # This might be a table that wasn't parsed correctly
-                    # Create HTML table manually
+                # Check if we have multiple lines and they look like table rows
+                table_line_count = sum(1 for line in table_lines if '|' in line and line.count('|') >= 2)
+                
+                if table_line_count >= 2:
+                    # This looks like a table that wasn't properly parsed
                     table = soup.new_tag('table')
-                    table['class'] = ['enhanced-table', 'zebra-stripe']
+                    table['class'] = ['enhanced-table', 'manual-table']
                     
+                    # Create thead and tbody
+                    thead = soup.new_tag('thead')
+                    tbody = soup.new_tag('tbody')
+                    
+                    # Process each line as a table row
                     in_header = True
                     for line in table_lines:
-                        if not line.strip() or not '|' in line:
+                        line = line.strip()
+                        if not line or line.count('|') < 2:
                             continue
-                        # Skip separator row (contains only |, -, and :)
-                        if all(c in '|:-' for c in line.strip()):
+                        
+                        # Skip separator rows (those with only |, -, and :)
+                        if all(c in '|:-' for c in line if c not in ' '):
                             in_header = False
                             continue
-                            
-                        # Process as a table row
+                        
+                        # Create a table row
                         tr = soup.new_tag('tr')
-                        cells = line.strip().split('|')
-                        # Skip empty first/last cell if line starts/ends with |
+                        
+                        # Process cells
+                        cells = line.split('|')
                         if line.startswith('|'):
                             cells = cells[1:]
                         if line.endswith('|'):
                             cells = cells[:-1]
-                            
-                        for cell in cells:
-                            if in_header:
-                                td = soup.new_tag('th')
-                            else:
-                                td = soup.new_tag('td')
-                            td.string = cell.strip()
-                            tr.append(td)
                         
+                        for cell in cells:
+                            cell_content = cell.strip()
+                            if in_header:
+                                cell_tag = soup.new_tag('th')
+                            else:
+                                cell_tag = soup.new_tag('td')
+                            
+                            # Set content
+                            cell_tag.string = cell_content
+                            tr.append(cell_tag)
+                        
+                        # Add row to the appropriate section
                         if in_header:
-                            thead = soup.new_tag('thead')
                             thead.append(tr)
-                            table.append(thead)
                             in_header = False
                         else:
-                            if not table.find('tbody'):
-                                tbody = soup.new_tag('tbody')
-                                table.append(tbody)
-                            table.tbody.append(tr)
+                            tbody.append(tr)
                     
-                    # If we created a valid table, replace the paragraph
+                    # Add thead and tbody to the table if they have content
+                    if thead.find('tr'):
+                        table.append(thead)
+                    if tbody.find('tr'):
+                        table.append(tbody)
+                    
+                    # Replace the paragraph with the table if we created a valid table
                     if table.find('tr'):
-                        # Wrap in responsive div
                         table_div = soup.new_tag('div')
                         table_div['class'] = ['table-responsive']
                         table_div.append(table)
                         p.replace_with(table_div)
         
-        # Process headings to add anchors for TOC
+        # Process all standard tables
+        for table in soup.find_all('table'):
+            self._process_table(table, soup)
+        
+        # Process headings for better navigation
         self._process_headings(soup)
         
-        # Process lists - first-level lists
+        # Process lists for better styling
         for ul in soup.find_all(['ul', 'ol'], recursive=False):
-            self._process_list(ul, level=1, soup=soup)
+            self._process_list(ul, level=1)
         
-        # Find any lists that may be inside other elements (not directly under body)
+        # Process nested lists inside containers
         for container in soup.find_all(['div', 'blockquote', 'td']):
             for ul in container.find_all(['ul', 'ol'], recursive=False):
-                self._process_list(ul, level=1, soup=soup)
-        
-        # Process tables
-        for table in soup.find_all('table'):
-            # Wrap table in a responsive div if not already wrapped
-            if table.parent.get('class') != ['table-responsive']:
-                table_div = soup.new_tag('div')
-                table_div['class'] = ['table-responsive']
-                table.wrap(table_div)
-            
-            # Add enhanced styling to table
-            table['class'] = table.get('class', []) + ['enhanced-table']
-            
-            # Add zebra striping and header styling
-            if table.find('thead'):
-                table['class'] = table['class'] + ['has-header']
-            table['class'] = table['class'] + ['zebra-stripe']
-            
-            # Align number cells to the right
-            for td in table.find_all('td'):
-                if td.string and td.string.strip().replace('.', '', 1).isdigit():
-                    td['class'] = td.get('class', []) + ['text-right']
-        
-        # Process definition lists
-        for dl in soup.find_all('dl'):
-            dl['class'] = dl.get('class', []) + ['definition-list']
-            for dt in dl.find_all('dt'):
-                dt['class'] = dt.get('class', []) + ['term']
-            for dd in dl.find_all('dd'):
-                dd['class'] = dd.get('class', []) + ['definition']
-        
-        # Process footnotes
-        footnotes_div = soup.find('div', class_='footnote')
-        if footnotes_div:
-            footnotes_div['class'] = ['enhanced-footnotes']
-            for ol in footnotes_div.find_all('ol'):
-                ol['class'] = ol.get('class', []) + ['footnote-list']
-                for li in ol.find_all('li'):
-                    li['class'] = li.get('class', []) + ['footnote-item']
+                self._process_list(ul, level=1)
         
         return str(soup)
 
-    def _process_list(self, list_tag, level=1, soup=None):
-        """
-        Process a list and its nested lists recursively.
+    def _process_headings(self, soup):
+        """Add classes and IDs to headings for better navigation."""
+        used_ids = set()  # Track used IDs to avoid duplicates
         
-        Args:
-            list_tag: The list tag (ul or ol) to process
-            level: The current nesting level
-            soup: The BeautifulSoup object for creating new tags
-        """
+        for h_tag in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+            # Add classes based on heading level
+            h_tag['class'] = h_tag.get('class', []) + [f'heading-{h_tag.name}']
+            
+            # Generate an ID from the heading text if it doesn't have one
+            if not h_tag.get('id'):
+                heading_text = h_tag.get_text().strip()
+                base_id = re.sub(r'[^\w\s-]', '', heading_text.lower())
+                base_id = re.sub(r'[\s-]+', '-', base_id)
+                
+                # Make sure ID is unique
+                heading_id = base_id
+                counter = 1
+                while heading_id in used_ids:
+                    heading_id = f"{base_id}-{counter}"
+                    counter += 1
+                
+                h_tag['id'] = heading_id
+                used_ids.add(heading_id)
+            else:
+                # If ID exists, still make sure it's unique
+                original_id = h_tag['id']
+                if original_id in used_ids:
+                    counter = 1
+                    new_id = f"{original_id}-{counter}"
+                    while new_id in used_ids:
+                        counter += 1
+                        new_id = f"{original_id}-{counter}"
+                    h_tag['id'] = new_id
+                    used_ids.add(new_id)
+                else:
+                    used_ids.add(original_id)
+
+    def _process_list(self, list_tag, level=1):
+        """Process a list and its nested lists recursively."""
         # Add appropriate classes based on level
         if level == 1:
             list_tag['class'] = list_tag.get('class', []) + ['enhanced-list']
@@ -409,18 +458,121 @@ class EnhancedPDFGenerator:
         
         # Process all list items at this level
         for li in list_tag.find_all('li', recursive=False):
+            # Add appropriate classes to list items
             if level == 1:
                 li['class'] = li.get('class', []) + ['enhanced-list-item']
             else:
                 li['class'] = li.get('class', []) + ['nested-list-item']
                 
-                # For deep nesting (3+), add a level indicator class
+                # For deep nesting, add a level indicator class
                 if level > 2:
                     li['class'] = li['class'] + [f'item-level-{level}']
             
             # Process nested lists recursively
             for nested_list in li.find_all(['ul', 'ol'], recursive=False):
-                self._process_list(nested_list, level=level+1, soup=soup)
+                self._process_list(nested_list, level=level+1)
+                
+            # Ensure specially formatted content within list items is preserved
+            # Look for bold or italic markers that might be part of the text node
+            for text_node in li.find_all(text=True, recursive=False):
+                # Skip if this is just whitespace
+                if not text_node.strip():
+                    continue
+                    
+                # Check if there are unprocessed markdown formatting markers
+                if '**' in text_node or '*' in text_node or '__' in text_node or '_' in text_node:
+                    # We need to properly parse this markdown text
+                    # Create a temporary markdown processor to handle just this fragment
+                    md_temp = markdown.Markdown(extensions=['extra'])
+                    html_fragment = md_temp.convert(text_node)
+                    
+                    # Create a temporary soup to parse the HTML fragment
+                    temp_soup = BeautifulSoup(html_fragment, 'html.parser')
+                    
+                    # Replace the text node with the parsed content
+                    # Need to use a placeholder tag to replace the text node
+                    placeholder = li.new_tag('span')
+                    text_node.replace_with(placeholder)
+                    
+                    # Replace the placeholder with the parsed content
+                    for element in temp_soup.body.contents:
+                        placeholder.insert_before(element)
+                    
+                    # Remove the placeholder
+                    placeholder.extract()
+
+    def _process_table(self, table, soup):
+        """Enhance table styling and structure."""
+        # Wrap table in a responsive div if not already wrapped
+        if table.parent.get('class') != ['table-responsive']:
+            table_div = soup.new_tag('div')
+            table_div['class'] = ['table-responsive']
+            table.wrap(table_div)
+        
+        # Add enhanced styling to table
+        table['class'] = table.get('class', []) + ['enhanced-table']
+        
+        # Add zebra striping and header styling
+        if table.find('thead'):
+            table['class'] = table['class'] + ['has-header']
+        else:
+            # Create thead from first row if it doesn't exist
+            first_row = table.find('tr')
+            if first_row:
+                thead = soup.new_tag('thead')
+                thead.append(first_row.extract())
+                table.insert(0, thead)
+                # Convert td to th in thead
+                for td in thead.find_all('td'):
+                    th = soup.new_tag('th')
+                    th.attrs = td.attrs
+                    if td.string:
+                        th.string = td.string
+                    else:
+                        # Copy all contents if not just a string
+                        for content in td.contents:
+                            th.append(content.copy())
+                    td.replace_with(th)
+                table['class'] = table['class'] + ['has-header']
+        
+        table['class'] = table['class'] + ['zebra-stripe']
+        
+        # Align number cells to the right
+        for td in table.find_all('td'):
+            if td.string and td.string.strip() and re.match(r'^[\d,.$%]+$', td.string.strip()):
+                td['class'] = td.get('class', []) + ['text-right']
+
+    def _extract_intro(self, content: str) -> str:
+        """Extract the introduction paragraph from the content."""
+        # Split content into lines
+        lines = content.strip().split('\n')
+        intro_lines = []
+        
+        # Skip metadata and empty lines at the start
+        i = 0
+        while i < len(lines) and (not lines[i].strip() or lines[i].strip().startswith('---')):
+            i += 1
+            
+        # Skip headers
+        while i < len(lines) and (not lines[i].strip() or lines[i].strip().startswith('#')):
+            i += 1
+            
+        # Collect first paragraph (until we hit an empty line or another header)
+        while i < len(lines) and lines[i].strip() and not lines[i].strip().startswith('#'):
+            intro_lines.append(lines[i])
+            i += 1
+            
+        if not intro_lines:
+            return "<p>This section provides detailed analysis and insights.</p>"
+            
+        # Convert the intro lines to HTML
+        intro_content = ' '.join(intro_lines)
+        
+        # Use a clean markdown processor
+        md = markdown.Markdown(extensions=['extra'])
+        intro_html = md.convert(intro_content)
+        
+        return intro_html
 
     def _generate_toc(self, sections):
         """Generate a properly formatted and hyperlinked table of contents."""
@@ -431,152 +583,228 @@ class EnhancedPDFGenerator:
         toc_html += '<h2 class="toc-title">Table of Contents</h2>\n'
         toc_html += '<div class="toc-entries">\n'
         
-        for idx, section in enumerate(sections, 1):
-            # Create section entry with proper hyperlink
-            # Use section-{idx} as the anchor, which matches the IDs in the template
+        # First add the executive summary if it exists
+        exec_summary = next((s for s in sections if s.id == "executive_summary"), None)
+        if exec_summary:
+            toc_html += f'<div class="toc-entry">\n'
+            toc_html += f'  <a href="#section-executive_summary" class="toc-link">Executive Summary</a>\n'
+            toc_html += f'</div>\n'
+        
+        # Then add all sections except the executive summary
+        for section in [s for s in sections if s.id != "executive_summary"]:
             section_id = f"section-{section.id}"
             section_title = section.title.strip()
             
             toc_html += f'<div class="toc-entry">\n'
             toc_html += f'  <a href="#{section_id}" class="toc-link">{section_title}</a>\n'
-            
-            # Handle subsections if they exist (using hasattr to check)
-            if hasattr(section, 'subsections') and section.subsections:
-                toc_html += '  <div class="toc-subsections">\n'
-                
-                for sub_idx, subsection in enumerate(section.subsections, 1):
-                    subsection_id = f"{section_id}-sub-{sub_idx}"
-                    subsection_title = subsection.title.strip()
-                    
-                    toc_html += f'    <div class="toc-subsection">\n'
-                    toc_html += f'      <a href="#{subsection_id}" class="toc-sublink">{subsection_title}</a>\n'
-                    toc_html += f'    </div>\n'
-                
-                toc_html += '  </div>\n'
-            
-            toc_html += '</div>\n'
+            toc_html += f'</div>\n'
         
         toc_html += '</div>\n</div>\n'
         
         return toc_html
-        
-    def _process_sections(self, sections):
-        """
-        Process sections for the report, adding IDs and processing markdown into HTML.
-        """
-        processed_sections = []
-        section_counter = 0
-        
-        for section in sections:
-            section_counter += 1
-            # Ensure the section ID is consistent with what the template expects
-            if not hasattr(section, "id") or not section.id:
-                section.id = f"section-{section_counter}"
-            
-            # Extract metadata, main content and sources separately
-            metadata, main_content, _ = self._extract_metadata_and_split_sources(section.content)
-            
-            # Update section with extracted metadata
-            section.metadata.update(metadata)
-            
-            # Process the main content of the section
-            if main_content:
-                # Extract key topics for the section cover
-                section.key_topics = self._extract_key_topics(main_content, max_topics=5)
-                
-                # Estimate reading time
-                section.reading_time = self._estimate_reading_time(main_content)
-                
-                # Extract introduction paragraph
-                section.intro = self._extract_intro(main_content)
-                
-                # Convert main content to HTML - this now includes sources
-                full_html = self._convert_markdown_to_html(main_content)
-                
-                # Set the HTML content for the section
-                section.html_content = full_html
-            
-            processed_sections.append(section)
-        
-        return processed_sections
 
-    def _extract_intro(self, content: str) -> str:
-        """Extract the introduction paragraph from the content."""
-        # Split content into lines
-        lines = content.strip().split('\n')
-        intro_lines = []
+    def _get_static_section_content(self, section_id: str) -> Dict:
+        """Get static predefined content for a section cover page based on section ID."""
+        section_content = {
+            "company_overview": {
+                "description": "This section provides a comprehensive overview of the company, including its history, business model, core operations, market position, and key differentiators.",
+                "key_topics": [
+                    "Company History & Background",
+                    "Business Model & Revenue Streams",
+                    "Products & Services",
+                    "Market Position & Competitive Landscape",
+                    "Corporate Structure & Leadership"
+                ]
+            },
+            "financial_analysis": {
+                "description": "This section analyzes the company's financial performance, including revenue trends, profitability metrics, cash flow patterns, debt structure, and key financial ratios.",
+                "key_topics": [
+                    "Revenue & Growth Analysis",
+                    "Profitability & Margin Trends",
+                    "Cash Flow & Liquidity",
+                    "Debt Structure & Capital Allocation",
+                    "Financial Ratios & Comparisons"
+                ]
+            },
+            "market_analysis": {
+                "description": "This section examines the market dynamics, industry trends, competitive landscape, market share analysis, and growth opportunities for the company.",
+                "key_topics": [
+                    "Industry Overview & Trends",
+                    "Market Size & Growth Potential",
+                    "Competitive Landscape Analysis",
+                    "Market Share & Positioning",
+                    "Growth Opportunities & Challenges"
+                ]
+            },
+            "swot_analysis": {
+                "description": "This section provides a structured analysis of the company's internal strengths and weaknesses, as well as external opportunities and threats it faces.",
+                "key_topics": [
+                    "Key Organizational Strengths",
+                    "Operational & Strategic Weaknesses",
+                    "Market & Growth Opportunities",
+                    "External Threats & Challenges",
+                    "Competitive Advantage Assessment"
+                ]
+            },
+            "risk_assessment": {
+                "description": "This section identifies and evaluates potential risks facing the company, including operational, financial, regulatory, market, and strategic risks.",
+                "key_topics": [
+                    "Operational & Business Risks",
+                    "Financial & Credit Risks",
+                    "Regulatory & Compliance Risks",
+                    "Market & Competitive Risks",
+                    "Strategic & Long-term Risks"
+                ]
+            },
+            "strategic_recommendations": {
+                "description": "This section provides actionable strategic recommendations for the company to enhance performance, address challenges, and capitalize on opportunities.",
+                "key_topics": [
+                    "Growth & Expansion Strategies",
+                    "Operational Efficiency Improvements",
+                    "Competitive Positioning Tactics",
+                    "Financial Performance Enhancement",
+                    "Risk Mitigation Approaches"
+                ]
+            },
+            "technology_landscape": {
+                "description": "This section examines the technological aspects of the company, including IT infrastructure, digital capabilities, innovation initiatives, and technology-driven opportunities.",
+                "key_topics": [
+                    "Technology Stack & Infrastructure",
+                    "Digital Transformation Initiatives",
+                    "Innovation Pipeline & R&D",
+                    "Technology-driven Opportunities",
+                    "Competitive Technology Benchmarking"
+                ]
+            },
+            "esg_analysis": {
+                "description": "This section evaluates the company's environmental, social, and governance practices, including sustainability initiatives, social responsibility, and corporate governance.",
+                "key_topics": [
+                    "Environmental Impact & Sustainability",
+                    "Social Responsibility & Community Engagement",
+                    "Corporate Governance Structure",
+                    "ESG Metrics & Performance",
+                    "Regulatory Compliance & Reporting"
+                ]
+            },
+            "industry_benchmarking": {
+                "description": "This section compares the company's performance against industry benchmarks and competitors across key operational and financial metrics.",
+                "key_topics": [
+                    "Financial Performance Benchmarking",
+                    "Operational Efficiency Comparisons",
+                    "Market Share & Growth Analysis",
+                    "Product/Service Quality Metrics",
+                    "Innovation & Strategic Positioning"
+                ]
+            },
+            "leadership_assessment": {
+                "description": "This section evaluates the company's leadership team, management structure, governance practices, and organizational culture.",
+                "key_topics": [
+                    "Executive Leadership Team Analysis",
+                    "Board Composition & Governance",
+                    "Management Track Record & Expertise",
+                    "Succession Planning & Talent Development",
+                    "Organizational Culture & Values"
+                ]
+            },
+            # Default content for any other sections
+            "default": {
+                "description": "This section provides detailed analysis and insights relevant to understanding the company's position, performance, and strategic outlook.",
+                "key_topics": [
+                    "Comprehensive Analysis & Insights",
+                    "Data-driven Observations",
+                    "Strategic Implications",
+                    "Key Findings & Takeaways",
+                    "Forward-looking Perspectives"
+                ]
+            }
+        }
         
-        # Skip metadata and empty lines at the start
-        i = 0
-        while i < len(lines) and (not lines[i].strip() or ':' in lines[i]):
-            i += 1
-            
-        # Skip headers
-        while i < len(lines) and lines[i].strip().startswith('#'):
-            i += 1
-            
-        # Collect lines until we hit a header or end of content
-        while i < len(lines):
-            line = lines[i].strip()
-            if line.startswith('#') or not line:
-                break
-            intro_lines.append(line)
-            i += 1
-            
-        if not intro_lines:
-            return "<p>This section provides detailed analysis and insights.</p>"
-            
-        # Convert the intro lines to HTML with full markdown processing
-        intro_content = '\n\n'.join(intro_lines)  # Use double newlines for paragraphs
+        # Return content for the requested section or default if not found
+        return section_content.get(section_id, section_content["default"])
         
-        # Use the full markdown processor with all extensions
-        self.md.reset()
-        intro_html = self.md.convert(intro_content)
-        
-        return intro_html
-
     def generate_pdf(self, sections_data: List[PDFSection], output_path: str, metadata: Dict) -> Path:
         """Generate a PDF report from the provided section data and metadata."""
-        processed_sections = self._process_sections(sections_data)
-
-        # Get paths for logo and favicon
-        template_dir = Path(self.template_dir)
-        assets_dir = template_dir / 'assets'
-        os.makedirs(assets_dir, exist_ok=True)
-        
-        # Directly use the assets in templates/assets
-        logo_path = assets_dir / 'supervity_logo.png'
-        favicon_path = assets_dir / 'supervity_favicon.png'
-        
-        # Use proper URLs for WeasyPrint
-        logo_url = f"templates/assets/supervity_logo.png"
-        favicon_url = f"templates/assets/supervity_favicon.png"
-        
-        print(f"Using logo URL: {logo_url}")
-        print(f"Using favicon URL: {favicon_url}")
-
-        # Prepare template context
-        context = {
-            'company_name': metadata.get('company', 'Company'),
-            'language': metadata.get('language', 'English'),
-            'generation_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'sections': processed_sections,
-            'toc': self._generate_toc(processed_sections),
-            'metadata': metadata,
-            'logo_path': logo_url,
-            'favicon_path': favicon_url
-        }
-
-        # Render template and generate PDF
-        final_html_content = self.template.render(**context)
-
         try:
-            # Get the base directory for proper resource resolution
-            base_url = os.path.dirname(os.path.abspath(__file__))
-            print(f"Using base URL: {base_url}")
+            # Process sections to extract metadata, format HTML, etc.
+            processed_sections = []
             
-            html = HTML(string=final_html_content, base_url=base_url)
-            # Define font config (consider making this configurable)
+            # Separate executive summary from other sections
+            exec_summary = next((s for s in sections_data if s.id == "executive_summary"), None)
+            regular_sections = [s for s in sections_data if s.id != "executive_summary"]
+            
+            # Process executive summary if it exists
+            if exec_summary:
+                # Extract metadata from the executive summary
+                meta, content = self._extract_section_metadata(exec_summary.content)
+                exec_summary.metadata.update(meta)
+                
+                # Process HTML content
+                exec_summary.html_content = self._convert_markdown_to_html(content)
+            
+            # Process all other sections
+            for section in regular_sections:
+                # Extract metadata from section content
+                meta, content = self._extract_section_metadata(section.content)
+                section.metadata.update(meta)
+                
+                # Get static content for section cover instead of dynamic extraction
+                static_content = self._get_static_section_content(section.id)
+                
+                # Use static key topics instead of dynamically extracted ones
+                section.key_topics = static_content["key_topics"]
+                
+                # Keep the intro static too
+                section.intro = f"<p>{static_content['description']}</p>"
+                
+                # Estimate reading time
+                section.reading_time = self._estimate_reading_time(content)
+                
+                # Convert content to HTML
+                section.html_content = self._convert_markdown_to_html(content)
+                
+                # Add to processed sections
+                processed_sections.append(section)
+            
+            # Set up paths for assets - use the absolute path to the parent directory
+            base_url = os.path.dirname(os.path.abspath(__file__))
+            assets_dir = os.path.join(base_url, 'templates', 'assets')
+            
+            # Create absolute paths for the assets
+            logo_path = os.path.abspath(os.path.join(assets_dir, 'supervity_logo.png'))
+            favicon_path = os.path.abspath(os.path.join(assets_dir, 'supervity_favicon.png'))
+            
+            # Verify assets exist
+            if not os.path.exists(logo_path):
+                print(f"Warning: Logo not found at {logo_path}")
+            if not os.path.exists(favicon_path):
+                print(f"Warning: Favicon not found at {favicon_path}")
+                
+            print(f"Logo path: {logo_path}")
+            print(f"Favicon path: {favicon_path}")
+            
+            # Prepare template context
+            context = {
+                'company_name': metadata.get('company', 'Company'),
+                'language': metadata.get('language', 'English'),
+                'generation_date': datetime.now().strftime('%Y-%m-%d'),
+                'sections': processed_sections,
+                'toc': self._generate_toc(processed_sections + ([exec_summary] if exec_summary else [])),
+                'metadata': metadata,
+                'executive_summary': exec_summary,
+                'logo_path': logo_path,
+                'favicon_path': favicon_path
+            }
+            
+            # Render template
+            html_content = self.template.render(**context)
+            
+            # For debugging, save the HTML content
+            debug_html_path = os.path.splitext(output_path)[0] + '.debug.html'
+            with open(debug_html_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+                print(f"Saved debug HTML to: {debug_html_path}")
+            
+            # Configure font and CSS
             font_config = FontConfiguration()
             css = CSS(string='''
                 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans:wght@400;700&display=swap');
@@ -635,7 +863,7 @@ class EnhancedPDFGenerator:
                     z-index: 2;
                     display: inline-block;
                     width: auto;
-                    max-width: calc(100% - 4em);
+                    max-width: 80%;
                 }
                 
                 .toc-link::after {
@@ -649,168 +877,67 @@ class EnhancedPDFGenerator:
                     font-weight: normal;
                 }
                 
-                .toc-subsections {
-                    margin-left: 2em;
-                    margin-top: 0.5em;
-                    width: 100%;
-                }
-                
-                .toc-subsection {
-                    margin: 0.4em 0;
-                    position: relative;
-                    display: flex;
-                    align-items: baseline;
-                    justify-content: space-between;
-                }
-                
-                .toc-subsection::after {
-                    content: "";
-                    position: absolute;
-                    bottom: 0.3em;
-                    left: 0;
-                    right: 0;
-                    border-bottom: 1px dotted #c7c7c7;
-                    z-index: 1;
-                }
-                
-                .toc-sublink {
-                    font-size: 10pt;
-                    color: #474747;
-                    text-decoration: none;
-                    background: white;
-                    padding-right: 0.5em;
-                    position: relative;
-                    z-index: 2;
-                    display: inline-block;
-                    width: auto;
-                    max-width: calc(100% - 3em);
-                }
-                
-                .toc-sublink::after {
-                    content: target-counter(attr(href), page);
-                    position: absolute;
-                    right: -3em;
-                    background: white;
-                    padding: 0 0.5em;
-                    color: #474747;
-                    z-index: 2;
-                    font-weight: normal;
-                }
-                
-                /* Enhanced list styles */
-                .enhanced-list {
-                    list-style-type: disc;
-                    margin: 0.8em 0;
-                    padding-left: 1.5em;
-                    line-height: 1.4;
-                }
-                
-                .enhanced-list-item {
-                    margin-bottom: 0.4em;
-                    position: relative;
-                    padding-left: 0.2em;
-                }
-                
-                .nested-list {
-                    list-style-type: circle;
-                    margin: 0.4em 0 0.4em 0.5em;
-                    padding-left: 1.5em;
-                }
-                
-                .nested-list-item {
-                    margin-bottom: 0.3em;
-                }
-                
-                /* Force proper bullet rendering */
-                ul.enhanced-list > li::marker {
-                    color: #474747;
-                    font-size: 0.9em;
-                }
-                
-                ul.nested-list > li::marker {
-                    color: #7f8c8d;
-                    font-size: 0.85em;
-                }
-                
-                /* Additional styling for ordered lists */
-                ol.enhanced-list {
-                    list-style-type: decimal;
-                }
-                
-                ol.nested-list {
-                    list-style-type: lower-alpha;
-                }
-                
-                ol.nested-list ol.nested-list {
-                    list-style-type: lower-roman;
-                }
-                
-                /* Handle mixed nested list types */
-                ul.enhanced-list ol.nested-list {
-                    list-style-type: decimal;
-                }
-                
-                ol.enhanced-list ul.nested-list {
-                    list-style-type: disc;
-                }
-                
-                /* Deeply nested list styles (3+ levels) */
-                .level-3 {
-                    margin-left: 0.3em !important;
-                    padding-left: 1.2em !important;
-                }
-                
-                ul.level-3 {
-                    list-style-type: square;
-                }
-                
-                ol.level-3 {
-                    list-style-type: lower-roman;
-                }
-                
-                .level-4 {
-                    margin-left: 0.2em !important;
-                    padding-left: 1em !important;
-                }
-                
-                ul.level-4 {
-                    list-style-type: none;
-                }
-                
-                ul.level-4 > li:before {
-                    content: "–";
-                    position: absolute;
-                    left: -0.8em;
-                }
-                
-                ol.level-4 {
-                    list-style-type: decimal;
-                }
-                
                 /* Enhanced table styles */
                 .table-responsive {
-                    margin: 0.75em 0;
+                    margin: 1.5em 0;
                     width: 100%;
+                    overflow-x: auto;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                    padding: 0.5em;
                 }
                 
                 .enhanced-table {
                     width: 100%;
                     border-collapse: collapse;
                     margin-bottom: 1em;
+                    font-size: 0.95em;
                 }
                 
-                .enhanced-table.has-header thead {
-                    background-color: #f5f5f5;
+                .enhanced-table, .enhanced-table * {
+                    box-sizing: border-box;
                 }
                 
-                .enhanced-table.zebra-stripe tr:nth-child(even) {
+                .enhanced-table thead {
+                    display: table-header-group;
+                }
+                
+                .enhanced-table tbody {
+                    display: table-row-group;
+                }
+                
+                .enhanced-table tr {
+                    display: table-row;
+                }
+                
+                .enhanced-table th, .enhanced-table td {
+                    display: table-cell;
+                    border: 1px solid #dee2e6;
+                    word-break: normal;
+                    word-wrap: break-word;
+                    vertical-align: middle;
+                    max-width: 300px;
+                    padding: 8px 12px;
+                }
+                
+                .enhanced-table th {
+                    background-color: #f0f2f5;
+                    border-bottom: 2px solid #000b37;
+                    text-align: left;
+                    font-weight: 600;
+                    color: #000b37;
+                }
+                
+                .enhanced-table td {
+                    background-color: #ffffff;
+                }
+                
+                .enhanced-table tr:nth-child(even) td { 
                     background-color: #f9f9f9;
                 }
                 
-                .enhanced-table th,
-                .enhanced-table td {
-                    padding: 0.75em;
-                    border: 1px solid #ddd;
+                .enhanced-table tr:hover td { 
+                    background-color: rgba(130, 137, 236, 0.1);
                 }
                 
                 .enhanced-table .text-right {
@@ -821,165 +948,361 @@ class EnhancedPDFGenerator:
                     text-align: center;
                 }
                 
-                /* Table figure and caption styles */
-                .table-figure {
-                    margin: 2em 0;
+                /* Manual tables (converted from markdown text) */
+                .manual-table {
+                    border: 2px solid #dee2e6;
                 }
                 
-                .table-figure figcaption {
-                    font-style: italic;
+                .manual-table th,
+                .manual-table td {
+                    padding: 10px 12px;
+                }
+                
+                /* Ensure tables break correctly between pages */
+                table, tr, td, th, tbody, thead, tfoot {
+                    page-break-inside: auto !important;
+                }
+                
+                /* Force table to a new page if it would break */
+                table { 
+                }
+                
+                /* Enhanced list styles */
+                .enhanced-list {
+                    padding-left: 1.5em;
+                    margin: 0.8em 0;
+                    list-style-type: disc;
+                }
+                
+                .enhanced-list-item {
+                    margin-bottom: 0.3em;
+                    text-align: left;
+                }
+                
+                .nested-list {
+                    padding-left: 1.5em;
+                    margin: 0.5em 0;
+                    list-style-type: circle;
+                }
+                
+                .nested-list-item {
+                    margin-bottom: 0.2em;
+                }
+                
+                /* Section cover styling */
+                .section-cover {
+                    page-break-before: always;
+                    page-break-after: always;
+                    height: 29.7cm;
+                    padding: 4cm 3cm;
+                    position: relative;
+                    background: linear-gradient(145deg, #f8f9fa 0%, #f1f1f1 100%);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
                     text-align: center;
-                    margin-top: 0.5em;
-                    color: #666;
                 }
                 
-                /* Definition list styles */
-                .definition-list {
-                    margin: 1em 0;
+                .section-cover::before {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 15px;
+                    height: 100%;
+                    background: linear-gradient(to bottom, #85c20b, #0056b3);
+                    border-right: 1px solid rgba(0, 0, 0, 0.05);
+                }
+                
+                .section-cover h2 {
+                    font-size: 36pt;
+                    margin-bottom: 2.5cm;
+                    color: #000b37;
+                    border: none;
+                    font-weight: bold;
+                    line-height: 1.2;
+                    position: relative;
+                    padding-bottom: 0.5cm;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                
+                .section-cover h2::after {
+                    content: "";
+                    position: absolute;
+                    bottom: 0;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 8cm;
+                    height: 3px;
+                    background: linear-gradient(90deg, #0056b3, #85c20b);
+                }
+                
+                .section-cover .subsections {
+                    margin: 0 auto;
+                    text-align: left;
+                    width: 80%;
+                    max-width: 600px;
+                    background: #ffffff;
+                    padding: 1.5cm;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                }
+                
+                .section-cover .subsections h3 {
+                    font-size: 18pt;
+                    color: #0056b3;
+                    margin-bottom: 1cm;
+                    text-align: center;
+                    border: none;
+                    font-weight: normal;
+                }
+                
+                .section-cover .subsections p {
+                    text-align: center;
+                    margin-bottom: 1.5cm;
+                    font-size: 12pt;
+                    color: #34495e;
+                    line-height: 1.6;
+                    font-style: italic;
+                }
+                
+                .section-cover .key-topics {
+                    margin-top: 1cm;
+                    list-style-type: none;
                     padding: 0;
                 }
                 
-                .definition-list .term {
-                    font-weight: bold;
-                    margin-top: 1em;
+                .section-cover .key-topics li {
+                    margin: 0.5cm 0;
+                    padding: 0.25cm 0.5cm;
+                    background-color: #f8f9fa;
+                    border-left: 3px solid #85c20b;
+                    text-align: left;
+                    color: #000b37;
+                    font-size: 12pt;
+                    border-radius: 3px;
                 }
                 
-                .definition-list .definition {
-                    margin-left: 2em;
-                    margin-bottom: 1em;
-                }
-                
-                /* Footnote styles */
-                .enhanced-footnotes {
-                    margin-top: 2em;
-                    padding-top: 1em;
-                    border-top: 1px solid #ddd;
-                }
-                
-                .enhanced-footnotes::before {
-                    content: "Footnotes";
-                    font-weight: bold;
-                    display: block;
-                    margin-bottom: 1em;
-                }
-                
-                .footnote-item {
-                    font-size: 0.9em;
-                    color: #666;
-                    margin-bottom: 0.5em;
-                }
-                
-                .footnote-item a {
-                    color: #0066cc;
-                    text-decoration: none;
-                }
-                
-                .footnote-item a:hover {
-                    text-decoration: underline;
-                }
-                
-                /* Utility classes */
-                .text-right { text-align: right; }
-                .text-center { text-align: center; }
-                
-                /* Long URL display */
-                a.long-url {
-                    word-wrap: break-word;
-                    font-size: 0.9em;
+                .section-cover .reading-time {
+                    margin-top: 3cm;
+                    font-size: 12pt;
                     color: #7f8c8d;
-                    font-family: monospace;
+                    font-style: italic;
+                    background: #ffffff;
+                    padding: 0.4cm 1cm;
+                    border-radius: 50px;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+                }
+                
+                .section-cover .reading-time-value {
+                    font-weight: bold;
+                    color: #0056b3;
+                }
+                
+                /* Executive summary styling */
+                .executive-summary {
+                    margin: 2em 0;
+                    padding: 2em;
+                    background-color: #f8f9fa;
+                    border-left: 6px solid #0056b3;
+                    border-radius: 6px;
+                    page-break-before: always;
+                    page-break-after: always;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                }
+                
+                .executive-summary-header {
+                    margin-bottom: 1.5em;
+                    border-bottom: 2px solid #dee2e6;
+                    padding-bottom: 1em;
+                }
+                
+                .executive-summary-label {
+                    font-size: 2em;
+                    font-weight: 700;
+                    color: #0056b3;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                
+                .executive-summary h3 {
+                    color: #0056b3;
+                    font-size: 1.4em;
+                    margin-top: 1.8em;
+                    margin-bottom: 1em;
+                    font-weight: 600;
+                    border-bottom: 1px solid #e9ecef;
+                    padding-bottom: 0.5em;
+                }
+                
+                .executive-summary p {
+                    text-align: justify;
+                    line-height: 1.6;
+                    margin-bottom: 1em;
+                }
+                
+                .executive-summary ul, .executive-summary ol {
+                    margin-left: 1.5em;
+                    margin-bottom: 1.5em;
+                }
+                
+                .executive-summary li {
+                    margin-bottom: 0.8em;
+                }
+                
+                .executive-summary table {
+                    width: 100%;
+                    margin: 1.5em 0;
+                    border-collapse: collapse;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+                }
+                
+                .executive-summary table th {
+                    background-color: #e9ecef;
+                    font-weight: 600;
+                    text-align: left;
+                    padding: 0.8em;
+                    border: 1px solid #dee2e6;
+                    color: #0056b3;
+                }
+                
+                .executive-summary table td {
+                    padding: 0.8em;
+                    border: 1px solid #dee2e6;
+                    vertical-align: top;
+                }
+                
+                .executive-summary strong {
+                    color: #0056b3;
+                    font-weight: 600;
+                }
+                
+                .executive-summary-content {
+                    margin-top: 1.5em;
+                    line-height: 1.6;
+                }
+                
+                .executive-summary-content h2, 
+                .executive-summary-content h3, 
+                .executive-summary-content h4 {
+                    color: #0056b3;
+                    margin-top: 1.5em;
+                    margin-bottom: 0.8em;
+                }
+                
+                .executive-summary-content ol {
+                    counter-reset: item;
+                    list-style-type: none;
+                    margin-left: 0;
+                    padding-left: 0;
+                }
+                
+                .executive-summary-content ol li {
+                    counter-increment: item;
+                    margin-bottom: 1.2em;
+                    padding-left: 2em;
+                    position: relative;
+                }
+                
+                .executive-summary-content ol li:before {
+                    content: counter(item) ".";
+                    position: absolute;
+                    left: 0;
+                    font-weight: bold;
+                    color: #0056b3;
                 }
             ''', font_config=font_config)
-
+            
+            # Generate PDF
+            html = HTML(string=html_content, base_url=base_url)
             html.write_pdf(
                 output_path,
-                stylesheets=[css],  # Apply CSS
-                presentational_hints=True,  # Allow HTML styling attributes
+                stylesheets=[css],
+                presentational_hints=True,
                 font_config=font_config
             )
+            
             print(f"PDF generated successfully: {output_path}")
             return Path(output_path)
+            
         except Exception as e:
-            print(f"Error during WeasyPrint PDF generation: {e}")
-            # Optionally write the final HTML to a file for debugging
-            debug_html_path = Path(output_path).with_suffix('.debug.html')
-            with open(debug_html_path, 'w', encoding='utf-8') as f_debug:
-                f_debug.write(final_html_content)
-            print(f"Debug HTML saved to: {debug_html_path}")
-            raise  # Re-raise the exception
+            print(f"Error generating PDF: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
 
-    def _extract_metadata_and_split_sources(self, raw_content: str) -> Tuple[Dict, str, str]:
-        """Extract YAML frontmatter only, keeping content intact.
-        
-        This function:
-        1. Extracts any YAML frontmatter at the beginning of the content
-        2. Returns the metadata and the full content
-        3. No longer splits sources from main content
-        """
-        metadata = {}
-        main_content = ""
-        sources_content = "" # This will always remain empty now
-
-        cleaned_content = self._cleanup_raw_markdown(raw_content)
-
-        # 1. Extract YAML frontmatter (if present)
-        content_to_process = cleaned_content
-        if cleaned_content.strip().startswith('---'):
-            parts = cleaned_content.split('---', 2)
-            if len(parts) >= 3:
-                try:
-                    frontmatter = parts[1]
-                    loaded_meta = yaml.safe_load(frontmatter)
-                    metadata = loaded_meta if isinstance(loaded_meta, dict) else {}
-                    content_to_process = parts[2].strip()
-                except yaml.YAMLError:
-                    print(f"Could not parse YAML frontmatter. Treating as content.")
-                    content_to_process = cleaned_content # Process everything if YAML fails
-
-        # 2. NO LONGER SPLITTING SOURCES - All remaining content is main_content
-        main_content = content_to_process
-        sources_content = "" # Explicitly set to empty
-
-        return metadata, main_content, sources_content
-
-def process_markdown_files(base_dir: Path, company_name: str, language: str, template_path: Optional[str] = None) -> Optional[Path]:
+def process_markdown_files(output_dir: Path, company_name: str, language: str) -> Optional[Path]:
     """Process all markdown files in the markdown directory and generate a PDF."""
-    markdown_dir = base_dir / 'markdown'
-    pdf_dir = base_dir / 'pdf'
-    os.makedirs(pdf_dir, exist_ok=True)
-    
-    # Collect sections from markdown files
-    sections = []
-    
-    # Use SECTION_ORDER to determine the correct order of sections
-    for section_id, section_title in SECTION_ORDER:
-        file_path = markdown_dir / f"{section_id}.md"
-        if file_path.exists():
-            with open(file_path, 'r', encoding='utf-8') as f:
+    try:
+        markdown_dir = output_dir / 'markdown'
+        pdf_dir = output_dir / 'pdf'
+        os.makedirs(pdf_dir, exist_ok=True)
+        
+        # Collect sections from markdown files
+        sections = []
+        
+        # First, check if an executive summary exists
+        exec_summary_path = markdown_dir / "executive_summary.md"
+        has_exec_summary = exec_summary_path.exists()
+        
+        # Handle the executive summary first, if it exists
+        if has_exec_summary:
+            with open(exec_summary_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            if content.strip():  # Only include non-empty sections
-                section = PDFSection(
-                    id=section_id,
-                    title=section_title,
+            if content.strip():
+                exec_summary = PDFSection(
+                    id="executive_summary",
+                    title="Executive Summary",
                     content=content
                 )
-                sections.append(section)
-    
-    if not sections:
-        print("No markdown files found or all files were empty.")
-        return None
-    
-    # Generate PDF
-    pdf_generator = EnhancedPDFGenerator(template_path)
-    output_path = pdf_dir / f"{company_name}_{language}_Report.pdf"
-    
-    return pdf_generator.generate_pdf(
-        sections, 
-        str(output_path), 
-        {
-            'title': f"{company_name} {language} Report",
-            'company': company_name,
-            'language': language
-        }
-    ) 
+                sections.append(exec_summary)
+                print(f"Including executive summary from {exec_summary_path}")
+        
+        # Use SECTION_ORDER to determine the correct order of sections
+        for section_id, section_title in SECTION_ORDER:
+            # Skip executive summary as we've already handled it
+            if section_id == "executive_summary":
+                continue
+                
+            file_path = markdown_dir / f"{section_id}.md"
+            if file_path.exists():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                if content.strip():  # Only include non-empty sections
+                    section = PDFSection(
+                        id=section_id,
+                        title=section_title,
+                        content=content
+                    )
+                    sections.append(section)
+                    print(f"Including section: {section_id} ({section_title})")
+        
+        if not sections:
+            print("No markdown files found or all files were empty.")
+            return None
+        
+        # Generate PDF
+        pdf_generator = EnhancedPDFGenerator()
+        output_path = pdf_dir / f"{company_name}_{language}_Report.pdf"
+        
+        pdf_path = pdf_generator.generate_pdf(
+            sections, 
+            str(output_path), 
+            {
+                'title': f"{company_name} {language} Report",
+                'company': company_name,
+                'language': language
+            }
+        )
+        
+        return pdf_path
+        
+    except Exception as e:
+        print(f"Error processing markdown files: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None 

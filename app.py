@@ -16,6 +16,7 @@ from test_agent_prompt import (
     format_time
 )
 from pdf_generator import process_markdown_files
+from summary_generator import create_executive_summary
 from config import SECTION_ORDER, AVAILABLE_LANGUAGES, PROMPT_FUNCTIONS, LLM_MODEL, LLM_TEMPERATURE
 from google import genai
 
@@ -30,8 +31,17 @@ st.set_page_config(
 # Load logo
 @st.cache_data
 def get_logo_base64():
-    with open("templates/assets/supervity_logo.png", "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+    try:
+        logo_path = Path("templates/assets/supervity_logo.png")
+        if not logo_path.exists():
+            st.warning(f"Logo file not found at {logo_path}")
+            return ""
+            
+        with open(logo_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except Exception as e:
+        st.warning(f"Error loading logo: {str(e)}")
+        return ""
 
 # Function to display PDF in Streamlit
 def display_pdf(pdf_path):
@@ -83,7 +93,9 @@ def validate_markdown(file_path: Path) -> bool:
         return False
 
 # Custom wrapper around generate_all_prompts to integrate with Streamlit
-def generate_report_with_progress(company_name: str, language: str, selected_prompts: List[Tuple[str, str]], context_company_name: str, ticker: Optional[str] = None, industry: Optional[str] = None):
+def generate_report_with_progress(company_name: str, language: str, selected_prompts: List[Tuple[str, str]], 
+                            context_company_name: str, include_executive_summary: bool = True,
+                            ticker: Optional[str] = None, industry: Optional[str] = None):
     """Wrapper around generate_all_prompts with Streamlit progress indicators"""
     # Create a Streamlit progress display
     progress_bar = st.progress(0)
@@ -114,6 +126,15 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
             if description:
                 self.tasks[task_id]["description"] = description
                 status_text.text(description.replace("[bold green]", "").replace("[cyan]", "").replace("[/]", ""))
+                
+    # Calculate total steps including executive summary if enabled
+    total_steps = len(selected_prompts) + 2  # +1 for validation, +1 for PDF generation
+    if include_executive_summary:
+        total_steps += 1
+
+    # Create an executive summary progress task to track separately
+    exec_summary_progress = StreamlitProgress()
+    exec_summary_task = exec_summary_progress.add_task("Executive Summary Generation", total=3)  # 3 steps: start, process, complete
 
     # Call the original function with our progress display
     try:
@@ -222,6 +243,71 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
                 status_text.text("All files validated successfully after retries!")
         else:
             status_text.text("All markdown files validated successfully!")
+
+        # Generate executive summary if report generation was successful
+        if token_stats['summary']['successful_prompts'] > 0 and include_executive_summary:
+            status_text.text("Preparing to generate executive summary...")
+            exec_summary_progress.update(exec_summary_task, advance=1, description="Preparing executive summary...")
+            
+            # Initialize executive summary path
+            exec_summary_path = None
+            retries = 2  # Allow up to 2 retries for executive summary generation
+            
+            for attempt in range(retries + 1):
+                try:
+                    status_text.text(f"Generating executive summary (attempt {attempt+1}/{retries+1})...")
+                    exec_summary_progress.update(exec_summary_task, advance=0, 
+                                                description=f"Generating executive summary (attempt {attempt+1}/{retries+1})...")
+                    
+                    exec_summary_path = create_executive_summary(base_dir, company_name, language)
+                    
+                    if exec_summary_path and exec_summary_path.exists():
+                        status_text.text("Executive summary generated successfully!")
+                        exec_summary_progress.update(exec_summary_task, advance=1, 
+                                                    description="Executive summary generated successfully!")
+                        
+                        # Add the summary to the token stats
+                        try:
+                            with open(exec_summary_path, 'r', encoding='utf-8') as f:
+                                summary_content = f.read()
+                                summary_tokens = count_tokens(summary_content)
+                                
+                            # Update token stats to include the executive summary
+                            token_stats["prompts"]["executive_summary"] = {
+                                "status": "success",
+                                "output_tokens": summary_tokens,
+                                "input_tokens": 0,  # We don't track this separately
+                                "total_tokens": summary_tokens,
+                                "execution_time": 0  # We don't track this separately
+                            }
+                            token_stats["summary"]["total_output_tokens"] += summary_tokens
+                            token_stats["summary"]["total_tokens"] += summary_tokens
+                            token_stats["summary"]["successful_prompts"] += 1
+                            
+                            # Success - break out of retry loop
+                            exec_summary_progress.update(exec_summary_task, advance=1, 
+                                                        description="Executive summary metrics collected")
+                            break
+                        except Exception as e:
+                            status_text.text(f"Warning: Could not count tokens for executive summary: {str(e)}")
+                            # Even if token counting fails, we still have a summary
+                            break
+                    else:
+                        status_text.text(f"Executive summary generation attempt {attempt+1} failed. " + 
+                                        ("Retrying..." if attempt < retries else "Giving up."))
+                        if attempt >= retries:
+                            status_text.text("Warning: Failed to generate executive summary after all attempts. Proceeding without it.")
+                
+                except Exception as e:
+                    if attempt < retries:
+                        status_text.text(f"Error generating executive summary: {str(e)}. Retrying...")
+                        time.sleep(2)  # Brief pause before retry
+                    else:
+                        status_text.text(f"Error generating executive summary after all attempts: {str(e)}. Proceeding without it.")
+        elif include_executive_summary:
+            status_text.text("No successful sections generated, skipping executive summary.")
+        else:
+            status_text.text("Executive summary generation disabled. Skipping this step.")
 
         # Return the results
         pdf_path = None
@@ -563,6 +649,13 @@ with st.form("report_generator_form"):
                 default=section_options,
                 help="Choose which sections to include in the report. By default, all sections are selected."
             )
+            
+            # Executive Summary toggle
+            include_executive_summary = st.checkbox(
+                "Generate Executive Summary",
+                value=True,
+                help="When enabled, an executive summary will be generated that highlights the top 15 points from the report"
+            )
 
     # Generate report button
     generate_button = st.form_submit_button("Generate Report")
@@ -594,23 +687,29 @@ if generate_button:
 
         # Generate report
         with st.spinner(f"Generating report for {target_company} in {language}..."):
-            token_stats, pdf_path, base_dir = generate_report_with_progress(
+            result = generate_report_with_progress(
                 target_company,
                 language,
                 selected_prompts,
                 context_company,
+                include_executive_summary=include_executive_summary,
                 ticker=ticker if ticker else None,
                 industry=industry if industry else None
             )
+            
+            token_stats, pdf_path, base_dir = result
 
-        if token_stats and pdf_path and pdf_path.exists(): # Added check for pdf_path existence
+        # Check if generation was successful
+        pdf_exists = (isinstance(pdf_path, Path) and pdf_path.exists()) if pdf_path else False
+        
+        if token_stats and pdf_exists:
             # Display success message and stats
             st.success(f"Report for {target_company} generated successfully!")
 
             # Display report statistics
             st.markdown('<h3 class="section-title">Report Statistics</h3>', unsafe_allow_html=True)
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.markdown(
@@ -641,6 +740,21 @@ if generate_button:
                     ),
                     unsafe_allow_html=True
                 )
+                
+            with col4:
+                # Check if executive summary was generated
+                has_exec_summary = "executive_summary" in token_stats.get("prompts", {})
+                exec_summary_icon = "📝" if has_exec_summary else "❌"
+                exec_summary_value = "Generated" if has_exec_summary else "Not Generated"
+                
+                st.markdown(
+                    metric_card(
+                        exec_summary_icon,
+                        "Executive Summary",
+                        exec_summary_value
+                    ),
+                    unsafe_allow_html=True
+                )
 
             # Display PDF preview
             st.markdown('<h3 class="section-title">Report Preview</h3>', unsafe_allow_html=True)
@@ -662,13 +776,47 @@ if generate_button:
 
             # Save location
             st.info(f"Report saved to: {pdf_path}")
-        elif token_stats and not pdf_path: # Case where generation finished but PDF failed or wasn't created
-             st.warning("Report generation completed, but PDF could not be generated or found. Please check the logs.")
-             # You might still want to show stats here
+        elif token_stats and not pdf_exists and pdf_path is not None: # Case where generation finished but PDF could not be generated or found
+            st.warning("Report generation completed, but PDF could not be generated or found. Please check the logs.")
+            
+            # Still show report statistics
+            st.markdown('<h3 class="section-title">Report Statistics</h3>', unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown(
+                    metric_card(
+                        "📊",
+                        "Total Tokens",
+                        f"{token_stats['summary']['total_tokens']:,}"
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+            with col2:
+                st.markdown(
+                    metric_card(
+                        "⏱️",
+                        "Generation Time",
+                        format_time(token_stats['summary']['total_execution_time'])
+                    ),
+                    unsafe_allow_html=True
+                )
+                
+            with col3:
+                st.markdown(
+                    metric_card(
+                        "✅",
+                        "Successful Sections",
+                        token_stats['summary']['successful_prompts']
+                    ),
+                    unsafe_allow_html=True
+                )
         else: # Case where generate_report_with_progress returned None for stats/path
             st.error("Failed to generate report. Please check the logs for details.")
 
 # Add footer
 st.markdown('<div class="footer">', unsafe_allow_html=True)
-st.markdown('© 2024 Account Research AI Agent by Supervity', unsafe_allow_html=True)
+st.markdown('© 2025 Account Research AI Agent by Supervity', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)

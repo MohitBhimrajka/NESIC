@@ -828,6 +828,98 @@
             left: 0.5em;
             color: var(--navy-blue);
         }
+
+        /* CSS Styling for Executive Summary */
+        .executive-summary {
+            margin: 2em 0 2em 0;
+            padding: 1.5em;
+            background-color: #f8f9fa;
+            border-left: 4px solid #0056b3;
+            border-radius: 4px;
+            page-break-before: always;
+        }
+        
+        .executive-summary-header {
+            margin-bottom: 1.5em;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 0.75em;
+        }
+        
+        .executive-summary-label {
+            font-size: 1.75em;
+            font-weight: 700;
+            color: #0056b3;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .executive-summary h3 {
+            color: #0056b3;
+            font-size: 1.25em;
+            margin-top: 1.5em;
+            margin-bottom: 0.75em;
+            font-weight: 600;
+        }
+        
+        .executive-summary p {
+            text-align: justify;
+            line-height: 1.6;
+        }
+        
+        .executive-summary ul, .executive-summary ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        
+        .executive-summary table {
+            width: 100%;
+            margin: 1.5em 0;
+            border-collapse: collapse;
+        }
+        
+        .executive-summary table th {
+            background-color: #e9ecef;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75em;
+            border: 1px solid #dee2e6;
+        }
+        
+        .executive-summary table td {
+            padding: 0.75em;
+            border: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+        
+        .executive-summary strong {
+            color: #0056b3;
+        }
+
+        .executive-summary-content {
+            margin-top: 1em;
+            line-height: 1.6;
+        }
+        
+        .executive-summary-content h2, 
+        .executive-summary-content h3, 
+        .executive-summary-content h4 {
+            color: #0056b3;
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+        }
+        
+        .executive-summary-content ol {
+            margin-left: 1.5em;
+            padding-left: 1em;
+        }
+        
+        .executive-summary-content li {
+            margin-bottom: 0.8em;
+        }
+        
+        .executive-summary-content p {
+            margin-bottom: 0.6em;
+        }
     </style>
 </head>
 <body>
@@ -858,31 +950,45 @@
         {{ toc | safe }}
     </div>
 
+    <!-- Executive Summary Section (if it exists) -->
+    {% if executive_summary %}
+    <div class="executive-summary" id="section-executive_summary">
+        <div class="executive-summary-header">
+            <div class="executive-summary-label">Executive Summary</div>
+        </div>
+        <div class="executive-summary-content">
+            {{ executive_summary.html_content | safe }}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Content Sections -->
     {% for section in sections %}
         <!-- Section Cover -->
         <div class="section-cover">
-            <h2>{{ section.title }}</h2>
+            <h2 id="section-{{ section.id }}">{{ section.title }}</h2>
             
             <div class="subsections">
-                <h3>In this section:</h3>
+                <h3>Overview</h3>
+                {{ section.intro | safe }}
+
                 {% if section.key_topics %}
+                <h3>Key Topics</h3>
+                <ul class="key-topics">
                     {% for topic in section.key_topics %}
-                    <p class="section-topic">• {{ topic }}</p>
+                    <li>{{ topic }}</li>
                     {% endfor %}
-                {% else %}
-                    <p class="section-topic">• {{ section.title }}</p>
+                </ul>
                 {% endif %}
-            </div>
-            
-            <div class="reading-time">
-                Estimated reading time: <span class="reading-time-value">{{ section.reading_time }} minutes</span>
+
+                <p class="section-topic section-reading-time">
+                    <strong>Estimated Reading Time:</strong> {{ section.reading_time }} minutes
+                </p>
             </div>
         </div>
 
         <!-- Section Content -->
         <div class="section-content">
-            <h2 id="section-{{ section.id }}">{{ section.title }}</h2>
             {{ section.html_content | safe }}
         </div>
     {% endfor %}

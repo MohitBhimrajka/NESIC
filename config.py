@@ -31,6 +31,7 @@ PDF_CONFIG = {
 
 # Section order and titles for the final report
 SECTION_ORDER = [
+    ("executive_summary", "Executive Summary"),
     ("basic", "Basic Information"),
     ("vision", "Vision Analysis"),
     ("management_strategy", "Management Strategy"),

@@ -185,7 +185,7 @@ TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS = textwrap.dedent("""\
    * "The company's**strategic plan**focuses on growth."
    * "Their*innovative approach*sets them apart."
    * "The strategy has **three pillars **for success." (extra space after closing marker)
-   * "The company's** strategic plan **focuess on growth." (extra spaces inside markers)
+   * "The company's** strategic plan **focuses on growth." (extra spaces inside markers)
 
 2. **Bold Text Formatting**:
    * Use double asterisks (**) for bold text
@@ -220,7 +220,7 @@ TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS = textwrap.dedent("""\
 """)
 
 # Now build the full ADDITIONAL_REFINED_INSTRUCTIONS using parts
-ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
+ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent(f"""\
 **Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage**:
 
 **Mandatory Self-Check Before Final Output**:
@@ -271,9 +271,9 @@ Before producing the final answer, confirm:
    * Maintain consistent paragraph formatting throughout the document
    * Don't break sentences across paragraphs without proper punctuation
 
-""" + TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS + """
+{TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS}
 
-""" + PROFESSIONAL_TEXT_GUIDELINES + """
+{PROFESSIONAL_TEXT_GUIDELINES}
 
 **Exactness of Table Columns**:
 - Each row in any table **MUST** have the exact same number of columns as the header row, delimited by pipes (`|`).
@@ -306,18 +306,18 @@ Before producing the final answer, confirm:
 - Be careful with asterisks in regular text - escape them with backslash when needed.
 - Do not place emphasis markers directly adjacent to punctuation.
 
-**High-Priority Checklist (Must Not Be Violated)**:
+**High-Priority Checklist (Must Not Be Violate)**:
 1. No fabrication: Silently omit rather than invent ungrounded data after exhaustive search.
 2. Adhere strictly to the specified Markdown formats (headings, lists, **perfect tables**).
 3. Use inline citations [SSX] matching final sources exactly.
 4. Provide only one "Sources" section at the end.
 5. Do not use any URLs outside "vertexaisearch.cloud.google.com/..." pattern if not explicitly provided.
-6. **Enforce Single-Entity Focus**: Strictly reference only the **exact** company named: **'{company_name}'** (with identifiers like Ticker: '{ticker}', Industry: '{industry}' if provided). **Crucially verify** you are NOT including data from similarly named but unrelated entities (e.g., if the target is 'Marvell Technology, Inc.', absolutely DO NOT include 'Marvel Entertainment' or data related to comics/movies). Confirm if data relates to the parent/consolidated entity or a specific subsidiary, and report accordingly based ONLY on the source [SSX].
+6. **Enforce Single-Entity Coverage (CRITICAL)**: If '{company_name}' is the focus, DO NOT include other similarly named but unrelated entities. Verify target entity identity throughout.
 7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
 """)
 
 # Build the full BASE_FORMATTING_INSTRUCTIONS using parts
-BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
+BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent(f"""\
     Output Format & Quality Requirements:
 
     **Direct Start & No Conversational Text**: Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
@@ -361,9 +361,9 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     | Net Income              | 8,765    | 9,876    | 10,987   | [SS2]     |
     | EBITDA                  | -        | 18,765   | 19,876   | [SS3]     |
 
-""" + TABLE_FORMATTING_GUIDELINES + """
+{TABLE_FORMATTING_GUIDELINES}
 
-""" + SECTION_CONSISTENCY_GUIDELINES + """
+{SECTION_CONSISTENCY_GUIDELINES}
 
     **Code Blocks**: When including code or structured content, use standard Markdown code blocks with triple backticks.
 
@@ -372,7 +372,7 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     Example of proper quote format:
     
     > "This is a direct quote from the CEO." [SS1]
-    > (Source: Annual Report 2025, p.5)
+    > (Source: Annual Report 2023, p.5)
 
     **Emphasis & Formatting**: 
     - Ensure proper spacing around asterisks/underscores used for italics or bold formatting
@@ -619,12 +619,12 @@ Conclude the *entire* research output, following the 'General Discussion' paragr
 
 **5. Final Check**:
 -   Before concluding the response, review the entire output. Verify:
-        * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts.
-        * Each source is on a new line and follows the correct format.
-        * Every fact in the report body is supported by an inline citation [SSX] that corresponds to a source in this list.
-        * Every source listed corresponds to at least one inline citation [SSX] in the report body.
+    * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts.
+    * Each source is on a new line and follows the correct format.
+    * Every fact in the report body is supported by an inline citation [SSX] that corresponds to a source in this list.
+    * Every source listed corresponds to at least one inline citation [SSX] in the report body.
 -   The "**Sources**" section must appear only once, at the end of the entire response.
-    """)
+""")
 
 HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
 **Handling Missing or Ungrounded Information**:
@@ -658,7 +658,7 @@ RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
     - Generic news articles unless they report specific, verifiable events from highly reputable sources (e.g., Nikkei, Bloomberg, Reuters, FT, WSJ) AND can be **cross-verified against primary sources** and have grounding URLs.
 - **Data Verification**: Cross-verify critical figures (e.g., revenue, profit, key KPIs, management names/titles) between sources where possible (e.g., AR summary vs. detailed financials vs. website).
 - **Group Structure Handling**: Clearly identify if data refers to the consolidated parent group (**{company_name}**) or a specific target subsidiary mentioned *in the source*. If the prompt focuses on the parent, report consolidated data unless segment data is explicitly requested and available. If focusing on a subsidiary mentioned in the source, clearly label it. Actively search for subsidiary-specific sections, appendices, or footnotes within parent company reports. Acknowledge (internally for decision-making) potential data limitations for non-publicly listed subsidiaries. **Do not report on subsidiaries unless directly relevant to the parent's structure or segment reporting as per the source [SSX].**
-- **Noting Charts/Figures**: If relevant visual information (org charts, strategy frameworks, process diagrams) is found in sources, note its existence and location (e.g., "An organizational chart is provided on page X of the 2024 Annual Report [SSX]"). Do not attempt to recreate complex visuals textually.
+- **Noting Charts/Figures**: If relevant visual information (org charts, strategy frameworks, process diagrams) is found in sources, note its existence and location (e.g., "An organizational chart is provided on page X of the 2023 Annual Report [SSX]"). Do not attempt to recreate complex visuals textually.
 - **Management Commentary**: Actively incorporate direct management commentary and analysis from these sources to explain trends and rationale.
 - **Recency**: Focus on the most recent 1-2 years for qualitative analysis; use the last 3 full fiscal years for financial trends. Clearly state the reporting period for all data.
 - **Secondary Sources**: Use reputable secondary sources sparingly *only* for context (e.g., credit ratings, widely accepted industry trends) or verification, always with clear attribution **and cross-reference with primary sources and grounding URLs.**
@@ -719,7 +719,7 @@ def get_language_instruction(language: str) -> str:
 
 # Now include TABLE_FORMATTING_GUIDELINES directly in BASE_FORMATTING_INSTRUCTIONS 
 # without trying to concatenate it in the middle
-BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
+BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent(f"""\
     Output Format & Quality Requirements:
 
     **Direct Start & No Conversational Text**: Begin the response directly with the first requested section heading (e.g., `## 1. Core Corporate Information`). No introductory or concluding remarks are allowed.
@@ -763,9 +763,9 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     | Net Income              | 8,765    | 9,876    | 10,987   | [SS2]     |
     | EBITDA                  | -        | 18,765   | 19,876   | [SS3]     |
 
-""" + TABLE_FORMATTING_GUIDELINES + """
+{TABLE_FORMATTING_GUIDELINES}
 
-""" + SECTION_CONSISTENCY_GUIDELINES + """
+{SECTION_CONSISTENCY_GUIDELINES}
 
     **Code Blocks**: When including code or structured content, use standard Markdown code blocks with triple backticks.
 
@@ -847,118 +847,6 @@ BASE_FORMATTING_INSTRUCTIONS = textwrap.dedent("""\
     - Never use "N/A", "Not Available", or explanatory text in place of missing data
     - Do not comment on missing data - simply present what is verifiable
     - For sections where no verifiable data exists, retain headings but minimize content
-""")
-
-# Create a detailed instruction to prevent example placeholders in reports
-PLACEHOLDER_REPLACEMENT_INSTRUCTION = textwrap.dedent("""\
-**CRITICAL: REPLACE ALL EXAMPLE PLACEHOLDERS IN FINAL OUTPUT**:
-
-NEVER use placeholder text like "FYXXXX", "FYYYY", "FYZZZZ", "Example Corp Ltd", "Segment A/B/C", or similar placeholders in your final output. These are for format demonstration ONLY.
-
-*   **INCORRECT** (do not do this):
-    | Segment Name | FY2025 Revenue | FY2025 % | FY2026 Revenue | FY2026 % |
-    |--------------|----------------|----------|----------------|----------|
-    | Segment A    | 100,000        | 40%      | 110,000        | 41%     |
-
-*   **CORRECT** (do this instead):
-  | Segment Name        | FY2023 Revenue | FY2023 % | FY2024 Revenue | FY2024 % |
-  |---------------------|----------------|----------|----------------|----------|
-  | Cloud Services      | 100,000        | 40%      | 110,000        | 41%      |
-
-*   **VERIFICATION STEP**: Before finalizing your response, search for the following strings and replace them with actual values:
-  - "FYXXXX", "FYYYY", "FYZZZZ" → Use actual fiscal years (e.g., "FY2023", "FY2024", "FY2025")
-  - "Segment A/B/C" → Use actual segment names from the company's reporting
-  - "Example Corp Ltd" → Use actual company names from verifiable sources
-  - Any other placeholder text → Replace with actual, verified data
-  
-If you cannot find actual values after exhaustive search, use generic descriptive terms instead of placeholders (e.g., "Previous Fiscal Year" instead of "FYXXXX").
-""")
-
-ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
-**Mandatory Preliminary Research: Understanding the Analyzing Company ({context_company_name})**:
-
-**CRITICAL Prerequisite**: Before generating the Strategy Research plan for the Target Company ({company_name}), you MUST conduct a **thorough, in-depth preliminary research** step focused *exclusively* on understanding the **Analyzing Company ({context_company_name})**. The goal is to move far beyond generic assumptions and build a specific profile of their offerings and strengths.
-
-**Research Depth & Source Prioritization**:
--   **Mandatory Sources**: Prioritize and diligently examine {context_company_name}'s:
-    1.  **Official Website**: Specifically the sections detailing "Products," "Services," "Solutions," "Industries," "Case Studies," and "About Us." Look for specific named offerings.
-    2.  **Latest Annual/Integrated Report**: Focus on sections describing business segments, strategy, R&D, key investments, and market positioning.
-    3.  **Recent Investor Relations Materials**: (Presentations, Factbooks) Check for strategic priorities, targeted growth areas, and capability highlights.
--   **Supplemental Sources**: Use reputable industry analysis or financial news reports *only* if necessary to clarify specific offerings or market position, but prioritize official self-descriptions.
--   **Timeframe**: Focus on the *current* and *most recently reported* capabilities and strategic direction.
-
-**Information to Extract (Be Specific)**:
-1.  **Core Business Domains & *Named* Solutions**: Identify the *specific, named* products, services, platforms, and solutions {context_company_name} actively markets. (e.g., Instead of "Cloud Services," find "CloudFlex Managed Azure" or "AI-Powered Predictive Maintenance Suite"). List the key domains (e.g., Cybersecurity, Cloud Infrastructure, ERP Implementation, Network Integration, Industry-Specific Software [specify industry]).
-2.  **Key Verifiable Strengths & Differentiators**: What does {context_company_name} claim as its specific advantages? (e.g., "Certified expertise in SAP S/4HANA migration," "Proprietary AI algorithm for X," "Extensive nationwide service network with Y depots," "Decades of experience in the Z vertical," "Unique partnership with TechVendor ABC"). Avoid generic terms like "good service."
-3.  **Primary Target Industries/Verticals**: Which specific industries does {context_company_name} explicitly state it focuses on or has deep expertise in?
-4.  **Technological Focus/Partnerships**: Identify key technologies {context_company_name} emphasizes (e.g., AI/ML, IoT, specific cloud platforms, cybersecurity frameworks) and major strategic technology partnerships mentioned.
-
-**CRITICAL - AVOID GENERICITY**:
--   **Do NOT rely on assumptions or superficial knowledge.** Your understanding must be based on the specific research conducted using the sources above.
--   **Do NOT use generic descriptions** like "offers IT solutions," "provides consulting," or "is good at technology." Be precise and use the specific terminology and offering names found in {context_company_name}'s own materials.
-
-**Purpose & Application**:
--   This preliminary research is **fundamental** to generating a valuable and non-generic Strategy Research plan. The quality and specificity of your proposed alignments in the main report (Sections 4, 6, 7, 9, 11) **directly depend** on the accuracy and depth of this initial research.
--   You will explicitly use the *specific capabilities, named solutions, and verifiable strengths* identified here when analyzing the Target Company ({company_name}) and proposing potential alignments.
--   You do *not* need to cite these preliminary research sources in the final output unless they overlap with provided grounding URLs for the Target Company ({company_name}).
-
-**Internal Verification**: Before proceeding to analyze the Target Company, internally confirm you have identified specific, named offerings and verifiable strengths for {context_company_name}, not just generic categories.
-    """)
-
-FINAL_REVIEW_INSTRUCTION = textwrap.dedent("""\
-**Internal Final Review**: Before generating the 'Sources' list, review your generated response for:
-
-**Completeness Check**:
-- Every numbered section requested in the prompt is present with the correct heading.
-- Each section contains all requested subsections and information points for the Target Company ({company_name}), or the content has been silently omitted if ungrounded after exhaustive search (headings retained).
-- The "Final Strategy Summary" (Section 11) is included.
-- No sections have been accidentally omitted or truncated.
-
-**Formatting Verification**:
-- All line breaks are properly formatted (no literal '\\n').
-- All section headings use correct Markdown format (`## Number. Title`).
-- All subsections use proper hierarchical format (`###` or indented bullets).
-- **Tables are PERFECTLY formatted** (aligned pipes, matching columns, start/end pipes, `-` used sparingly only for missing cell data *confirmed absent in source* for {company_name}, data accuracy check vs source).
-- Lists use consistent formatting and indentation.
-
-**Citation Integrity (Target Company - {company_name})**:
-- Every factual claim about **{company_name}** has an inline citation `[SSX]`.
-- **Specifically verify {company_name}'s financial data points and table entries for correct [SSX] citations.**
-- Citations are placed immediately after the supported claim, before punctuation.
-- All citations correspond exactly to entries that WILL BE in the final Sources list.
-- Every source listed corresponds to at least one inline citation `[SSX]` referring to **{company_name}**.
-
-**Data Precision & Recency (Target Company - {company_name})**:
-- All monetary values for **{company_name}** specify currency and reporting period.
-- All dates for **{company_name}** are in consistent format and reflect the latest available grounded data.
-- Numerical data for **{company_name}** is presented with appropriate precision and units.
-- Primary sources used for **{company_name}** are confirmed to be the most recent available and grounded.
-
-**Content Quality & Alignment Specificity**:
-- Direct start with no conversational text.
-- Professional tone with no placeholders (except the minimal `-` in tables for {company_name} where structurally needed and confirmed absent in source).
-- Adherence to silent omission handling instructions for {company_name}.
-- Logical flow within and between sections.
-- Analytical depth provided where required (explaining 'why').
-- **Alignment Specificity**: Verify that proposed alignments between the Analyzing Company's ({context_company_name}) capabilities and the Target Company's ({company_name}) needs (Sections 4, 6, 7, 9, 11) are **specific, non-generic, and plausibly based on the Analyzing Company's likely offerings** (reflecting thorough preliminary research). They should reference specific needs/challenges of {company_name} [SSX].
-
-**Single-Entity & Role Clarity (CRITICAL)**:
-- Ensure that analysis and data strictly pertains to the specified Target Company **'{company_name}'**. Verify no data from similarly named but unrelated entities has crept in.
-- Maintain clarity between the Target Company ({company_name}) and the Analyzing Company ({context_company_name}). Ensure proposals clearly articulate *how* {context_company_name} can help {company_name}.
-
-Proceed to generate the final 'Sources' list only after confirming these conditions are met.
-""")
-
-COMPLETION_INSTRUCTION_TEMPLATE = textwrap.dedent("""\
-**Output Completion Requirements**:
-
-Before concluding your response, verify that:
-1. Every numbered section requested in the prompt is complete with all required subsections (or content is silently omitted if ungrounded after exhaustive search, retaining headings).
-2. All content follows **perfect markdown formatting** throughout, especially for tables (check data accuracy and source alignment).
-3. Each section contains all necessary details based on available grounded information and is not truncated. Check for data recency.
-4. The response maintains consistent formatting for lists, tables, and code blocks.
-5. All inline citations `[SSX]` are properly placed, with no extraneous or fabricated URLs. Every fact presented MUST be cited, **especially all financial data**.
-6. Strictly focus on the exact named company **'{company_name}'** (no confusion with similarly named entities). Verify parent vs. subsidiary context where needed.
 """)
 
 # --- Prompt Generating Functions ---
@@ -1654,7 +1542,7 @@ Conduct thorough research on **{company_name}**'s crisis management and business
 
 ## 2. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) synthesizing the findings from Section 1 regarding **{company_name}**. Assess its apparent resilience to digital disruptions based on its history of incidents, responses, stated preparedness, and the potential application of DX for mitigation. Use inline citations explicitly (e.g., "The company's response to the 2024 incident [SSX] suggests an established protocol, though the stated RTO [SSY] raises questions... The identified risk of X [SSZ] could potentially be addressed by DX initiatives focused on Y...").
-    *   Structure the discussion logically, starting with a summary of the incident history and response effectiveness, followed by an gravitational of the stated preparedness measures (IRP, BCP) and risk awareness, incorporating the potential role of DX, and concluding with an assessment of overall digital resilience for {company_name}, identifying potential strengths and weaknesses relevant to a Japanese audience considering partnership or investment.
+    *   Structure the discussion logically, starting with a summary of the incident history and response effectiveness, followed by an evaluation of the stated preparedness measures (IRP, BCP) and risk awareness, incorporating the potential role of DX, and concluding with an assessment of overall digital resilience for {company_name}, identifying potential strengths and weaknesses relevant to a Japanese audience considering partnership or investment.
     *   Do not introduce any new claims not supported by the previous analysis and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
