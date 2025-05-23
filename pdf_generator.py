@@ -312,8 +312,10 @@ class EnhancedPDFGenerator:
                             child.replace_with(placeholder)
                             
                             # Insert the parsed content before the placeholder
-                            for element in temp_soup.body.contents:
-                                placeholder.insert_before(element)
+                            # Check if body exists and has contents before trying to access them
+                            if temp_soup.body and temp_soup.body.contents:
+                                for element in temp_soup.body.contents:
+                                    placeholder.insert_before(element)
                             
                             # Remove the placeholder
                             placeholder.extract()
@@ -489,17 +491,19 @@ class EnhancedPDFGenerator:
                     # Create a temporary soup to parse the HTML fragment
                     temp_soup = BeautifulSoup(html_fragment, 'html.parser')
                     
-                    # Replace the text node with the parsed content
-                    # Need to use a placeholder tag to replace the text node
-                    placeholder = li.new_tag('span')
-                    text_node.replace_with(placeholder)
-                    
-                    # Replace the placeholder with the parsed content
-                    for element in temp_soup.body.contents:
-                        placeholder.insert_before(element)
-                    
-                    # Remove the placeholder
-                    placeholder.extract()
+                    # Make sure we can create a new tag and soup.body exists
+                    if hasattr(li, 'new_tag') and callable(li.new_tag) and temp_soup.body and temp_soup.body.contents:
+                        # Replace the text node with the parsed content
+                        # Need to use a placeholder tag to replace the text node
+                        placeholder = li.new_tag('span')
+                        text_node.replace_with(placeholder)
+                        
+                        # Replace the placeholder with the parsed content
+                        for element in temp_soup.body.contents:
+                            placeholder.insert_before(element)
+                        
+                        # Remove the placeholder
+                        placeholder.extract()
 
     def _process_table(self, table, soup):
         """Enhance table styling and structure."""
