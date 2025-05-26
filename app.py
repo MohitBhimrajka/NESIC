@@ -1322,28 +1322,28 @@ REPORT_PRESETS = {
         "description": "Comprehensive business analysis covering all operational areas",
         "best_for": "Due diligence, M&A research, full company assessment",
         "sections": [name for name, _ in PROMPT_FUNCTIONS],
-        "est_time": "15-20 minutes"
+        "est_time": "5-10 minutes"
     },
     "strategic": {
         "name": "Strategic Assessment",
         "description": "Leadership, competitive positioning, and strategic direction analysis",
         "best_for": "Partnership evaluation, strategic planning, competitive intelligence",
         "sections": ["basic", "vision", "management_strategy", "competitive", "strategy_research"],
-        "est_time": "8-12 minutes"
+        "est_time": "3-6 minutes"
     },
     "financial": {
         "name": "Financial & Risk Review",
         "description": "Financial performance, regulatory compliance, and risk assessment",
         "best_for": "Investment decisions, credit analysis, risk evaluation",
         "sections": ["basic", "financial", "regulatory", "crisis"],
-        "est_time": "6-10 minutes"
+        "est_time": "3-6 minutes"
     },
     "innovation": {
         "name": "Innovation & Technology",
         "description": "Digital transformation capabilities and business model innovation",
         "best_for": "Technology partnerships, innovation assessment, digital readiness",
         "sections": ["basic", "digital_transformation", "business_structure", "vision", "management_strategy"],
-        "est_time": "6-10 minutes"
+        "est_time": "4-7 minutes"
     }
 }
 

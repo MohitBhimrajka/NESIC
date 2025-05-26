@@ -227,13 +227,99 @@ TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS = textwrap.dedent("""\
 
 # Simplified core instructions for better clarity
 ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
-**Core Requirements:**
-*   **Grounding Rule:** Only include facts that have Vertex AI grounding URLs (starting with "https://vertexaisearch.cloud.google.com/grounding-api-redirect/")
-*   **No Fabrication:** Never invent URLs or data - omit information if no grounding URL is provided
-*   **Single Entity:** Only include data about the specified company - avoid similarly named entities
-*   **Citations:** Every fact needs [SSX] citation matching the Sources list
-*   **Format:** Use proper Markdown (## for sections, ### for subsections, proper tables)
-*   **Silent Omission:** If no grounding URL exists for a fact, omit it without explanation
+**Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage**:
+
+**Mandatory Self-Check Before Final Output**:
+Before producing the final answer, confirm:
+1. All requested sections are fully included with correct headings.
+2. All factual statements have inline citations [SSX] pointing to valid Vertex AI URLs in the final Sources list.
+3. Only the permitted Vertex AI grounding URLs are used—no external or fabricated links.
+4. Markdown headings and tables follow the specified format (##, ###, consistent columns, **strict pipe alignment**). Ensure data within tables is accurate against the source.
+5. A single "Sources" section is present, properly labeled, and each source is on its own line.
+6. Inline citations appear before punctuation where feasible.
+7. No data or sources are invented. If information is omitted due to lack of verifiable grounding after exhaustive search, this is done silently without comment.
+8. **Strict Single-Entity Focus**: Strictly reference only the **exact** company named: **'{company_name}'** (with identifiers like Ticker: '{ticker}', Industry: '{industry}' if provided). **Crucially verify** you are NOT including data from similarly named but unrelated entities (e.g., if the target is 'Marvell Technology, Inc.', absolutely DO NOT include 'Marvel Entertainment' or data related to comics/movies). Confirm if data relates to the parent/consolidated entity or a specific subsidiary, and report accordingly based ONLY on the source [SSX].
+9. Verify recency of all primary sources used (AR, MTP, website data, etc.).
+10. Confirm key financial figures and table data points against cited sources. **Verify specifically that all financial data has valid [SSX] citations linked to provided grounding URLs.**
+11. Ensure lists (KPIs, Officers, Subsidiaries) are complete based on source availability.
+12. Confirm analytical depth provided where requested (explaining 'why' and drivers).
+
+**Additional Markdown Formatting Guidelines to Ensure Clean Rendering**:
+
+1. **Tables and Markdown Lists**:
+   * Never place Markdown lists directly inside table cells.
+   * If a cell must contain multiple points, use semicolons or commas to separate them.
+   * For complex nested data, reference a note below the table.
+
+2. **Emphasis and Special Character Handling**:
+   * Always use proper spacing around emphasis markers:
+     * Correct: Text with **bold words** in it.
+     * Incorrect: Text with**bold words**in it.
+   * Be careful with asterisks in regular text - escape them with backslash when needed.
+   * Don't place emphasis markers directly adjacent to punctuation.
+
+3. **List Formatting Excellence**:
+   * Maintain consistent indentation (4 spaces for nested items)
+   * Always include a space after the list marker (*, -, or numbers)
+   * Ensure proper nesting hierarchy for multi-level lists
+   * Don't mix different list markers in the same list
+
+4. **Heading Structure**:
+   * Use ## for main sections (e.g., ## 1. Section Title)
+   * Use ### for subsections
+   * Include a space after the # symbols
+   * Maintain logical hierarchy (don't skip levels)
+   * Don't include formatting markers in headings unless absolutely necessary
+
+5. **Paragraph and Line Spacing**:
+   * Separate paragraphs with a blank line
+   * Don't include unnecessary blank lines between list items
+   * Maintain consistent paragraph formatting throughout the document
+   * Don't break sentences across paragraphs without proper punctuation
+
+""" + TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS + """
+
+""" + PROFESSIONAL_TEXT_GUIDELINES + """
+
+**Exactness of Table Columns**:
+- Each row in any table **MUST** have the exact same number of columns as the header row, delimited by pipes (`|`).
+- Use exactly one pipe (`|`) at the beginning and end of each row.
+- Ensure header separator lines (`|---|---|`) match the number of columns precisely.
+- If data for a specific cell is missing *in the source* after exhaustive search, use a simple hyphen (`-`) as a placeholder *only if necessary* to maintain table structure and alignment. Do not add explanatory text.
+- Always include an inline citation [SSX] if referencing factual numbers within a table cell or in a note below the table referencing the table's data. Verify the cited data matches the source.
+- Maintain proper spacing between cell content and pipe separators (e.g., `| Cell content |` not `|Cell content|`).
+
+**Quotes with Inline Citations**:
+- Any verbatim quote must include:
+    1. The speaker's name and date or document reference in parentheses.
+    2. An inline citation [SSX] immediately following.
+- This ensures clarity on who said it, when they said it, and the exact source.
+- For quotes longer than one line, ensure each line begins with the quote marker (>).
+
+**Exactness of Hyperlinks in Sources**:
+- The final "Sources" section must use the format "* [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Brief annotation [SSX]."
+- Number sources sequentially without skipping.
+- Provide no additional domain expansions or transformations beyond what is given.
+- Do not summarize entire documents—only note which facts the source supports.
+
+**Do Not Summarize Sources**:
+- In each source annotation, reference only the specific claim(s) the link supports, not a broad summary.
+
+**Emphasis and Formatting**:
+- Ensure proper spacing around emphasis markers:
+  - Correct: Text with **bold words** in it.
+  - Incorrect: Text with**bold words**in it. 
+- Be careful with asterisks in regular text - escape them with backslash when needed.
+- Do not place emphasis markers directly adjacent to punctuation.
+
+**High-Priority Checklist (Must Not Be Violated)**:
+1. No fabrication: Silently omit rather than invent ungrounded data after exhaustive search.
+2. Adhere strictly to the specified Markdown formats (headings, lists, **perfect tables**).
+3. Use inline citations [SSX] matching final sources exactly.
+4. Provide only one "Sources" section at the end.
+5. Do not use any URLs outside "vertexaisearch.cloud.google.com/..." pattern if not explicitly provided.
+6. **Enforce Single-Entity Coverage (CRITICAL)**: If '{company_name}' is the focus, DO NOT include other similarly named but unrelated entities. Verify target entity identity throughout.
+7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
 """)
 
 # Build the full BASE_FORMATTING_INSTRUCTIONS using parts
