@@ -109,7 +109,12 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
     # Create a Streamlit progress display
     progress_bar = st.progress(0)
     status_text = st.empty()
-    status_text.text("Initializing report generation...")
+    status_text.markdown("""
+    <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+        <div style="margin-bottom: 0.5rem;">🚀 Initializing report generation...</div>
+        <div style="font-size: 0.9rem; opacity: 0.8;">Setting up AI analysis systems...</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Define a simple progress class that integrates with Streamlit
     class StreamlitProgress:
@@ -134,7 +139,13 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
 
             if description:
                 self.tasks[task_id]["description"] = description
-                status_text.text(description.replace("[bold green]", "").replace("[cyan]", "").replace("[/]", ""))
+                clean_description = description.replace("[bold green]", "").replace("[cyan]", "").replace("[/]", "")
+                status_text.markdown(f"""
+                <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                    <div style="margin-bottom: 0.5rem;">🔄 {clean_description}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">Processing your business intelligence report...</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
     # Calculate total steps including executive summary if enabled
     total_steps = len(selected_prompts) + 2  # +1 for validation, +1 for PDF generation
@@ -168,18 +179,33 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
 
         invalid_files: Dict[str, Path] = {}
 
-        status_text.text("Validating generated markdown files...")
+        status_text.markdown("""
+        <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+            <div style="margin-bottom: 0.5rem;">🔍 Validating generated content...</div>
+            <div style="font-size: 0.9rem; opacity: 0.8;">Ensuring report quality and completeness...</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # First check - validate each markdown file
         for prompt_name, _ in selected_prompts:
             md_file = markdown_dir / f"{prompt_name}.md"
             if not validate_markdown(md_file):
                 invalid_files[prompt_name] = md_file
-                status_text.text(f"Found invalid content in {prompt_name}.md, will retry...")
+                status_text.markdown(f"""
+                <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                    <div style="margin-bottom: 0.5rem;">⚠️ Found invalid content in {prompt_name}.md</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">Will retry generation for better quality...</div>
+                </div>
+                """, unsafe_allow_html=True)
 
         # Re-run prompts for invalid files if any
         if invalid_files:
-            status_text.text(f"Re-running {len(invalid_files)} prompts with invalid content...")
+            status_text.markdown(f"""
+            <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                <div style="margin-bottom: 0.5rem;">🔄 Re-running {len(invalid_files)} sections...</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">Improving content quality for optimal results...</div>
+            </div>
+            """, unsafe_allow_html=True)
 
             # Create API client with the new format
             api_key = os.getenv("GEMINI_API_KEY")
@@ -219,7 +245,12 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
                     )
 
                 # Generate content
-                status_text.text(f"Retrying {prompt_name}...")
+                status_text.markdown(f"""
+                <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                    <div style="margin-bottom: 0.5rem;">🔄 Retrying {prompt_name}...</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">Generating enhanced content...</div>
+                </div>
+                """, unsafe_allow_html=True)
                 result = generate_content(client, prompt, invalid_files[prompt_name])
 
                 # Update token stats
@@ -247,15 +278,35 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
                     still_invalid.append(prompt_name)
 
             if still_invalid:
-                status_text.text(f"Warning: {len(still_invalid)} files still have invalid content: {', '.join(still_invalid)}")
+                status_text.markdown(f"""
+                <div style="text-align: center; color: #ff9a5a; font-size: 1.1rem; margin: 1rem 0;">
+                    <div style="margin-bottom: 0.5rem;">⚠️ Some content needs improvement</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">Proceeding with available sections...</div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                status_text.text("All files validated successfully after retries!")
+                status_text.markdown("""
+                <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                    <div style="margin-bottom: 0.5rem;">✅ All content validated successfully!</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">Quality check complete...</div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            status_text.text("All markdown files validated successfully!")
+            status_text.markdown("""
+            <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                <div style="margin-bottom: 0.5rem;">✅ All sections generated successfully!</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">Content validation passed...</div>
+            </div>
+            """, unsafe_allow_html=True)
 
         # Generate executive summary if report generation was successful
         if token_stats['summary']['successful_prompts'] > 0 and include_executive_summary:
-            status_text.text("Preparing to generate executive summary...")
+            status_text.markdown("""
+            <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                <div style="margin-bottom: 0.5rem;">📋 Preparing executive summary...</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">Creating comprehensive overview...</div>
+            </div>
+            """, unsafe_allow_html=True)
             exec_summary_progress.update(exec_summary_task, advance=1, description="Preparing executive summary...")
             
             # Initialize executive summary path
@@ -264,14 +315,24 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
             
             for attempt in range(retries + 1):
                 try:
-                    status_text.text(f"Generating executive summary (attempt {attempt+1}/{retries+1})...")
+                    status_text.markdown(f"""
+                    <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                        <div style="margin-bottom: 0.5rem;">📝 Creating executive summary (attempt {attempt+1}/{retries+1})...</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8;">Synthesizing key insights...</div>
+                    </div>
+                    """, unsafe_allow_html=True)
                     exec_summary_progress.update(exec_summary_task, advance=0, 
                                                 description=f"Generating executive summary (attempt {attempt+1}/{retries+1})...")
                     
                     exec_summary_path = create_executive_summary(base_dir, company_name, language)
                     
                     if exec_summary_path and exec_summary_path.exists():
-                        status_text.text("Executive summary generated successfully!")
+                        status_text.markdown("""
+                        <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                            <div style="margin-bottom: 0.5rem;">✅ Executive summary completed!</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">Key insights captured...</div>
+                        </div>
+                        """, unsafe_allow_html=True)
                         exec_summary_progress.update(exec_summary_task, advance=1, 
                                                     description="Executive summary generated successfully!")
                         
@@ -331,21 +392,38 @@ def generate_report_with_progress(company_name: str, language: str, selected_pro
             # Check if PDF needs generation (only if markdown exists and PDF doesn't)
             markdown_files_exist = any((markdown_dir / f"{name}.md").exists() for name, _ in selected_prompts)
             if markdown_files_exist and not pdf_path.exists():
-                status_text.text("Generating PDF from markdown files...")
+                status_text.markdown("""
+                <div style="text-align: center; color: white; font-size: 1.1rem; margin: 1rem 0;">
+                    <div style="margin-bottom: 0.5rem;">📄 Generating final PDF report...</div>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">Formatting and compiling content...</div>
+                </div>
+                """, unsafe_allow_html=True)
                 generated_pdf_path = process_markdown_files(base_dir, company_name, language)
                 if generated_pdf_path:
                      pdf_path = generated_pdf_path # Update path if generated
                 else:
                      pdf_path = None # PDF generation failed
-                     status_text.text("PDF generation failed.")
+                     status_text.markdown("""
+                     <div style="text-align: center; color: #ff9a5a; font-size: 1.1rem; margin: 1rem 0;">
+                         <div style="margin-bottom: 0.5rem;">⚠️ PDF generation failed</div>
+                         <div style="font-size: 0.9rem; opacity: 0.8;">Content is available in markdown format...</div>
+                     </div>
+                     """, unsafe_allow_html=True)
             elif not markdown_files_exist:
-                 status_text.text("No markdown files found to generate PDF.")
+                 status_text.markdown("""
+                 <div style="text-align: center; color: #ff9a5a; font-size: 1.1rem; margin: 1rem 0;">
+                     <div style="margin-bottom: 0.5rem;">⚠️ No content files found</div>
+                     <div style="font-size: 0.9rem; opacity: 0.8;">Unable to generate PDF...</div>
+                 </div>
+                 """, unsafe_allow_html=True)
                  pdf_path = None
-            else:
-                 status_text.text("PDF already exists or no markdown generated.")
-                 # Keep existing pdf_path if it exists
 
-        status_text.text("Report generation complete!")
+        status_text.markdown("""
+        <div style="text-align: center; color: var(--primary-lime); font-size: 1.3rem; margin: 1rem 0;">
+            <div style="margin-bottom: 0.5rem;">🎉 Report generation complete!</div>
+            <div style="font-size: 0.9rem; opacity: 0.8;">Your business intelligence report is ready...</div>
+        </div>
+        """, unsafe_allow_html=True)
         progress_bar.empty()
 
         return token_stats, pdf_path, base_dir
@@ -575,8 +653,601 @@ def apply_custom_css():
         border-radius: 0 0 6px 6px;
         padding: 1rem;
     }
+
+    /* Report Type Selection Styles */
+    .report-type-container {
+        margin: 1.5rem 0;
+    }
+
+    .report-type-header {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+        margin-bottom: 0.5rem;
+    }
+
+    .report-type-subtitle {
+        color: var(--secondary-dark-gray);
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .preset-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .preset-card {
+        background: white;
+        border: 2px solid #e1e5e9;
+        border-radius: 12px;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        text-align: left;
+    }
+
+    .preset-card:hover {
+        border-color: var(--primary-lime);
+        box-shadow: 0 4px 15px rgba(133, 194, 11, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .preset-card.selected {
+        border-color: var(--primary-lime);
+        background: linear-gradient(135deg, #f8fff4 0%, #ffffff 100%);
+        box-shadow: 0 4px 20px rgba(133, 194, 11, 0.2);
+    }
+
+    .preset-card.selected::after {
+        content: "✓";
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: var(--primary-lime);
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .preset-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .preset-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+        margin-bottom: 0.5rem;
+    }
+
+    .preset-description {
+        color: var(--secondary-dark-gray);
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+
+    .preset-best-for {
+        font-size: 0.85rem;
+        color: var(--comp-cyan);
+        font-style: italic;
+        margin-bottom: 0.5rem;
+    }
+
+    .preset-time {
+        font-size: 0.8rem;
+        color: var(--secondary-dark-gray);
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 15px;
+        display: inline-block;
+    }
+
+    .custom-selection {
+        background: white;
+        border: 2px solid #e1e5e9;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .custom-selection.expanded {
+        border-color: var(--primary-lime);
+    }
+
+    .custom-header {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        margin-bottom: 1rem;
+    }
+
+    .custom-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+
+    .custom-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+        flex-grow: 1;
+    }
+
+    .section-groups {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .section-group {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .section-group-title {
+        font-weight: 600;
+        color: var(--primary-navy);
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .section-preview {
+        background: var(--secondary-light-lime);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid var(--primary-lime);
+    }
+
+    .section-preview-title {
+        font-weight: 600;
+        color: var(--primary-navy);
+        margin-bottom: 0.5rem;
+    }
+
+    .section-preview-content {
+        font-size: 0.9rem;
+        color: var(--secondary-dark-gray);
+    }
+
+    /* Professional Wizard Styles */
+    .wizard-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    .step-container {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e1e5e9;
+    }
+
+    .step-container.disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .step-title {
+        color: var(--primary-navy);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .step-description {
+        color: var(--secondary-dark-gray);
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.4;
+    }
+
+    /* Professional Button Styles */
+    .stButton > button {
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+        padding: 0.75rem 1.25rem !important;
+        transition: all 0.2s ease !important;
+        border: 1px solid #e1e5e9 !important;
+        font-size: 0.95rem !important;
+        background: white !important;
+        color: var(--primary-navy) !important;
+    }
+
+    .stButton > button:hover {
+        background: var(--primary-lime) !important;
+        color: white !important;
+        border-color: var(--primary-lime) !important;
+    }
+
+    /* Prominent Generate Button */
+    .generate-button button {
+        background: var(--primary-lime) !important;
+        color: var(--primary-navy) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 1.2rem 3rem !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        box-shadow: 0 4px 20px rgba(133, 194, 11, 0.4) !important;
+        transition: all 0.3s ease !important;
+        min-height: 60px !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    .generate-button button:hover {
+        background: var(--secondary-light-lime) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 30px rgba(133, 194, 11, 0.6) !important;
+    }
+
+    .generate-button button:active {
+        transform: translateY(0) !important;
+    }
+
+    /* Progress Styles */
+    .progress-container {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 2rem;
+        margin: 2rem 0;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .progress-title {
+        color: white;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .progress-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-animation {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid var(--primary-lime);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Professional Selection Preview */
+    .selection-preview {
+        background: #f8f9fa;
+        border: 1px solid #e1e5e9;
+        border-radius: 6px;
+        padding: 1.25rem;
+        margin-top: 1rem;
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .preview-icon {
+        font-size: 1.25rem;
+        color: var(--primary-lime);
+    }
+
+    .preview-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+    }
+
+    .preview-description {
+        color: var(--secondary-dark-gray);
+        font-size: 0.95rem;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+
+    .preview-details {
+        display: grid;
+        gap: 0.4rem;
+    }
+
+    .preview-item {
+        color: var(--secondary-dark-gray);
+        font-size: 0.9rem;
+        padding: 0.2rem 0;
+    }
+
+    /* Professional Custom Preview */
+    .custom-preview {
+        background: #f8f9fa;
+        border: 1px solid #e1e5e9;
+        border-radius: 6px;
+        padding: 1.25rem;
+        margin-top: 1rem;
+    }
+
+    .custom-preview-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+        margin-bottom: 0.75rem;
+    }
+
+    .custom-preview-details {
+        display: grid;
+        gap: 0.4rem;
+    }
+
+    .custom-item {
+        color: var(--secondary-dark-gray);
+        font-size: 0.9rem;
+        padding: 0.2rem 0;
+    }
+
+    /* Prominent Generate Section */
+    .generate-section {
+        background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-dark-gray) 100%);
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        margin: 2rem 0;
+        box-shadow: 0 8px 32px rgba(0, 11, 55, 0.3);
+        border: none;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .generate-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: left 0.8s;
+    }
+
+    .generate-section:hover::before {
+        left: 100%;
+    }
+
+    .generate-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .generate-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        margin-bottom: 2rem;
+        line-height: 1.4;
+    }
+
+    /* Professional Input Styles */
+    .stTextInput > div > div > input {
+        border-radius: 4px !important;
+        border: 1px solid #e1e5e9 !important;
+        padding: 0.6rem 0.75rem !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .stTextInput > div > div > input:focus {
+        border-color: var(--primary-lime) !important;
+        box-shadow: 0 0 0 2px rgba(133, 194, 11, 0.1) !important;
+    }
+
+    .stSelectbox > div > div > div {
+        border-radius: 4px !important;
+        border: 1px solid #e1e5e9 !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .stSelectbox > div > div > div:focus-within {
+        border-color: var(--primary-lime) !important;
+        box-shadow: 0 0 0 2px rgba(133, 194, 11, 0.1) !important;
+    }
+
+    /* Professional Checkbox Styles */
+    .stCheckbox > label {
+        padding: 0.4rem 0 !important;
+        font-size: 0.95rem !important;
+        font-weight: 400 !important;
+        color: var(--secondary-dark-gray) !important;
+    }
+
+    .stCheckbox > label > div:first-child {
+        margin-right: 0.6rem !important;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .step-container {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .step-title {
+            font-size: 1.5rem;
+        }
+        
+        .wizard-container {
+            padding: 0 0.5rem;
+        }
+    }
+
+    /* Animation for smooth transitions */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .step-container {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    /* Success states */
+    .stSuccess {
+        border-radius: 12px !important;
+        border-left: 4px solid var(--primary-lime) !important;
+    }
+
+    /* Info states */
+    .stInfo {
+        border-radius: 12px !important;
+        border-left: 4px solid var(--comp-cyan) !important;
+    }
+
+    /* Professional Summary Section */
+    .summary-section {
+        background: #f8f9fa;
+        border: 1px solid #e1e5e9;
+        border-radius: 6px;
+        padding: 1.25rem;
+        margin: 1rem 0;
+        max-width: 1000px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .summary-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-navy);
+        margin-bottom: 0.75rem;
+    }
+
+    .summary-current-selection {
+        background: var(--primary-navy);
+        color: white;
+        padding: 0.6rem;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .summary-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.6rem;
+    }
+
+    .summary-item {
+        background: white;
+        padding: 0.6rem;
+        border-radius: 4px;
+        border-left: 3px solid var(--primary-lime);
+        font-size: 0.9rem;
+    }
     </style>
     """, unsafe_allow_html=True)
+
+# Report preset configurations
+REPORT_PRESETS = {
+    "complete": {
+        "name": "Complete Analysis",
+        "description": "Comprehensive business analysis covering all operational areas",
+        "best_for": "Due diligence, M&A research, full company assessment",
+        "sections": [name for name, _ in PROMPT_FUNCTIONS],
+        "est_time": "15-20 minutes",
+        "icon": "📊"
+    },
+    "strategic": {
+        "name": "Strategic Assessment",
+        "description": "Leadership, competitive positioning, and strategic direction analysis",
+        "best_for": "Partnership evaluation, strategic planning, competitive intelligence",
+        "sections": ["basic", "vision", "management_strategy", "competitive", "strategy_research"],
+        "est_time": "8-12 minutes",
+        "icon": "📈"
+    },
+    "financial": {
+        "name": "Financial & Risk Review",
+        "description": "Financial performance, regulatory compliance, and risk assessment",
+        "best_for": "Investment decisions, credit analysis, risk evaluation",
+        "sections": ["basic", "financial", "regulatory", "crisis"],
+        "est_time": "6-10 minutes",
+        "icon": "💼"
+    },
+    "innovation": {
+        "name": "Innovation & Technology",
+        "description": "Digital transformation capabilities and business model innovation",
+        "best_for": "Technology partnerships, innovation assessment, digital readiness",
+        "sections": ["basic", "digital_transformation", "business_structure", "vision", "management_strategy"],
+        "est_time": "6-10 minutes",
+        "icon": "⚡"
+    }
+}
+
+# Section groups for custom selection
+SECTION_GROUPS = {
+    "foundational": {
+        "name": "Foundational Analysis",
+        "sections": ["basic"],
+        "always_selected": True
+    },
+    "strategic": {
+        "name": "Strategic Analysis",
+        "sections": ["vision", "management_strategy", "strategy_research"]
+    },
+    "financial": {
+        "name": "Financial Analysis", 
+        "sections": ["financial", "regulatory"]
+    },
+    "operational": {
+        "name": "Operational Analysis",
+        "sections": ["business_structure", "digital_transformation", "competitive"]
+    },
+    "risk": {
+        "name": "Risk Analysis",
+        "sections": ["crisis"]
+    }
+}
 
 # Custom metric component
 def metric_card(icon, label, value):
@@ -587,6 +1258,37 @@ def metric_card(icon, label, value):
         <div class="metric-label">{label}</div>
     </div>
     """
+
+# Helper function to create preset card HTML
+def create_preset_card(preset_id, preset_data, is_selected=False):
+    selected_class = "selected" if is_selected else ""
+    return f"""
+    <div class="preset-card {selected_class}" onclick="selectPreset('{preset_id}')">
+        <div class="preset-icon">{preset_data['icon']}</div>
+        <div class="preset-title">{preset_data['name']}</div>
+        <div class="preset-description">{preset_data['description']}</div>
+        <div class="preset-best-for">Best for: {preset_data['best_for']}</div>
+        <div class="preset-time">⏱️ {preset_data['est_time']}</div>
+    </div>
+    """
+
+# Helper function to get section title from section ID
+def get_section_title(section_id):
+    """Get human-readable title for a section ID"""
+    section_titles = {
+        "basic": "Basic Information",
+        "financial": "Financial Analysis", 
+        "competitive": "Competitive Landscape",
+        "management_strategy": "Management Strategy",
+        "regulatory": "Regulatory Environment",
+        "crisis": "Crisis Management",
+        "digital_transformation": "Digital Transformation",
+        "business_structure": "Business Structure",
+        "vision": "Vision & Leadership",
+        "management_message": "Management Message",
+        "strategy_research": "Strategy Research"
+    }
+    return section_titles.get(section_id, section_id.replace("_", " ").title())
 
 # Check user authentication first - if not authenticated, show only the auth form
 if not check_user_authentication():
@@ -607,92 +1309,325 @@ st.markdown('</div>', unsafe_allow_html=True)
 # Show analytics status (now hidden for clean UI)
 show_analytics_status()
 
-# Main form
-st.markdown('<div class="form-container">', unsafe_allow_html=True)
-st.markdown('<h2 class="form-header">Research Configuration</h2>', unsafe_allow_html=True)
+# Initialize session state for reactive behavior
+if 'report_type' not in st.session_state:
+    st.session_state.report_type = 'complete'
+if 'custom_sections' not in st.session_state:
+    st.session_state.custom_sections = []
+if 'step' not in st.session_state:
+    st.session_state.step = 1
+if 'generation_in_progress' not in st.session_state:
+    st.session_state.generation_in_progress = False
 
-with st.form("report_generator_form"):
-    col1, col2 = st.columns(2)
+# Function to create an interactive preset card
+def create_interactive_preset_card(preset_id, preset_data, is_selected=False):
+    selected_class = "selected" if is_selected else ""
+    return f"""
+    <div class="interactive-preset-card {selected_class}" onclick="selectPreset('{preset_id}')">
+        <div class="preset-icon-large">{preset_data['icon']}</div>
+        <div class="preset-title-large">{preset_data['name']}</div>
+        <div class="preset-description-large">{preset_data['description']}</div>
+        <div class="preset-details">
+            <div class="preset-best-for"><strong>💡 Best for:</strong> {preset_data['best_for']}</div>
+            <div class="preset-time-large">⏱️ <strong>{preset_data['est_time']}</strong></div>
+            <div class="preset-sections-count">📋 <strong>{len(preset_data['sections'])} sections</strong></div>
+        </div>
+    </div>
+    """
 
-    with col1:
-        # Required inputs
-        target_company = st.text_input(
-            "Target Company Name",
-            placeholder="Enter the name of the company you want to research",
-            help="The company you want to generate a research report about"
-        )
-        context_company = st.text_input(
-            "Context Company",
-            placeholder="Enter your company name",
-            help="Required: Your company name that will appear as the author of the report"
-        )
-        ticker = st.text_input(
-            "Stock Ticker Symbol",
-            placeholder="Optional: AAPL, MSFT, GOOG, etc.",
-            help="The stock ticker symbol of the target company (if publicly traded)"
-        )
-        industry = st.text_input(
-            "Primary Industry",
-            placeholder="Optional: Technology, Healthcare, Finance, etc.",
-            help="The primary industry sector of the target company"
-        )
+# Main interface - Professional wizard
+st.markdown('<div class="wizard-container">', unsafe_allow_html=True)
 
-        # Language options - convert dictionary to list of tuples for selectbox
-        language_options = [(key, value) for key, value in AVAILABLE_LANGUAGES.items()]
-        selected_language_option = st.selectbox(
-            "Select Language",
-            options=language_options,
-            format_func=lambda x: f"{x[1]} ({x[0]})",
-            index=1  # Index 1 corresponds to English
-        )
+# Step 1: Company Information
+step1_disabled = "disabled" if st.session_state.generation_in_progress else ""
+st.markdown(f'<div class="step-container {step1_disabled}">', unsafe_allow_html=True)
+st.markdown('<h2 class="step-title">Company Information</h2>', unsafe_allow_html=True)
+st.markdown('<p class="step-description">Enter the target company details and your organization information</p>', unsafe_allow_html=True)
 
-    with col2:
-        # Advanced options with expander
-        with st.expander("Advanced Options", expanded=False):
-            # Section selection
-            st.subheader("Section Selection")
-            section_options = [name for name, _ in PROMPT_FUNCTIONS]
-            selected_sections = st.multiselect(
-                "Select Sections to Generate",
-                options=section_options,
-                default=section_options,
-                help="Choose which sections to include in the report. By default, all sections are selected."
-            )
-            
-            # Executive Summary toggle
-            include_executive_summary = st.checkbox(
-                "Generate Executive Summary",
-                value=True,
-                help="When enabled, an executive summary will be generated that highlights the top 15 points from the report"
-            )
+col1, col2 = st.columns([1.2, 0.8])
 
-    # Generate report button
-    generate_button = st.form_submit_button("Generate Report")
+with col1:
+    target_company = st.text_input(
+        "Target Company Name",
+        placeholder="e.g., Apple, Tesla, Microsoft",
+        help="The company you want to generate a research report about",
+        key="target_company_input",
+        disabled=st.session_state.generation_in_progress
+    )
+    
+    context_company = st.text_input(
+        "Your Company Name",
+        placeholder="Your organization's name",
+        help="Your company name that will appear as the report author",
+        key="context_company_input",
+        disabled=st.session_state.generation_in_progress
+    )
+
+with col2:
+    ticker = st.text_input(
+        "Stock Ticker (Optional)",
+        placeholder="AAPL, TSLA, MSFT",
+        help="Stock ticker symbol if publicly traded",
+        key="ticker_input",
+        disabled=st.session_state.generation_in_progress
+    )
+    
+    industry = st.text_input(
+        "Industry (Optional)",
+        placeholder="Technology, Automotive",
+        help="Primary industry sector",
+        key="industry_input",
+        disabled=st.session_state.generation_in_progress
+    )
+
+# Language selection
+language_options = [(key, value) for key, value in AVAILABLE_LANGUAGES.items()]
+selected_language_option = st.selectbox(
+    "Report Language",
+    options=language_options,
+    format_func=lambda x: f"{x[1]}",
+    index=1,  # English default
+    key="language_select",
+    disabled=st.session_state.generation_in_progress
+)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Add additional information for the user
-st.info("**Help Tips:**  \n"
-        "• Target Company Name: The company you want to research  \n"
-        "• Context Company: YOUR company that will create the report  \n"
-        "• Stock Ticker Symbol: The ticker of the target company (e.g., AAPL for Apple)  \n"
-        "• Primary Industry: The main industry of the target company")
+# Step 2: Report Type Selection
+step2_disabled = "disabled" if st.session_state.generation_in_progress else ""
+st.markdown(f'<div class="step-container {step2_disabled}">', unsafe_allow_html=True)
+st.markdown('<h2 class="step-title">Analysis Configuration</h2>', unsafe_allow_html=True)
+st.markdown('<p class="step-description">Select the type of analysis that best fits your business requirements</p>', unsafe_allow_html=True)
+
+# Create preset selection with columns
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("Complete Analysis", key="preset_complete", use_container_width=True, disabled=st.session_state.generation_in_progress):
+        st.session_state.report_type = 'complete'
+    
+    if st.button("Financial & Risk Review", key="preset_financial", use_container_width=True, disabled=st.session_state.generation_in_progress):
+        st.session_state.report_type = 'financial'
+
+with col2:
+    if st.button("Strategic Assessment", key="preset_strategic", use_container_width=True, disabled=st.session_state.generation_in_progress):
+        st.session_state.report_type = 'strategic'
+    
+    if st.button("Innovation & Technology", key="preset_innovation", use_container_width=True, disabled=st.session_state.generation_in_progress):
+        st.session_state.report_type = 'innovation'
+
+# Custom option
+if st.button("Custom Selection", key="preset_custom", use_container_width=True, disabled=st.session_state.generation_in_progress):
+    st.session_state.report_type = 'custom'
+
+# Show current selection details
+if st.session_state.report_type != 'custom':
+    preset = REPORT_PRESETS[st.session_state.report_type]
+    selected_sections = preset["sections"]
+    
+    # Dynamic info card based on selection
+    st.markdown(f"""
+    <div class="selection-preview">
+        <div class="preview-header">
+            <span class="preview-icon">{preset['icon']}</span>
+            <span class="preview-title">{preset['name']}</span>
+        </div>
+        <div class="preview-description">{preset['description']}</div>
+        <div class="preview-details">
+            <div class="preview-item">
+                <strong>Best for:</strong> {preset['best_for']}
+            </div>
+            <div class="preview-item">
+                <strong>Estimated time:</strong> {preset['est_time']}
+            </div>
+            <div class="preview-item">
+                <strong>Sections included:</strong> {len(preset['sections'])} sections
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+else:
+    # Custom selection interface
+    st.markdown("### Custom Section Selection")
+    st.markdown("Configure your analysis by selecting specific sections:")
+    
+    # Initialize custom sections
+    if 'custom_sections' not in st.session_state:
+        st.session_state.custom_sections = ['basic']  # Always include basic
+    
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.markdown("**Core Business Analysis**")
+        
+        # Always include basic (disabled checkbox)
+        st.checkbox("Basic Information", value=True, disabled=True, help="Always included")
+        
+        fin_check = st.checkbox("Financial Performance", value="financial" in st.session_state.custom_sections, key="custom_fin", disabled=st.session_state.generation_in_progress)
+        comp_check = st.checkbox("Competitive Landscape", value="competitive" in st.session_state.custom_sections, key="custom_comp", disabled=st.session_state.generation_in_progress)
+        reg_check = st.checkbox("Regulatory Environment", value="regulatory" in st.session_state.custom_sections, key="custom_reg", disabled=st.session_state.generation_in_progress)
+        
+        st.markdown("**Strategic Analysis**")
+        vis_check = st.checkbox("Vision & Leadership", value="vision" in st.session_state.custom_sections, key="custom_vis", disabled=st.session_state.generation_in_progress)
+        mgmt_check = st.checkbox("Management Strategy", value="management_strategy" in st.session_state.custom_sections, key="custom_mgmt", disabled=st.session_state.generation_in_progress)
+        strat_check = st.checkbox("Strategy Research", value="strategy_research" in st.session_state.custom_sections, key="custom_strat", disabled=st.session_state.generation_in_progress)
+    
+    with col_b:
+        st.markdown("**Operational Analysis**")
+        bus_check = st.checkbox("Business Structure", value="business_structure" in st.session_state.custom_sections, key="custom_bus", disabled=st.session_state.generation_in_progress)
+        digi_check = st.checkbox("Digital Transformation", value="digital_transformation" in st.session_state.custom_sections, key="custom_digi", disabled=st.session_state.generation_in_progress)
+        msg_check = st.checkbox("Management Message", value="management_message" in st.session_state.custom_sections, key="custom_msg", disabled=st.session_state.generation_in_progress)
+        
+        st.markdown("**Risk Management**")
+        crisis_check = st.checkbox("Crisis Management", value="crisis" in st.session_state.custom_sections, key="custom_crisis", disabled=st.session_state.generation_in_progress)
+    
+    # Update custom sections based on checkboxes
+    custom_sections = ['basic']  # Always include basic
+    if fin_check: custom_sections.append('financial')
+    if comp_check: custom_sections.append('competitive')
+    if reg_check: custom_sections.append('regulatory')
+    if vis_check: custom_sections.append('vision')
+    if mgmt_check: custom_sections.append('management_strategy')
+    if strat_check: custom_sections.append('strategy_research')
+    if bus_check: custom_sections.append('business_structure')
+    if digi_check: custom_sections.append('digital_transformation')
+    if msg_check: custom_sections.append('management_message')
+    if crisis_check: custom_sections.append('crisis')
+    
+    st.session_state.custom_sections = custom_sections
+    selected_sections = custom_sections
+    
+    # Show custom selection preview
+    section_count = len(selected_sections)
+    estimated_time = f"{3 + section_count * 1}-{5 + section_count * 2} minutes"
+    
+    st.markdown(f"""
+    <div class="custom-preview">
+        <div class="custom-preview-header">Custom Configuration</div>
+        <div class="custom-preview-details">
+            <div class="custom-item"><strong>{section_count} sections selected</strong></div>
+            <div class="custom-item"><strong>Estimated time: {estimated_time}</strong></div>
+            <div class="custom-item"><strong>Executive Summary: Always included</strong></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Step 3: Generate Report
+st.markdown('<div class="generate-section">', unsafe_allow_html=True)
+
+# Dynamic content based on generation state
+if st.session_state.generation_in_progress:
+    # Show progress UI
+    st.markdown('''
+    <div class="progress-container">
+        <div class="progress-animation"></div>
+        <div class="progress-title">Generating Your Report</div>
+        <div class="progress-subtitle">Please wait while we analyze and compile your business intelligence report</div>
+    </div>
+    ''', unsafe_allow_html=True)
+    generate_button = False
+else:
+    # Show generation options
+    can_generate = bool(target_company and context_company)
+    
+    if can_generate:
+        # Get current selection info
+        if st.session_state.report_type != 'custom':
+            preset = REPORT_PRESETS[st.session_state.report_type]
+            button_text = f"Generate {preset['name']}"
+            section_count = len(preset['sections'])
+            est_time = preset['est_time']
+        else:
+            button_text = f"Generate Custom Report"
+            section_count = len(st.session_state.custom_sections)
+            est_time = f"{3 + section_count * 1}-{5 + section_count * 2} minutes"
+        
+        st.markdown(f'''
+        <div class="generate-title">Ready to Generate Report</div>
+        <div class="generate-subtitle">
+            {section_count} sections • Estimated time: {est_time}
+            <br>Analysis for <strong>{target_company}</strong> by <strong>{context_company}</strong>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        # Prominent generate button
+        st.markdown('<div class="generate-button">', unsafe_allow_html=True)
+        generate_button = st.button(
+            button_text,
+            key="generate_report_btn",
+            use_container_width=True,
+            type="primary"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.button(
+            "Complete Company Information to Continue",
+            disabled=True,
+            use_container_width=True
+        )
+        generate_button = False
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)  # Close wizard-container
+
+# Add professional summary section
+if st.session_state.report_type != 'custom':
+    current_preset = REPORT_PRESETS[st.session_state.report_type]
+    current_selection_text = f"{current_preset['name']} ({len(current_preset['sections'])} sections)"
+else:
+    current_selection_text = f"Custom Configuration ({len(st.session_state.custom_sections)} sections)"
+
+st.markdown(f"""
+<div class="summary-section">
+    <div class="summary-header">Configuration Summary</div>
+    <div class="summary-current-selection">{current_selection_text}</div>
+    <div class="summary-items">
+        <div class="summary-item">
+            <strong>Target Company:</strong> {target_company if target_company else "Not specified"}
+        </div>
+        <div class="summary-item">
+            <strong>Your Company:</strong> {context_company if context_company else "Not specified"}
+        </div>
+        <div class="summary-item">
+            <strong>Language:</strong> {selected_language_option[1]}
+        </div>
+        <div class="summary-item">
+            <strong>Executive Summary:</strong> Always included
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Quick information for users
+st.info("Complete the company information and select your analysis type to generate a comprehensive business research report.")
 
 # Handle form submission
-if generate_button:
+if 'generate_button' in locals() and generate_button:
     if not target_company:
         st.error("Please enter a target company name.")
     elif not context_company:
         st.error("Please enter your company name as the context company.")
     else:
+        # Set generation in progress
+        st.session_state.generation_in_progress = True
         # Get selected language
         language_key, language = selected_language_option
 
-        # Filter selected prompts
-        if selected_sections:
-            selected_prompts = [(section_id, prompt_func) for section_id, prompt_func in PROMPT_FUNCTIONS if section_id in selected_sections]
+        # Get selected sections based on report type
+        if st.session_state.report_type != 'custom':
+            selected_sections = REPORT_PRESETS[st.session_state.report_type]["sections"]
         else:
-            selected_prompts = PROMPT_FUNCTIONS
+            selected_sections = st.session_state.custom_sections
+
+        # Filter selected prompts based on selected sections
+        selected_prompts = [(section_id, prompt_func) for section_id, prompt_func in PROMPT_FUNCTIONS if section_id in selected_sections]
+        
+        # Ensure we have at least basic information
+        if not selected_prompts:
+            selected_prompts = [("basic", "get_basic_prompt")]
 
         # Get user info for analytics
         user_info = get_user_info()
@@ -707,7 +1642,7 @@ if generate_button:
                 language,
                 selected_prompts,
                 context_company,
-                include_executive_summary=include_executive_summary,
+                include_executive_summary=True,  # Always generate executive summary
                 ticker=ticker if ticker else None,
                 industry=industry if industry else None
             )
@@ -742,6 +1677,9 @@ if generate_button:
             # Don't let analytics logging failure break the app
             st.warning(f"Analytics logging failed: {str(e)}")
             pass
+        
+        # Reset generation state
+        st.session_state.generation_in_progress = False
         
         if token_stats and pdf_exists:
             # Display success message and stats
@@ -856,6 +1794,8 @@ if generate_button:
                 )
         else: # Case where generate_report_with_progress returned None for stats/path
             st.error("Failed to generate report. Please check the logs for details.")
+            # Reset generation state on error
+            st.session_state.generation_in_progress = False
 
 # Show user info at bottom
 show_user_info_header()
