@@ -10,12 +10,18 @@ from typing import Optional
 # --- Standard Instruction Blocks ---
 # (Updated with placeholders for formatting)
 
-# New instruction to skip thinking process
-NO_THINKING_INSTRUCTION = textwrap.dedent("""\
-    **Direct Response Requirement**:
+# Simple instruction for direct response
+NO_THINKING_INSTRUCTION = "Start directly with the first section heading. No introductory text."
+
+# Clear grounding instruction to be placed at the start of prompts
+GROUNDING_INSTRUCTION = textwrap.dedent("""\
+    **CRITICAL GROUNDING REQUIREMENT:**
     
-    Provide your response in a structured, final format without showing your thinking or planning process. Do not include any preliminary analysis, reasoning, or step-by-step thinking in your output. Present only the final, polished answer directly using the requested format and sections. Your output should start with my first requested section heading as this is a professional report.
-""")
+    Only use facts that have Vertex AI grounding URLs starting with:
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
+    
+    Never fabricate or invent URLs. If no grounding URL is provided for a fact, omit that fact completely.
+    """)
 
 # Create a detailed table formatting guidelines constant
 TABLE_FORMATTING_GUIDELINES = textwrap.dedent("""\
@@ -219,101 +225,15 @@ TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS = textwrap.dedent("""\
    * Verify all opening formatting markers have matching closing markers
 """)
 
-# Now build the full ADDITIONAL_REFINED_INSTRUCTIONS using parts
+# Simplified core instructions for better clarity
 ADDITIONAL_REFINED_INSTRUCTIONS = textwrap.dedent("""\
-**Additional Refined Instructions for Zero Hallucination, Perfect Markdown, and Strict Single-Entity Coverage**:
-
-**Mandatory Self-Check Before Final Output**:
-Before producing the final answer, confirm:
-1. All requested sections are fully included with correct headings.
-2. All factual statements have inline citations [SSX] pointing to valid Vertex AI URLs in the final Sources list.
-3. Only the permitted Vertex AI grounding URLs are used—no external or fabricated links.
-4. Markdown headings and tables follow the specified format (##, ###, consistent columns, **strict pipe alignment**). Ensure data within tables is accurate against the source.
-5. A single "Sources" section is present, properly labeled, and each source is on its own line.
-6. Inline citations appear before punctuation where feasible.
-7. No data or sources are invented. If information is omitted due to lack of verifiable grounding after exhaustive search, this is done silently without comment.
-8. **Strict Single-Entity Focus**: Strictly reference only the **exact** company named: **'{company_name}'** (with identifiers like Ticker: '{ticker}', Industry: '{industry}' if provided). **Crucially verify** you are NOT including data from similarly named but unrelated entities (e.g., if the target is 'Marvell Technology, Inc.', absolutely DO NOT include 'Marvel Entertainment' or data related to comics/movies). Confirm if data relates to the parent/consolidated entity or a specific subsidiary, and report accordingly based ONLY on the source [SSX].
-9. Verify recency of all primary sources used (AR, MTP, website data, etc.).
-10. Confirm key financial figures and table data points against cited sources. **Verify specifically that all financial data has valid [SSX] citations linked to provided grounding URLs.**
-11. Ensure lists (KPIs, Officers, Subsidiaries) are complete based on source availability.
-12. Confirm analytical depth provided where requested (explaining 'why' and drivers).
-
-**Additional Markdown Formatting Guidelines to Ensure Clean Rendering**:
-
-1. **Tables and Markdown Lists**:
-   * Never place Markdown lists directly inside table cells.
-   * If a cell must contain multiple points, use semicolons or commas to separate them.
-   * For complex nested data, reference a note below the table.
-
-2. **Emphasis and Special Character Handling**:
-   * Always use proper spacing around emphasis markers:
-     * Correct: Text with **bold words** in it.
-     * Incorrect: Text with**bold words**in it.
-   * Be careful with asterisks in regular text - escape them with backslash when needed.
-   * Don't place emphasis markers directly adjacent to punctuation.
-
-3. **List Formatting Excellence**:
-   * Maintain consistent indentation (4 spaces for nested items)
-   * Always include a space after the list marker (*, -, or numbers)
-   * Ensure proper nesting hierarchy for multi-level lists
-   * Don't mix different list markers in the same list
-
-4. **Heading Structure**:
-   * Use ## for main sections (e.g., ## 1. Section Title)
-   * Use ### for subsections
-   * Include a space after the # symbols
-   * Maintain logical hierarchy (don't skip levels)
-   * Don't include formatting markers in headings unless absolutely necessary
-
-5. **Paragraph and Line Spacing**:
-   * Separate paragraphs with a blank line
-   * Don't include unnecessary blank lines between list items
-   * Maintain consistent paragraph formatting throughout the document
-   * Don't break sentences across paragraphs without proper punctuation
-
-""" + TEXT_FORMATTING_EXCELLENCE_REQUIREMENTS + """
-
-""" + PROFESSIONAL_TEXT_GUIDELINES + """
-
-**Exactness of Table Columns**:
-- Each row in any table **MUST** have the exact same number of columns as the header row, delimited by pipes (`|`).
-- Use exactly one pipe (`|`) at the beginning and end of each row.
-- Ensure header separator lines (`|---|---|`) match the number of columns precisely.
-- If data for a specific cell is missing *in the source* after exhaustive search, use a simple hyphen (`-`) as a placeholder *only if necessary* to maintain table structure and alignment. Do not add explanatory text.
-- Always include an inline citation [SSX] if referencing factual numbers within a table cell or in a note below the table referencing the table's data. Verify the cited data matches the source.
-- Maintain proper spacing between cell content and pipe separators (e.g., `| Cell content |` not `|Cell content|`).
-
-**Quotes with Inline Citations**:
-- Any verbatim quote must include:
-    1. The speaker's name and date or document reference in parentheses.
-    2. An inline citation [SSX] immediately following.
-- This ensures clarity on who said it, when they said it, and the exact source.
-- For quotes longer than one line, ensure each line begins with the quote marker (>).
-
-**Exactness of Hyperlinks in Sources**:
-- The final "Sources" section must use the format "* [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Brief annotation [SSX]."
-- Number sources sequentially without skipping.
-- Provide no additional domain expansions or transformations beyond what is given.
-- Do not summarize entire documents—only note which facts the source supports.
-
-**Do Not Summarize Sources**:
-- In each source annotation, reference only the specific claim(s) the link supports, not a broad summary.
-
-**Emphasis and Formatting**:
-- Ensure proper spacing around emphasis markers:
-  - Correct: Text with **bold words** in it.
-  - Incorrect: Text with**bold words**in it. 
-- Be careful with asterisks in regular text - escape them with backslash when needed.
-- Do not place emphasis markers directly adjacent to punctuation.
-
-**High-Priority Checklist (Must Not Be Violated)**:
-1. No fabrication: Silently omit rather than invent ungrounded data after exhaustive search.
-2. Adhere strictly to the specified Markdown formats (headings, lists, **perfect tables**).
-3. Use inline citations [SSX] matching final sources exactly.
-4. Provide only one "Sources" section at the end.
-5. Do not use any URLs outside "vertexaisearch.cloud.google.com/..." pattern if not explicitly provided.
-6. **Enforce Single-Entity Coverage (CRITICAL)**: If '{company_name}' is the focus, DO NOT include other similarly named but unrelated entities. Verify target entity identity throughout.
-7. Complete an internal self-check (see above) to ensure compliance with all instructions before concluding.
+**Core Requirements:**
+*   **Grounding Rule:** Only include facts that have Vertex AI grounding URLs (starting with "https://vertexaisearch.cloud.google.com/grounding-api-redirect/")
+*   **No Fabrication:** Never invent URLs or data - omit information if no grounding URL is provided
+*   **Single Entity:** Only include data about the specified company - avoid similarly named entities
+*   **Citations:** Every fact needs [SSX] citation matching the Sources list
+*   **Format:** Use proper Markdown (## for sections, ### for subsections, proper tables)
+*   **Silent Omission:** If no grounding URL exists for a fact, omit it without explanation
 """)
 
 # Build the full BASE_FORMATTING_INSTRUCTIONS using parts
@@ -498,7 +418,7 @@ ANALYZING_COMPANY_CAPABILITIES_INSTRUCTION = textwrap.dedent("""\
 **Purpose & Application**:
 -   This preliminary research is **fundamental** to generating a valuable and non-generic Strategy Research plan. The quality and specificity of your proposed alignments in the main report (Sections 4, 6, 7, 9, 11) **directly depend** on the accuracy and depth of this initial research.
 -   You will explicitly use the *specific capabilities, named solutions, and verifiable strengths* identified here when analyzing the Target Company ({company_name}) and proposing potential alignments.
--   You do *not* need to cite these preliminary research sources in the final output unless they overlap with provided grounding URLs for the Target Company ({company_name}).
+-   You do *not* need to cite these preliminary research sources in the final output unless they overlap with provided VertexAI grounding URLs for the Target Company ({company_name}).
 
 **Internal Verification**: Before proceeding to analyze the Target Company, internally confirm you have identified specific, named offerings and verifiable strengths for {context_company_name}, not just generic categories.
 """)
@@ -559,73 +479,39 @@ Before concluding your response, verify that:
 6. Strictly focus on the exact named company **'{company_name}'** (no confusion with similarly named entities). Verify parent vs. subsidiary context where needed.
 """)
 
-# Create a specific instruction for VertexAI link formatting
-SOURCE_LINK_FORMAT_INSTRUCTION = textwrap.dedent("""\
-**CRITICAL: VertexAI Link Formatting Requirements**:
+# Removed overly complex SOURCE_LINK_FORMAT_INSTRUCTION - now handled in simplified FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE
 
-All source links **MUST** follow this exact pattern:
-- Source text: Must be formatted as "Supervity Source X" (where X is the sequential number)
-- URL format: Must begin with "https://vertexaisearch.cloud.google.com/"
-- Every link must use proper Markdown syntax: [Supervity Source X](https://vertexaisearch.cloud.google.com/)
-
-**VERIFICATION STEP**: Before finalizing, verify all source links:
-1. Confirm every source uses exact pattern: [Supervity Source X](https://vertexaisearch.cloud.google.com/...)
-2. Ensure sources are numbered sequentially (1, 2, 3...) without gaps
-3. Check every source has a brief annotation after the link
-4. Verify each inline citation [SSX] in the text corresponds to a source in the list
-""")
-
+# FINAL SOURCE LIST INSTRUCTIONS: Simplified and clarified for better grounding accuracy
 FINAL_SOURCE_LIST_INSTRUCTIONS_TEMPLATE = textwrap.dedent("""\
-**Final Source List Requirements**:
+    **Final Source List Requirements:**
 
-Conclude the *entire* research output, following the 'General Discussion' paragraph, with a clearly marked section titled "**Sources**". This section is critical for verifying the information grounding process AND for document generation.
-""") + SOURCE_LINK_FORMAT_INSTRUCTION + textwrap.dedent("""
+    Conclude your response with a section titled "**Sources**".
 
-**1. Content - MANDATORY URL Type & Source Integrity**:
--   **Exclusive Source Type**: This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
--   **URL Pattern**: These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/`. **Only URLs matching this exact pattern are permitted.**
--   **Strict Filtering**: Absolutely **DO NOT** include any other type of URL (direct website links, news, PDFs, etc.).
--   **CRITICAL - No Hallucination**: **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/ URLs** from previous queries or general knowledge if they were not explicitly provided by the Vertex AI Search system as grounding results *for this specific query and for the specific fact being cited*. If a fact is identified by the system and a corresponding `vertexaisearch.cloud.google.com/grounding-api-redirect/...` URL is provided by the system as its grounding source, **that specific URL must be used for that fact's citation, even if its direct click-through behavior for a human user is imperfect (e.g., leads to a document's main page instead of a specific anchor).** Your responsibility is to report the grounding URL the system associated with the fact. If a fact is identified but lacks a corresponding system-provided grounding URL after exhaustive search by the system, it must be silently omitted from the report body AND no source should be listed for it.
--   **Purpose**: This list verifies the specific grounding data provided by Vertex AI Search for this request—not external knowledge or other URLs.
+    **URL Requirements:**
+    *   **ONLY use grounding URLs provided by Vertex AI Search** that start with "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
+    *   **NEVER fabricate or invent any URLs**
+    *   If no grounding URL is provided for a fact, omit that fact entirely
 
-**2. Formatting and Annotation (CRITICAL FOR PARSING)**:
--   **Source Line Format**: Present each source on a completely new line. Each line **MUST** start with a Markdown list indicator (`* ` or `- `) followed by the hyperlink in Markdown format and then its annotation.
--   **REQUIRED Format**:
-    * [Supervity Source X](Full_Vertex_AI_Grounding_URL) - Annotation explaining exactly what information is supported (e.g., supports CEO details and FY2025 revenue [SSX]).
--   **Sequential Labeling**: The visible hyperlink text **MUST** be labeled sequentially "Supervity Source 1", "Supervity Source 2", etc. Do not skip numbers.
--   **Annotation Requirement**: The annotation MUST be:
-    * Included immediately after the hyperlink on the same line, separated by " - ".
-    * Brief and specific, explaining exactly which piece(s) of information in the main body (and referenced with inline citation [SSX]) that grounding URL supports.
-    * Written in the target output language: **{language}**.
+    **Format Requirements:**
+    *   Each source on a new line starting with "* "
+    *   Format: "* [Supervity Source X](exact_grounding_URL) - Brief description of what this supports [SSX]"
+    *   Number sources sequentially (1, 2, 3, etc.)
+    *   Every inline citation [SSX] in your response must correspond to a source in this list
+    *   Write descriptions in {language}
 
-**3. Quantity and Linkage**:
--   **List All Verifiable Used Sources**: List ***every distinct***, verifiable Vertex AI grounding URL provided for this specific query that directly supports content presented in the report body via an inline citation [SSX]. Do *not* include provided grounding URLs if they were not ultimately used to support any statement in the report.
--   **Accuracy Over Quantity**: Accuracy and adherence to the grounding rules are absolute. If fewer verifiable URLs are available *and used* from the provided results after exhaustive search, list only those used.
--   **Fact Linkage**: Every grounding URL listed MUST directly correspond to facts/figures/statements present in the report body referenced with the corresponding inline citation [SSX].
+    **Example:**
+    * [Supervity Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/ABC123...) - Company revenue data for FY2023 [SS1]
+    * [Supervity Source 2](https://vertexaisearch.cloud.google.com/grounding-api-redirect/DEF456...) - CEO information and management structure [SS2]
+    """)
 
-**4. Content Selection Based on Verifiable Grounding**:
--   **Prerequisite for Inclusion**: Only include facts, figures, details, or quotes in the main report if they can be supported by a verifiable Vertex AI grounding URL from this query after exhaustive search.
--   **Omission of Ungrounded Facts/Sections**: If specific information cannot be supported by a verifiable grounding URL after exhaustive search, silently omit that detail. If a whole section cannot be grounded after exhaustive search, retain the section heading but omit the content.
-
-**5. Final Check**:
--   Before concluding the response, review the entire output. Verify:
-    * Exclusive use of valid, provided Vertex AI grounding URLs that support cited facts.
-    * Each source is on a new line and follows the correct format.
-    * Every fact in the report body is supported by an inline citation [SSX] that corresponds to a source in this list.
-    * Every source listed corresponds to at least one inline citation [SSX] in the report body.
--   The "**Sources**" section must appear only once, at the end of the entire response.
-""")
-
+# HANDLING MISSING INFORMATION: Simplified version
 HANDLING_MISSING_INFO_INSTRUCTION = textwrap.dedent("""\
-**Handling Missing or Ungrounded Information**:
-- **Exhaustive Research First**: Conduct exhaustive research using primarily official company sources (see `RESEARCH_DEPTH_INSTRUCTION`). Search diligently across *multiple relevant primary sources* (e.g., latest AR, previous AR, Financial Statements + Footnotes, Supplementary Data Packs, Tanshin/Filings, MTP docs, IR presentations, Results Overviews, specific website sections) for *each data point* before concluding information is unavailable. Check document publication dates for recency.
-- **Grounding Requirement for Inclusion**: Information is included only if:
-    1. The information is located in a reliable source document.
-    2. A corresponding, verifiable Vertex AI grounding URL (matching the pattern `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`) is provided in the search results for this query.
-- **Strict Silent Omission Policy**: If information cannot meet both conditions *after exhaustive research*, omit that specific fact, sentence, or data point entirely. Do **not** include statements like 'Data not found' or 'Information unavailable'. If an entire subsection lacks verifiable grounded data, retain the heading but omit the content. If a table cell requires a placeholder for structure, use only a single hyphen (`-`) without explanation, and only after confirming the data is genuinely missing *in the source*.
-- **No Inference/Fabrication**: Do not infer, guess, or estimate ungrounded information. Do not fabricate grounding URLs.
-- **Cross-Language Search**: If necessary, check other language results; if found, translate only the necessary information and list the corresponding grounding URL.
-""")
+    *   **Handling Missing Information:**
+        *   Only include information that has a corresponding Vertex AI grounding URL
+        *   If no grounding URL is provided for information, omit it completely
+        *   Never use placeholders like 'N/A' or 'Not Found'
+        *   Never fabricate grounding URLs
+    """)
 
 RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
 **Research Depth & Source Prioritization**:
@@ -645,13 +531,13 @@ RESEARCH_DEPTH_INSTRUCTION = textwrap.dedent("""\
     - Press release aggregation sites (unless linking directly to an official release)
     - Outdated market reports (unless historical context is explicitly requested)
     - Competitor websites/reports (except in competitive analysis with extreme caution and strict grounding rules)
-    - Generic news articles unless they report specific, verifiable events from highly reputable sources (e.g., Nikkei, Bloomberg, Reuters, FT, WSJ) AND can be **cross-verified against primary sources** and have grounding URLs.
+    - Generic news articles unless they report specific, verifiable events from highly reputable sources (e.g., Nikkei, Bloomberg, Reuters, FT, WSJ) AND can be **cross-verified against primary sources** and have VertexAI grounding URLs.
 - **Data Verification**: Cross-verify critical figures (e.g., revenue, profit, key KPIs, management names/titles) between sources where possible (e.g., AR summary vs. detailed financials vs. website).
 - **Group Structure Handling**: Clearly identify if data refers to the consolidated parent group (**{company_name}**) or a specific target subsidiary mentioned *in the source*. If the prompt focuses on the parent, report consolidated data unless segment data is explicitly requested and available. If focusing on a subsidiary mentioned in the source, clearly label it. Actively search for subsidiary-specific sections, appendices, or footnotes within parent company reports. Acknowledge (internally for decision-making) potential data limitations for non-publicly listed subsidiaries. **Do not report on subsidiaries unless directly relevant to the parent's structure or segment reporting as per the source [SSX].**
 - **Noting Charts/Figures**: If relevant visual information (org charts, strategy frameworks, process diagrams) is found in sources, note its existence and location (e.g., "An organizational chart is provided on page X of the 2024 Annual Report [SSX]"). Do not attempt to recreate complex visuals textually.
 - **Management Commentary**: Actively incorporate direct management commentary and analysis from these sources to explain trends and rationale.
 - **Recency**: Focus on the most recent 1-2 years for qualitative analysis; use the last 3 full fiscal years for financial trends. Clearly state the reporting period for all data.
-- **Secondary Sources**: Use reputable secondary sources sparingly *only* for context (e.g., credit ratings, widely accepted industry trends) or verification, always with clear attribution **and cross-reference with primary sources and grounding URLs.**
+- **Secondary Sources**: Use reputable secondary sources sparingly *only* for context (e.g., credit ratings, widely accepted industry trends) or verification, always with clear attribution **and cross-reference with primary sources and VertexAI grounding URLs.**
 - **Handling Conflicts**: If conflicting information is found between official sources, prioritize the most recent, definitive source. Note discrepancies with dual citations if significant (e.g., [SSX, SSY]).
 - **Calculation Guidelines**: If metrics are not explicitly reported but must be calculated:
     - Calculate only if all necessary base data (e.g., Net Income, Revenue, Equity, Assets, Debt) is available and verifiable from grounded sources.
@@ -670,26 +556,11 @@ ANALYSIS_SYNTHESIS_INSTRUCTION = textwrap.dedent("""\
 """)
 
 INLINE_CITATION_INSTRUCTION = textwrap.dedent("""\
-**Inline Citation Requirement**:
-- Every factual claim, data point (including figures in tables), direct quote, and specific summary **MUST** include an inline citation in the format `[SSX]`, where X corresponds exactly to the sequential number of the source in the final Sources list.
-- Place the inline citation immediately after the supported statement and **before punctuation** when possible (e.g., "Revenue was ¥100B [SS1].").
-- If a single sentence contains multiple distinct facts from different sources, cite each appropriately (e.g., "Revenue was ¥100B [SS1] and net income was ¥10B [SS2].").
-- If a single source supports multiple facts within a paragraph or table, reuse the same `[SSX]`.
-- Maintain absolute consistency: Always use [SS1], [SS2], etc. - never use variations like [S1], [Source 1], etc.
-- This ensures that each fact is directly verifiable against the corresponding "Supervity Source X" in the final Sources list.
-
-**Examples of proper citations**:
-- "The company reported revenue of $1.2 billion in FY2024 [SS1]."
-- "According to the CEO, 'innovation is our top priority' [SS2]."
-- "The board consists of 12 directors [SS3], including 5 independent members [SS3]."
-- "Market share increased to 15% [SS4], while competitor share declined to 10% [SS5]."
-
-**In tables**:
-| Metric      | FY2024 | FY2025 | Source |
-|-------------|--------|--------|--------|
-| Revenue     | $1.2B  | $1.4B  | [SS1]  |
-| Net Income  | $200M  | $250M  | [SS1]  |
-| Market Share| 15%    | 17%    | [SS2]  |
+**Citations Required:**
+- Every fact needs [SSX] citation where X matches source number
+- Place citation after fact, before punctuation: "Revenue was $1.2B [SS1]."
+- Use [SS1], [SS2], etc. consistently
+- Reuse same [SSX] for multiple facts from one source
 """)
 
 SPECIFICITY_INSTRUCTION = textwrap.dedent("""\
@@ -701,7 +572,7 @@ SPECIFICITY_INSTRUCTION = textwrap.dedent("""\
 """)
 
 AUDIENCE_CONTEXT_REMINDER = textwrap.dedent("""\
-**Audience Relevance**: Keep the target audience (Japanese corporate strategy professionals) in mind. Frame analysis and the 'General Discussion' to highlight strategic implications, competitive positioning, market opportunities/risks, and operational insights relevant for potential partnership, investment, or competitive assessment. Use terminology common in Japanese business contexts where appropriate and natural for the {language}.
+**Audience Relevance**: Keep the target audience (corporate strategy professionals) in mind. Frame analysis and the 'General Discussion' to highlight strategic implications, competitive positioning, market opportunities/risks, and operational insights relevant for potential partnership, investment, or competitive assessment. Use terminology common in business contexts where appropriate and natural for the {language}.
 """)
 
 def get_language_instruction(language: str) -> str:
@@ -710,7 +581,7 @@ def get_language_instruction(language: str) -> str:
 # --- Prompt Generating Functions ---
 
 # Basic Prompt
-def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_basic_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for a comprehensive basic company profile with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -727,6 +598,9 @@ def get_basic_prompt(company_name: str, language: str = "Japanese", ticker: Opti
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
+
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Absolutely DO NOT include information about any other similarly named companies (e.g., entertainment, unrelated industries). Verify the identity of the company for all sourced information.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -740,7 +614,7 @@ Target Audience Context: {formatted_audience_reminder}
 {get_language_instruction(language)}
 
 Research Requirements:
-Conduct in-depth research using {company_name}'s official sources. Perform exhaustive checks across multiple primary sources before omitting any requested information silently. Every factual claim, data point, and summary must include an inline citation in the format [SSX]. Provide specific dates or reporting periods (e.g., "as of 2025-03-31", "for FY2024"). Ensure every claim is grounded by a verifiable Vertex AI grounding URL referenced back in the final Sources list for **{company_name}**. Use the absolute latest available official information.
+Conduct in-depth research using {company_name}'s official sources. Perform exhaustive checks across multiple primary sources before omitting any requested information silently. Every factual claim, data point, and summary must include an inline citation in the format [SSX]. Provide specific dates or reporting periods (e.g., "as of 2025-03-31", "for FY2024"). Ensure every claim is grounded by a verifiable  VertexAI grounding URL referenced back in the final Sources list for **{company_name}**. Use the absolute latest available official information.
 {HANDLING_MISSING_INFO_INSTRUCTION}
 {formatted_research_depth}
 {SPECIFICITY_INSTRUCTION}
@@ -770,7 +644,7 @@ Conduct in-depth research using {company_name}'s official sources. Perform exhau
 ## 3. Business Environment Analysis:
     *   Describe the current market environment by identifying major competitors and market dynamics (include specific names, market share percentages if available and verifiable, and exact data dates as available [SSX]).
     *   Identify and explain key industry trends (e.g., technological shifts, regulatory changes) including specific figures or percentages where possible [SSX]. Note where these trends are discussed in company reports [SSY].
-    *   ***Discuss the strategic implications and opportunities/threats these trends pose for {company_name} from a Japanese corporate perspective [SSX].***
+    *   ***Discuss the strategic implications and opportunities/threats these trends pose for {company_name} from a English corporate perspective [SSX].***
 
 ## 4. Organizational Structure Overview:
     *   Describe the high-level organizational structure as stated in official sources (e.g., "divisional based on Mobility, Safety, and Entertainment sectors [SSX]", "functional", "matrix") and reference the source (e.g., "as shown in the Annual Report 2025, p. XX") [SSX].
@@ -816,7 +690,7 @@ Conduct in-depth research using {company_name}'s official sources. Perform exhau
 ## 8. General Discussion:
     *   Provide a concluding single paragraph (approximately 300-500 words).
     *   **Synthesize** the key findings exclusively from Sections 1-7 about **{company_name}**, explicitly linking analysis (e.g., "The organizational structure described in section 4 [SSX] supports the strategic focus mentioned by the CEO [SSY]...") and ensuring every claim is supported by an inline citation. Incorporate key quantitative points.
-    *   Structure your analysis logically by starting with an overall assessment, then discussing strengths and opportunities, followed by weaknesses and risks, and concluding with an outlook relevant for the Japanese audience. Look for and mention potential DX implications arising from the company's structure or leadership messages [SSX].
+    *   Structure your analysis logically by starting with an overall assessment, then discussing strengths and opportunities, followed by weaknesses and risks, and concluding with an outlook relevant for the English audience. Look for and mention potential DX implications arising from the company's structure or leadership messages [SSX].
     *   **Do not introduce new factual claims** that are not derived from the previous sections about **{company_name}**.
 
 Source and Accuracy Requirements:
@@ -832,7 +706,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Financial Prompt
-def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_financial_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for a detailed financial analysis with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -848,7 +722,7 @@ def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: 
     formatted_audience_reminder = AUDIENCE_CONTEXT_REMINDER.format(language=language)
 
     enhanced_financial_research_instructions = textwrap.dedent(f"""\
-    *   **Mandatory Deep Search & Calculation**: Conduct an exhaustive search within **{company_name}**'s official financial disclosures for the last 3 full fiscal years, including Annual Reports, Financial Statements (Income Statement, Balance Sheet, Cash Flow Statement), **Footnotes**, Supplementary Data Packs (Databases, Tanshin), official filings, and IR materials. Do not rely solely on summary tables; examine detailed statements and notes for definitions and components [SSX]. Cross-verify figures across multiple sources. Verify table data accuracy meticulously. **Crucially, every single financial figure, ratio, or data point presented, whether in text or tables, MUST be directly supported by a verifiable Vertex AI grounding URL provided *for this query* [SSX] related to {context_str}.**
+    *   **Mandatory Deep Search & Calculation**: Conduct an exhaustive search within **{company_name}**'s official financial disclosures for the last 3 full fiscal years, including Annual Reports, Financial Statements (Income Statement, Balance Sheet, Cash Flow Statement), **Footnotes**, Supplementary Data Packs (Databases, Tanshin), official filings, and IR materials. Do not rely solely on summary tables; examine detailed statements and notes for definitions and components [SSX]. Cross-verify figures across multiple sources. Verify table data accuracy meticulously. **Crucially, every single financial figure, ratio, or data point presented, whether in text or tables, MUST be directly supported by a verifiable  VertexAI grounding URL provided *for this query* [SSX] related to {context_str}.**
     *   **Time Period Clarity**: Always use the 3 most recently COMPLETED fiscal years with available data (e.g., FY2023, FY2024, FY2025). Clearly label the specific fiscal years in all tables and text (e.g., "FY2023, FY2024, FY2025" rather than just "last 3 years"). Include end dates where appropriate (e.g., "FY2025 ending March 31, 2026").
     *   **Calculation Obligation & Citation**: For financial metrics such as Margins, ROE, ROA, Debt-to-Equity, and ROIC: if not explicitly stated, calculate them using standard formulas only if all necessary base data is available and verifiable from grounded sources for {company_name}. Clearly state the formula used [SSX]. **When reporting a calculated metric, cite the sources for all underlying base data points used in the calculation** (e.g., "ROE (Calculated: NI [SS1] / Avg Equity [SS2]) [SS1, SS2]").
     *   **Strict Silent Omission Policy**: If a metric cannot be found or reliably calculated from verifiable sources after exhaustive search, omit that specific line item entirely. Do not use placeholders like 'N/A' or state that data is missing.
@@ -875,6 +749,8 @@ def get_financial_prompt(company_name: str, language: str = "Japanese", ticker: 
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Absolutely DO NOT include information about any other similarly named companies. Verify the identity for all financial data sourced.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -883,12 +759,12 @@ Comprehensive Strategic Financial Analysis of {company_name} (Last 3 Fiscal Year
 
 Objective: Deliver a complete, analytically rich, and meticulously sourced financial profile of **{company_name}** using the last three full fiscal years. Combine traditional financial metrics with analysis of profitability, cost structure, cash flow, investments, and contextual factors. Provide deep analysis explaining trends and drivers, requiring meticulous sourcing and in-depth analysis explaining the 'why' behind the numbers. Focus strictly on {context_str}.
 
-Target Audience Context: This analysis is for a **Japanese corporate strategy audience**. Use Japanese terminology when appropriate (e.g., "売上総利益" for Gross Profit) and ensure that all monetary values specify currency (e.g., JPY millions) and reporting period (e.g., "FY2024 ended March 31, 2025") with exact dates where available [SSX]. {formatted_audience_reminder}
+Target Audience Context: This analysis is for a **English corporate strategy audience**. Use English terminology when appropriate (e.g., "売上総利益" for Gross Profit) and ensure that all monetary values specify currency (e.g., JPY millions) and reporting period (e.g., "FY2024 ended March 31, 2025") with exact dates where available [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
 Research Requirements:
-For each section, provide verifiable data with inline citations [SSX] and specific dates or reporting periods after conducting exhaustive research across multiple primary sources (including **footnotes**) for **{company_name}**. **Every single financial figure MUST have a verifiable grounding URL citation [SSX] from this query.** Every claim must be traceable to a final source. Silently omit any data not found. Use **perfect Markdown tables** for financial data presentation, verifying data accuracy against sources. Use '-' for missing data points only if needed for table structure. *Consider adding industry-specific metrics if relevant and reported (see instructions).*
+For each section, provide verifiable data with inline citations [SSX] and specific dates or reporting periods after conducting exhaustive research across multiple primary sources (including **footnotes**) for **{company_name}**. **Every single financial figure MUST have a verifiable VertexAI grounding URL citation [SSX] from this query.** Every claim must be traceable to a final source. Silently omit any data not found. Use **perfect Markdown tables** for financial data presentation, verifying data accuracy against sources. Use '-' for missing data points only if needed for table structure. *Consider adding industry-specific metrics if relevant and reported (see instructions).*
 {HANDLING_MISSING_INFO_INSTRUCTION}
 {formatted_research_depth}
 {SPECIFICITY_INSTRUCTION}
@@ -1007,11 +883,11 @@ For each section, provide verifiable data with inline citations [SSX] and specif
 
 ## General Discussion:
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the findings exclusively from Sections 1-9 regarding **{company_name}**. Explicitly connect the analysis (e.g., "The strong cash flow generation [SSX] supports the investment strategy outlined in Section 7 [SSY], despite the margin pressure noted in Section 3 [SSZ]..."). Explain *why* trends are occurring based on the analysis. Incorporate key quantitative results. Discuss implications for future financial performance and strategic options for {company_name}.
-    *   Structure the discussion logically by starting with an overall assessment of {company_name}'s financial health and performance trends, then discussing profitability drivers, cash flow adequacy, investment effectiveness, and concluding with an outlook (including strengths/weaknesses) tailored to a Japanese audience.
+    *   Structure the discussion logically by starting with an overall assessment of {company_name}'s financial health and performance trends, then discussing profitability drivers, cash flow adequacy, investment effectiveness, and concluding with an outlook (including strengths/weaknesses) tailored to a English audience.
     *   Do not introduce any new factual claims that are not supported by previous sections and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
-*   **Accuracy**: All information must be current and verifiable for **{company_name}**. Specify currency (e.g., JPY millions) and reporting period (e.g., FY2024) for every monetary value. Silently omit unverified data after exhaustive search. Verify table data meticulously. **Every financial figure must have a grounding URL citation [SSX].**
+*   **Accuracy**: All information must be current and verifiable for **{company_name}**. Specify currency (e.g., JPY millions) and reporting period (e.g., FY2024) for every monetary value. Silently omit unverified data after exhaustive search. Verify table data meticulously. **Every financial figure must have a VertexAI grounding URL citation [SSX].**
 *   **Source Specificity**: Every data point (in text, tables) must include an inline citation [SSX] that corresponds to a specific source in the final Sources list. Cite base data for calculations.
 *   **Source Quality**: Rely primarily on official company sources for **{company_name}** (Financial Statements, Footnotes, Tanshin, IR Presentations, Annual Reports). Secondary sources may be used sparingly for context (like ratings) and must be clearly cited, verified, and grounded.
 
@@ -1023,7 +899,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Competitive Landscape Prompt
-def get_competitive_landscape_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_competitive_landscape_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for a detailed competitive analysis with nuanced grounding rules and expanded scope."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1042,25 +918,27 @@ def get_competitive_landscape_prompt(company_name: str, language: str = "Japanes
     **Research & Grounding Strategy for Competitive Analysis**:
 
     1.  **Prioritize {company_name}'s Official Statements**: Use {company_name}'s own reports (Annual Report, IR materials) exhaustively to identify competitors *they* acknowledge [SSX] and their assessment of the market [SSY].
-    2.  **Industry & Competitor Data Grounding**: For specific facts about the industry or competitors (e.g., market size/share, trends, competitor financials/products/strategies), use reliable third-party sources (reputable market research firms, financial news like Nikkei/Bloomberg, competitor's official reports) **only if** grounding URLs for these sources are provided by Vertex AI Search. Cite these using [SSY], [SSZ]. If no grounding URL is provided for an industry or competitor fact after exhaustive search, silently omit that specific data point. Do not invent facts or state unavailability. Ensure competitor data pertains to entities genuinely competing with {context_str}.
+    2.  **Industry & Competitor Data Grounding**: For specific facts about the industry or competitors (e.g., market size/share, trends, competitor financials/products/strategies), use reliable third-party sources (reputable market research firms, financial news like Nikkei/Bloomberg, competitor's official reports) **only if** VertexAI grounding URLs for these sources are provided by  Search. Cite these using [SSY], [SSZ]. If no VertexAI grounding URL is provided for an industry or competitor fact after exhaustive search, silently omit that specific data point. Do not invent facts or state unavailability. Ensure competitor data pertains to entities genuinely competing with {context_str}.
     3.  **Synthesis & Attribution**: When synthesizing competitive positioning or SWOT for {company_name}, clearly attribute claims. If based on {company_name}'s statements, use [SSX]. If based on grounded third-party data about the industry or a competitor, use [SSY], [SSZ]. Avoid unsourced analysis.
     4.  **Silent Omission Rule**: Silently omit any industry or competitor claim that cannot be traced back to either {company_name}'s statements [SSX] or a grounded third-party source [SSY, SSZ] after exhaustive search.
-    5.  **Final Source List Integrity**: The final "Sources" list MUST include only the Vertex AI grounding URLs provided for this query (which may include links to {company_name}'s site or grounded third-party sites). Inline citations [SSX, SSY, SSZ] must match these sources.
+    5.  **Final Source List Integrity**: The final "Sources" list MUST include only the  VertexAI grounding URLs provided for this query (which may include links to {company_name}'s site or grounded third-party sites). Inline citations [SSX, SSY, SSZ] must match these sources.
     6.  **Timeframe Clarity**: For competitor and market data, always specify the exact timeframe (e.g., "As of FY2024" or "Data from Q2 2024") and ensure you're using the most recently available complete data. For trend analysis, specify the period covered (e.g., "Market share trends from 2022-2024 show...").
     7.  **Missing Data Handling**: In tables, use a single hyphen ('-') as a placeholder ONLY when needed for table structure and ONLY when you've confirmed the data is truly unavailable in reliable sources after thorough searching. DO NOT use 'N/A', blank cells, or explanatory text in table cells.
     """)
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str} and its competitive landscape. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
 
 Detailed Competitive Analysis and Strategic Positioning of {company_name}
 
-Objective: To conduct a comprehensive competitive analysis of **{company_name}** including industry overview, competitor identification, analysis of their market presence and strategies, and an assessment of {company_name}'s own competitive positioning, strategy, and detailed capabilities. Conclusions should include a synthesized discussion relevant to a Japanese corporate audience. Focus strictly on {context_str}.
+Objective: To conduct a comprehensive competitive analysis of **{company_name}** including industry overview, competitor identification, analysis of their market presence and strategies, and an assessment of {company_name}'s own competitive positioning, strategy, and detailed capabilities. Conclusions should include a synthesized discussion relevant to a English corporate audience. Focus strictly on {context_str}.
 
-Target Audience Context: This output is for strategic review by a **Japanese company**. Ensure all analysis is supported by explicit inline citations [SSX] for {company_name}'s data/statements and [SSY, SSZ] for grounded industry/competitor data. Clearly attribute synthesized points. {formatted_audience_reminder}
+Target Audience Context: This output is for strategic review by a **English company**. Ensure all analysis is supported by explicit inline citations [SSX] for {company_name}'s data/statements and [SSY, SSZ] for grounded industry/competitor data. Clearly attribute synthesized points. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1134,13 +1012,13 @@ Use **perfect Markdown tables**. Adhere strictly to grounding rules outlined bel
 
 ### 6. General Discussion
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the findings exclusively from Sections 1-5 regarding **{company_name}** and its competitive environment. Clearly link analytical statements using inline citations (e.g., "Given the industry trend towards X [SSY], {company_name}'s investment in Y technology [SSX] positions it well against Competitor A's recent moves [SSZ]..."). Evaluate the overall competitive strength and strategic effectiveness of {company_name}.
-    *   Structure the analysis logically by starting with an overall assessment of the competitive landscape and {company_name}'s place within it, discussing strengths/weaknesses/strategy effectiveness in light of competitors and trends, and concluding with strategic implications and potential threats/opportunities from a Japanese perspective.
+    *   Structure the analysis logically by starting with an overall assessment of the competitive landscape and {company_name}'s place within it, discussing strengths/weaknesses/strategy effectiveness in light of competitors and trends, and concluding with strategic implications and potential threats/opportunities from a English perspective.
     *   Do not introduce new factual claims or unsourced analysis.
 
 Source and Accuracy Requirements:
 *   **Accuracy**: All information must be factual and current. Specify currency, dates, and reporting periods for any figures. Differentiate between {company_name}'s statements and grounded competitor/industry data. Silently omit unverified data after exhaustive search. Verify table data.
-*   **Traceability**: Every claim must include an inline citation ([SSX] for company data, [SSY], [SSZ], etc. for grounded competitor/industry data) corresponding to a grounding URL in the final Sources list.
-*   **Source Quality**: Use primarily {company_name}'s official sources. For competitor/industry data, use *only* information verifiable through provided Vertex AI grounding URLs (which might point to reputable third-party sources or competitor reports).
+*   **Traceability**: Every claim must include an inline citation ([SSX] for company data, [SSY], [SSZ], etc. for grounded competitor/industry data) corresponding to a VertexAI grounding URL in the final Sources list.
+*   **Source Quality**: Use primarily {company_name}'s official sources. For competitor/industry data, use *only* information verifiable through provided  VertexAI grounding URLs (which might point to reputable third-party sources or competitor reports).
 
 {formatted_completion_template}
 {formatted_final_review}
@@ -1150,7 +1028,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Management Strategy Prompt
-def get_management_strategy_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_management_strategy_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing management strategy and mid-term business plan with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1167,6 +1045,8 @@ def get_management_strategy_prompt(company_name: str, language: str = "Japanese"
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1175,7 +1055,7 @@ Comprehensive Analysis of {company_name}'s Management Strategy and Mid-Term Busi
 
 Objective: To conduct an extensive analysis of **{company_name}**'s management strategy and mid-term business plan (MTP) by evaluating strategic pillars, execution effectiveness, progress against targets, and challenges. Focus on explaining *why* strategic choices were made and *how* progress is tracked using specific data with inline citations [SSX]. Focus strictly on {context_str}.
 
-Target Audience Context: This analysis is designed for a **Japanese company** needing deep strategic insights. Present all information with exact dates (e.g., MTP period FY2025-FY2027), reporting periods, financial figures in specified currency, and clear official source attributions [SSX]. {formatted_audience_reminder}
+Target Audience Context: This analysis is designed for a **English company** needing deep strategic insights. Present all information with exact dates (e.g., MTP period FY2025-FY2027), reporting periods, financial figures in specified currency, and clear official source attributions [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1233,7 +1113,7 @@ Conduct in-depth research from official sources for **{company_name}** (IR docum
 
 ## 5. General Discussion:
     *   Provide a single concluding paragraph (300-500 words) that synthesizes the key findings from Sections 1-4 regarding **{company_name}**. Clearly connect each analytical insight with inline citations (e.g., "The strategic focus on DX [SSX] aligns with the MTP targets [SSY], although execution progress shows challenges in margin improvement [SSZ]..."). Explain *why* progress is as reported, based on the analysis. Incorporate key quantitative points.
-    *   Structure the discussion logically by starting with an overall assessment of the strategy and MTP ambition, discussing execution effectiveness and progress against targets, highlighting key challenges and adaptations, and concluding with strategic takeaways and outlook relevant for a Japanese audience.
+    *   Structure the discussion logically by starting with an overall assessment of the strategy and MTP ambition, discussing execution effectiveness and progress against targets, highlighting key challenges and adaptations, and concluding with strategic takeaways and outlook relevant for a English audience.
     *   Do not introduce any new claims that are not derived from the previous sections and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
@@ -1249,7 +1129,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Regulatory Prompt
-def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_regulatory_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing the regulatory environment with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1266,6 +1146,8 @@ def get_regulatory_prompt(company_name: str, language: str = "Japanese", ticker:
 
     prompt = f'''
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1274,7 +1156,7 @@ In-Depth Analysis of the Regulatory Environment for {company_name}
 
 Objective: To analyze the regulatory environment impacting **{company_name}**, including key laws, licensing, supervisory bodies, market impacts, international comparisons, and recent trends, particularly as they relate to its core business and digital activities. Evaluate the company's stated compliance approaches and any enforcement actions with precise dates and references [SSX]. Focus strictly on {context_str}.
 
-Target Audience Context: The output is for a **Japanese company** reviewing regulatory risks for potential partnership, investment, or competitive evaluation. Provide exact law/regulation names, dates, reporting periods, and detailed official source references [SSX]. {formatted_audience_reminder}
+Target Audience Context: The output is for a **English company** reviewing regulatory risks for potential partnership, investment, or competitive evaluation. Provide exact law/regulation names, dates, reporting periods, and detailed official source references [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1328,13 +1210,13 @@ Conduct deep research on **{company_name}**'s regulatory environment using offic
 
 ## 8. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the findings from Sections 1-7 regarding **{company_name}**. Clearly articulate the primary regulatory pressures {company_name} faces and assess its apparent compliance posture and risk management effectiveness, using inline citations [SSX, SSY].
-    *   Structure the analysis by summarizing the key regulatory domains (general, industry-specific, international, emerging trends), evaluating the company's stated compliance strengths and any reported weaknesses or incidents, and concluding with an overall evaluation of regulatory risk tailored to a Japanese audience (considering factors like operational impact, reputational risk, potential fines, impact on strategy).
+    *   Structure the analysis by summarizing the key regulatory domains (general, industry-specific, international, emerging trends), evaluating the company's stated compliance strengths and any reported weaknesses or incidents, and concluding with an overall evaluation of regulatory risk tailored to a English audience (considering factors like operational impact, reputational risk, potential fines, impact on strategy).
     *   Do not introduce new factual claims beyond the provided analysis and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
 *   **Accuracy**: All regulatory details must be current and verifiable for **{company_name}**. Include specific law names, dates, certification details, and currency information for fines. Silently omit unverified data after exhaustive search.
 *   **Traceability**: Each statement must have an inline citation [SSX] corresponding to the final Sources list.
-*   **Source Quality**: Use official company disclosures for **{company_name}** (Annual Reports, Sustainability/ESG Reports, Governance sections, specific policy documents if available), government regulatory websites, and reputable news sources only if grounded by Vertex AI Search results.
+*   **Source Quality**: Use official company disclosures for **{company_name}** (Annual Reports, Sustainability/ESG Reports, Governance sections, specific policy documents if available), government regulatory websites, and reputable news sources only if grounded by  Search results.
 
 {formatted_completion_template}
 {formatted_final_review}
@@ -1344,7 +1226,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Crisis Prompt
-def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_crisis_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing digital crisis management and business continuity with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1361,6 +1243,8 @@ def get_crisis_prompt(company_name: str, language: str = "Japanese", ticker: Opt
 
     prompt = f'''
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1369,7 +1253,7 @@ In-Depth Analysis of {company_name}'s Digital Crisis Management and Business Con
 
 Objective: To analyze how **{company_name}** prepares for, manages, and responds to digital crises (e.g., cyberattacks, system outages, data breaches) and its business continuity plans (BCP) related to digital operations. Include details on past incidents with exact dates, impacts (including financial figures with specified currency if reported), company responses, and potential DX-based mitigation strategies linked to identified risks. Use inline citations [SSX]. Focus strictly on {context_str}.
 
-Target Audience Context: This output is for a **Japanese company** assessing digital risk resilience for strategic decision-making. Provide precise data (with dates and reporting periods) and official source references [SSX]. {formatted_audience_reminder}
+Target Audience Context: This output is for a **English company** assessing digital risk resilience for strategic decision-making. Provide precise data (with dates and reporting periods) and official source references [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1400,13 +1284,13 @@ Conduct thorough research on **{company_name}**'s crisis management and business
 
 ## 2. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) synthesizing the findings from Section 1 regarding **{company_name}**. Assess its apparent resilience to digital disruptions based on its history of incidents, responses, stated preparedness, and the potential application of DX for mitigation. Use inline citations explicitly (e.g., "The company's response to the 2024 incident [SSX] suggests an established protocol, though the stated RTO [SSY] raises questions... The identified risk of X [SSZ] could potentially be addressed by DX initiatives focused on Y...").
-    *   Structure the discussion logically, starting with a summary of the incident history and response effectiveness, followed by an evaluation of the stated preparedness measures (IRP, BCP) and risk awareness, incorporating the potential role of DX, and concluding with an assessment of overall digital resilience for {company_name}, identifying potential strengths and weaknesses relevant to a Japanese audience considering partnership or investment.
+    *   Structure the discussion logically, starting with a summary of the incident history and response effectiveness, followed by an evaluation of the stated preparedness measures (IRP, BCP) and risk awareness, incorporating the potential role of DX, and concluding with an assessment of overall digital resilience for {company_name}, identifying potential strengths and weaknesses relevant to a English audience considering partnership or investment.
     *   Do not introduce any new claims not supported by the previous analysis and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
 *   **Accuracy**: All incident details, dates, financial impacts (with currency), and response measures must be current and verifiable against grounded sources for **{company_name}**. Silently omit unverified data after exhaustive search. Proposed DX solutions should be logical extensions of identified risks/tech capabilities.
 *   **Traceability**: Every factual claim must include an inline citation [SSX] linked to a source in the final Sources list.
-*   **Source Quality**: Prioritize official company disclosures for **{company_name}** (press releases on incidents, security sections in reports). Use reputable news or cybersecurity firm reports *only* if grounded by Vertex AI Search results.
+*   **Source Quality**: Prioritize official company disclosures for **{company_name}** (press releases on incidents, security sections in reports). Use reputable news or cybersecurity firm reports *only* if grounded by  Search results.
 
 {formatted_completion_template}
 {formatted_final_review}
@@ -1416,7 +1300,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Digital Transformation Prompt
-def get_digital_transformation_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_digital_transformation_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing DX strategy and execution with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1433,6 +1317,8 @@ def get_digital_transformation_prompt(company_name: str, language: str = "Japane
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1441,7 +1327,7 @@ In-Depth Analysis of {company_name}'s Digital Transformation (DX) Strategy and E
 
 Objective: To analyze **{company_name}**'s Digital Transformation (DX) strategy, including its vision, the rationale behind it, key priorities, major investments, and specific case studies of digital initiatives. Evaluate also how DX integrates compliance and crisis management considerations. Use precise data (e.g., specific investment amounts with currency, dates) supported by inline citations [SSX]. Focus strictly on {context_str}.
 
-Target Audience Context: The analysis is prepared for a **Japanese company** assessing {company_name}'s digital maturity and strategy. Therefore, it must be detailed, with exact figures (specifying currency and reporting periods) and official source references [SSX]. {formatted_audience_reminder}
+Target Audience Context: The analysis is prepared for a **English company** assessing {company_name}'s digital maturity and strategy. Therefore, it must be detailed, with exact figures (specifying currency and reporting periods) and official source references [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1487,13 +1373,13 @@ Conduct detailed research on **{company_name}**'s DX journey using official sour
 
 ## 5. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the findings from Sections 1-4 regarding **{company_name}**. Assess the coherence, ambition, rationale, and execution progress of {company_name}'s DX strategy. Explicitly link data points and examples using inline citations (e.g., "The strategic rationale focusing on customer experience [SSX] drives the significant investment in CRM [SSY], and early results from case studies [SSZ] suggest potential, though scaling remains a challenge...").
-    *   Structure your discussion logically—start with an overview of the DX strategy's clarity and focus, evaluate the investment commitment and implementation effectiveness based on examples, integrate the handling of compliance and risk, and conclude with an assessment of the DX maturity and outlook relevant for a Japanese audience.
+    *   Structure your discussion logically—start with an overview of the DX strategy's clarity and focus, evaluate the investment commitment and implementation effectiveness based on examples, integrate the handling of compliance and risk, and conclude with an assessment of the DX maturity and outlook relevant for a English audience.
     *   Do not introduce new facts outside of the presented analysis and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
 *   **Accuracy**: All data must be current and verified for **{company_name}**. Specify currency and reporting period for every monetary value, investment figure, and outcome metric. Silently omit unverified data after exhaustive search. Verify table data meticulously.
 *   **Traceability**: Every fact must include an inline citation [SSX] that corresponds to a source in the final Sources list.
-*   **Source Quality**: Prioritize official company disclosures for **{company_name}** (Annual Reports, IR presentations, specific DX reports/webpages) and reputable research *only if grounded* by Vertex AI Search results.
+*   **Source Quality**: Prioritize official company disclosures for **{company_name}** (Annual Reports, IR presentations, specific DX reports/webpages) and reputable research *only if grounded* by  Search results.
 
 {formatted_completion_template}
 {formatted_final_review}
@@ -1503,7 +1389,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Business Structure Prompt
-def get_business_structure_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_business_structure_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing business structure, geographic footprint, ownership, and leadership linkages with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1538,6 +1424,8 @@ def get_business_structure_prompt(company_name: str, language: str = "Japanese",
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1546,7 +1434,7 @@ In-Depth Analysis of {company_name}'s Business Structure, Geographic Footprint, 
 
 Objective: To analytically review **{company_name}**'s operational structure (by business and geography, using company-reported metrics), ownership composition, and how these elements link to leadership's stated strategic vision. Include specific figures (with currency and fiscal year), and reference official sources (e.g., Annual Report, IR materials, Filings) with inline citations [SSX]. Focus strictly on {context_str}.
 
-Target Audience Context: This output is intended for a **Japanese company** performing market analysis and partnership evaluation. Present all claims with exact dates, detailed quantitative figures, and clear source references [SSX]. {formatted_audience_reminder}
+Target Audience Context: This output is intended for a **English company** performing market analysis and partnership evaluation. Present all claims with exact dates, detailed quantitative figures, and clear source references [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1639,7 +1527,7 @@ Perform a critical analysis using official sources for **{company_name}** (Annua
         * How the ownership structure may influence business decisions or governance at {company_name} [SSZ].
         * Key opportunities or challenges presented by {company_name}'s current segment mix and geographic footprint [SSW].
         * Potential future developments or necessary structural changes based on {company_name}'s current structure, trends, and leadership comments [SSX, SSY].
-    *   Structure your discussion logically, starting with a summary of business and geographic drivers, assessing ownership influence and leadership vision alignment, and concluding with strategic implications for a Japanese audience.
+    *   Structure your discussion logically, starting with a summary of business and geographic drivers, assessing ownership influence and leadership vision alignment, and concluding with strategic implications for a English audience.
     *   Do not introduce new unsupported claims about **{company_name}**.
 
 Source and Accuracy Requirements:
@@ -1655,7 +1543,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Vision Prompt
-def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_vision_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for analyzing corporate vision and purpose with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1672,6 +1560,8 @@ def get_vision_prompt(company_name: str, language: str = "Japanese", ticker: Opt
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1680,7 +1570,7 @@ Analysis of {company_name}'s Strategic Vision and Purpose
 
 Objective: To provide a detailed analysis of **{company_name}**'s officially stated vision, mission, or purpose. Break down its core components (pillars, strategic themes), explain how progress is measured using specific KPIs mentioned in relation to the vision, and assess stakeholder focus. Include exact quotes, dates, and reference all information using inline citations [SSX]. Use the latest available sources. Focus strictly on {context_str}.
 
-Target Audience Context: This analysis is for a **Japanese company** assessing strategic alignment and long-term direction. Present precise information with clear source references and detailed explanations (e.g., "as per the Integrated Report 2025, p.12, [SSX]") {formatted_audience_reminder}
+Target Audience Context: This analysis is for a **English company** assessing strategic alignment and long-term direction. Present precise information with clear source references and detailed explanations (e.g., "as per the Integrated Report 2025, p.12, [SSX]") {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1710,7 +1600,7 @@ Conduct in-depth research using official sources for **{company_name}** such as 
 
 ## 2. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the information in Section 1 regarding **{company_name}**. Evaluate the clarity, ambition, distinctiveness, and internal coherence of the stated vision and its components. Use inline citations to link back to specific elements (e.g., "The vision's focus on sustainability [SSX] is clearly measured by the CO2 reduction KPI [SSY], demonstrating commitment... However, the link between the 'Innovation' pillar and specific KPIs appears less defined [SSZ] based on available public disclosures..."). Incorporate key quantitative points if available.
-    *   Structure the analysis logically—start with an overall summary of the vision's core message, discuss the strength and measurability of its components and stakeholder considerations, and finally evaluate its potential effectiveness in guiding strategy and its relevance for a Japanese audience assessing long-term direction.
+    *   Structure the analysis logically—start with an overall summary of the vision's core message, discuss the strength and measurability of its components and stakeholder considerations, and finally evaluate its potential effectiveness in guiding strategy and its relevance for a English audience assessing long-term direction.
     *   Do not introduce new claims beyond the synthesized findings from Section 1 and citations about **{company_name}**.
 
 Source and Accuracy Requirements:
@@ -1726,7 +1616,7 @@ Source and Accuracy Requirements:
     return prompt
 
 # Management Message Prompt
-def get_management_message_prompt(company_name: str, language: str = "Japanese", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
+def get_management_message_prompt(company_name: str, language: str = "English", ticker: Optional[str] = None, industry: Optional[str] = None, context_company_name: str = "NESIC"):
     """Generates a prompt for collecting strategic quotes from leadership with enhanced entity focus."""
     context_str = f"**{company_name}**"
     if ticker: context_str += f" (Ticker: {ticker})"
@@ -1743,6 +1633,8 @@ def get_management_message_prompt(company_name: str, language: str = "Japanese",
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This entire request is *exclusively* about the specific entity: {context_str}. Verify the identity of the company and the speaker for all sourced information. Do not include unrelated entities.
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1751,7 +1643,7 @@ Detailed Leadership Strategic Outlook (Verbatim Quotes) for {company_name}
 
 Objective: To compile a collection of direct, verbatim strategic quotes from **{company_name}**'s senior leadership (primarily CEO and Chairman, but also including other key C-suite executives like CFO, CSO, CTO, COO, or relevant BU Heads if their verifiable quotes offer significant strategic insight) that illustrate the company's strategic direction, key priorities, future plans, market outlook, and responses to major challenges. Each quote must be accurately transcribed with an immediate source citation in parentheses and an inline citation [SSX] confirming its origin. Focus strictly on leadership of {context_str}.
 
-Target Audience Context: This information is for a **Japanese company** that requires a clear understanding of leadership's strategic communication and tone. Ensure that every quote includes the speaker's name and title, the exact source document/event, date, and page/timestamp if available [SSX]. {formatted_audience_reminder}
+Target Audience Context: This information is for a **English company** that requires a clear understanding of leadership's strategic communication and tone. Ensure that every quote includes the speaker's name and title, the exact source document/event, date, and page/timestamp if available [SSX]. {formatted_audience_reminder}
 
 {get_language_instruction(language)}
 
@@ -1812,7 +1704,7 @@ Conduct focused research on recent (last 1-2 years) official communications from
 
 ## 2. General Discussion:
     *   Provide a concluding single paragraph (300-500 words) that synthesizes the key strategic messages, priorities, and tone conveyed *exclusively* through the collected, verifiable quotes from **{company_name}**'s leadership in Section 1. Identify recurring themes, potential shifts in focus, or areas where different executives provide complementary perspectives. Use inline citations to link back to specific quotes or speakers (e.g., "The CEO's emphasis on digital innovation [SSX, SSZ] aligns with the CTO's focus on AI investment [SST], suggesting a unified direction... However, the Chairman's cautionary note on governance [SSV] highlights potential execution risks..."). Consider potential DX opportunities or challenges implied by the leadership messages [SSX].
-    *   Structure your analysis logically: summarize the dominant strategic narrative from leadership based on the quotes, highlight any nuances or potential tensions between messages, and conclude with an assessment of the clarity and consistency of the strategic communication relevant for a Japanese audience interpreting leadership signals.
+    *   Structure your analysis logically: summarize the dominant strategic narrative from leadership based on the quotes, highlight any nuances or potential tensions between messages, and conclude with an assessment of the clarity and consistency of the strategic communication relevant for a English audience interpreting leadership signals.
     *   Do not introduce any new factual claims or analysis beyond what is directly supported by the quotes provided and cited about **{company_name}**.
 
 Source and Accuracy Requirements:
@@ -1887,13 +1779,15 @@ def get_strategy_research_prompt(
        * Each source citation [SSX] must correspond to a valid entry in the final Sources list.
     
     4. **Silent Omission Implementation**:
-       * After thorough research, silently omit data points about {company_name} that cannot be verified with grounding URLs.
+       * After thorough research, silently omit data points about {company_name} that cannot be verified with VertexAI grounding URLs.
        * Never explain data is "missing" or "not available" - simply exclude the unverifiable point.
        * For key sections where no verifiable data exists, retain the headings but provide minimalist content based only on verified information.
     """)
 
     prompt = f"""
 {NO_THINKING_INSTRUCTION}
+
+{GROUNDING_INSTRUCTION}
 **CRITICAL FOCUS**: This Strategy Research is *exclusively* about the specific Target Company: {context_str}. Verify the identity of the Target Company for all sourced information [SSX]. Do not include unrelated entities. This plan leverages public data about the Target Company ({company_name}) to inform a strategic account plan for the Analyzing Company ({context_company_name}).
 
 {PLACEHOLDER_REPLACEMENT_INSTRUCTION}
@@ -1909,7 +1803,7 @@ Target Audience Context: This plan is for internal use by the Analyzing Company'
 {formatted_analyzing_company_capabilities} # Instructs LLM on mandatory, in-depth research & application of {context_company_name} capabilities
 
 Research Requirements (Target Company - {company_name}):
-*   Use only data about the **Target Company ({company_name})** validated through Gemini grounding URLs [SSX]. Perform exhaustive checks across multiple primary sources (latest reports, filings, presentations, official website) before silently omitting unverified data about {company_name}.
+*   Use only data about the **Target Company ({company_name})** validated through Gemini VertexAI grounding URLs [SSX]. Perform exhaustive checks across multiple primary sources (latest reports, filings, presentations, official website) before silently omitting unverified data about {company_name}.
 *   Every fact, figure, stated initiative, or challenge pertaining to the **Target Company ({company_name})** must be backed by an inline citation [SSX]. Silently omit any unverified points about {company_name}.
 *   Use **perfect Markdown tables** for presenting data related to {company_name}. Verify data accuracy against sources. Use '-' for missing data points only if structurally necessary and confirmed absent in source for {company_name}.
 *   Focus on extracting actionable intelligence about **{company_name}** that informs specific, tailored strategic engagement possibilities for **{context_company_name}**. Analyze the *implications* of the data deeply.
@@ -1932,7 +1826,7 @@ Research Requirements (Target Company - {company_name}):
     *   **Key Executives Relevant to Strategy/IT/Operations**: (List names/titles if verifiable, e.g., CIO, CTO, CDO, CFO, COO, Head of Digital, Key BU Leaders) [SSY]
     *   **Approximate Employee Range/Number**: [Most recent figure with date] [SSX]
     *   **Core Business Summary**: Summarize main operations, key products/services, primary customer segments, and main markets based on latest official reports for {company_name} [SSX].
-    *   *(Note: Avoid speculation on {context_company_name}-{company_name} relationship history unless verifiable via grounding URLs [SSZ]. Focus analysis on {company_name}.)*
+    *   *(Note: Avoid speculation on {context_company_name}-{company_name} relationship history unless verifiable via VertexAI grounding URLs [SSZ]. Focus analysis on {company_name}.)*
 
 ## 2. Target Company Revenue Analysis & Growth Drivers ({company_name})
     *   Present Revenue for {company_name} for the last 3 full fiscal years (FY2023, FY2024, FY2025) in a **perfectly formatted Markdown table**, specifying currency (e.g., JPY Millions) [SSX]. Calculate YoY Growth Rate (%). Verify data. Use '-' for missing data points only if needed for table structure.

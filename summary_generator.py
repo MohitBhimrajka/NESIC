@@ -121,8 +121,15 @@ Unlike generic summaries, your task is to identify what is **truly critical and 
     *   Each highlight should be a concise, powerful bullet point, acting as a strategic headline.
     *   These are the "must-knows" that even the busiest executive would instantly grasp as central to {company_name}'s current narrative.
     *   They should be distinct and not just rephrased findings from the longer list.
+    
+2.  **Key Talking Points for Research Team (Exactly 5 Points):**
+    *   Create **exactly 5 strategically curated talking points** designed specifically for the {company_name} research team or stakeholders who commissioned this report.
+    *   These should be actionable insights, recommendations, or strategic guidance that directly address research objectives.
+    *   Each talking point should provide clear direction for decision-making, next steps, or strategic considerations.
+    *   Focus on practical implications and recommendations that the research team can act upon or present to leadership.
+    *   These should synthesize key insights into digestible, actionable guidance rather than just restating facts.
 
-2.  **Comprehensive Key Findings (Exactly 15 Points):**
+3.  **Comprehensive Key Findings (Exactly 15 Points):**
     *   Present **exactly 15 distinct, data-driven, and high-impact insights** from the report.
     *   Each point must:
         *   Be specific and quantifiable (include exact figures, dates, percentages, or clear metrics) where data exists.
@@ -130,18 +137,18 @@ Unlike generic summaries, your task is to identify what is **truly critical and 
         *   Be written in concise, actionable language.
         *   **CRITICAL:** REMOVE ALL CITATIONS (e.g., `[SSX]`, `[1]`, `(Author, Year)`) from the summary, including within tables. The summary must be self-contained.
 
-3.  **Critical Tables (Optional, but prioritized if highly relevant):**
+4.  **Critical Tables (Optional, but prioritized if highly relevant):**
     *   Include **up to 2** *most critical* tables that concisely summarize vital quantitative data (e.g., key financial performance, market share breakdown, critical operational metrics, or strategic targets) for {company_name}.
     *   Ensure tables are properly formatted in Markdown and are directly integrated into the flow of information where most relevant to the findings.
     *   Ensure table content is self-explanatory within the summary context and **free of citations**.
 
-4.  **Language and Length:**
+5.  **Language and Length:**
     *   Write the entire summary in **{language}** language.
-    *   Limit the summary to approximately **1000-1500 words** to ensure conciseness while maintaining comprehensive depth.
+    *   Limit the summary to approximately **1200-1800 words** to ensure conciseness while maintaining comprehensive depth (increased range to accommodate the additional talking points section).
 
-5.  **Formatting and Structure:**
-    *   Format the summary as clean Markdown with clear headings and **unique IDs for all headings** to avoid duplicate anchors (e.g., `{{{{#executive-summary-main}}}}`, `{{{{#company-overview}}}}`).
-    *   Ensure a logical flow from a high-level overview to strategic highlights, then detailed findings, and finally, comprehensive implications.
+6.  **Formatting and Structure:**
+    *   Format the summary as clean Markdown with clear headings. **DO NOT USE any template tags, IDs, or anchor references** (e.g., avoid template tags like company-overview-main, executive-summary-main, etc.).
+    *   Ensure a logical flow from a high-level overview to strategic highlights, key findings, talking points, and finally comprehensive implications.
 
 ## Output Structure
 Your Executive Summary should strictly adhere to this Markdown structure:
@@ -165,6 +172,14 @@ company: "{company_name}"
 *   **[Concise Strategic Insight 4]:** (Brief elaboration.)
 *   **[Concise Strategic Insight 5]:** (Brief elaboration.)
 
+### Key Talking Points for Research Team
+(5 strategically curated talking points designed specifically for the research team or stakeholders who commissioned this report. These should be actionable insights or recommendations that directly address their research objectives and provide clear direction for decision-making.)
+1.  **[Strategic Action/Recommendation 1]:** (Specific, actionable insight with clear implications for the research team's objectives and decision-making process.)
+2.  **[Strategic Action/Recommendation 2]:** (Second actionable point, focused on practical next steps or strategic considerations.)
+3.  **[Strategic Action/Recommendation 3]:** (Third strategic talking point that addresses key concerns or opportunities identified in the research.)
+4.  **[Strategic Action/Recommendation 4]:** (Fourth point providing tactical or strategic guidance based on the company analysis.)
+5.  **[Strategic Action/Recommendation 5]:** (Fifth talking point that synthesizes critical insights into actionable recommendations.)
+
 ### Key Findings
 (Exactly 15 distinct, specific, and impactful findings. Each point should have a bold title and detail the finding with data and its implication for {company_name}. Integrate critical tables here if relevant.)
 1.  **[Concise Title for Finding 1]:** (First critical finding, backed by specific data/figures, and its direct implication or significance for {company_name}'s performance or strategy.)
@@ -176,16 +191,16 @@ company: "{company_name}"
 
 ## Common Pitfalls to Avoid (Self-Correction Guidelines)
 1.  **DO NOT** retain *any* citations (e.g., `[SSX]`, `[1]`, `(Source, Year)`) anywhere in the summary, including tables. They must be completely removed.
-2.  **DO NOT** simply copy and paste large blocks of text from the original report. Your task is sophisticated synthesis, rephrasing, and analysis.
-3.  **DO NOT** produce a generic summary. Every point must be profoundly specific, data-driven, and uniquely tailored to the specific dynamics, strengths, and weaknesses of {company_name}.
-4.  **DO NOT** introduce new facts or data not explicitly found in the provided report content.
-5.  **DO NOT** apply a fixed hierarchy of importance to different report sections; dynamically assess what is most critical for {company_name} based on the report's actual content.
-6.  **DO NOT** use qualifying phrases like "according to the report," "the document states," or "it is mentioned that." Present information directly as fact.
-7.  **DO NOT** use placeholder text or hypothetical examples.
-8.  **DO NOT** generate statistical approximations when precise figures are available in the report.
-9.  **DO NOT** use filler phrases like "It is important to note that" or "It is worth mentioning." Be direct and concise.
-10. **DO NOT** repeat the same information or implication across multiple key points (both in Highlights and Key Findings). Each point must offer a distinct, valuable insight.
-11. **DO NOT** use duplicate heading IDs. Each ID must be unique within the summary.
+2.  **DO NOT** use any template tags, IDs, or anchor references in headings (e.g., avoid template tags like company-overview-main, executive-summary-main, key-findings-main, etc.). All headings should be clean Markdown without any templating syntax.
+3.  **DO NOT** simply copy and paste large blocks of text from the original report. Your task is sophisticated synthesis, rephrasing, and analysis.
+4.  **DO NOT** produce a generic summary. Every point must be profoundly specific, data-driven, and uniquely tailored to the specific dynamics, strengths, and weaknesses of {company_name}.
+5.  **DO NOT** introduce new facts or data not explicitly found in the provided report content.
+6.  **DO NOT** apply a fixed hierarchy of importance to different report sections; dynamically assess what is most critical for {company_name} based on the report's actual content.
+7.  **DO NOT** use qualifying phrases like "according to the report," "the document states," or "it is mentioned that." Present information directly as fact.
+8.  **DO NOT** use placeholder text or hypothetical examples.
+9.  **DO NOT** generate statistical approximations when precise figures are available in the report.
+10. **DO NOT** use filler phrases like "It is important to note that" or "It is worth mentioning." Be direct and concise.
+11. **DO NOT** repeat the same information or implication across multiple key points (both in Highlights and Key Findings). Each point must offer a distinct, valuable insight.
 12. **DO NOT** neglect to explain the *significance* or *implication* of data points. Data without context or impact is not valuable.
 13. **DO NOT** make assumptions about {company_name} that are not supported by the report's content.
 
@@ -268,22 +283,32 @@ generated_at: "{datetime.now().isoformat()}"
                 logger.info("Added default metadata to executive summary")
             
             # 8. Verify the output has expected structure
-            # This validation logic is from the original script and remains unchanged.
-            # It might not fully align with the new, more detailed prompt structure, but per your request,
-            # it's kept as is.
             with open(output_path, 'r', encoding='utf-8') as f:
                 content_for_validation = f.read() # Used a new variable to avoid confusion with 'content' above
                 
                 # Check for key headings
-                if not re.search(r'^##\s+Executive\s+Summary', content_for_validation, re.MULTILINE):
-                    logger.warning("Executive summary may be missing proper heading structure")
+                if not re.search(r'^###\s+Company\s+Overview', content_for_validation, re.MULTILINE):
+                    logger.warning("Executive summary may be missing proper Company Overview heading")
+                
+                if not re.search(r'^###\s+Executive\s+Summary\s+Highlights', content_for_validation, re.MULTILINE):
+                    logger.warning("Executive summary may be missing proper Executive Summary Highlights heading")
+                
+                if not re.search(r'^###\s+Key\s+Findings', content_for_validation, re.MULTILINE):
+                    logger.warning("Executive summary may be missing proper Key Findings heading")
+                
+                if not re.search(r'^###\s+Key\s+Talking\s+Points', content_for_validation, re.MULTILINE):
+                    logger.warning("Executive summary may be missing proper Key Talking Points heading")
+                
+                # Check for template tags that should have been removed
+                template_tag_count = len(re.findall(r'\{\{[^}]*#[^}]*\}\}', content_for_validation))
+                if template_tag_count > 0:
+                    logger.warning(f"Executive summary still contains {template_tag_count} template tags that should have been removed.")
                 
                 # Check for tables if they're mentioned in the content
                 if "table" in content_for_validation.lower() and not re.search(r'\|[\s-]+\|', content_for_validation):
                     logger.warning("Executive summary mentions tables but may be missing proper table formatting")
                     
                 # Check if citations were properly removed
-                # Updated regex slightly for common citation patterns to be more robust.
                 citation_count = len(re.findall(r'\[SS\d+\]|\[\d+\]|\(\s*\w+[^)]*,\s*\d{4}\s*\)|{{\s*\[\s*\w*\s*\]\s*}}', content_for_validation))
                 if citation_count > 0:
                     logger.warning(f"Executive summary still contains {citation_count} citations that should have been removed.")

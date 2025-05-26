@@ -5,7 +5,7 @@ User authentication and information collection for the ARA Streamlit app.
 import streamlit as st
 import re
 from email_validator import validate_email, EmailNotValidError
-from analytics_logger import generate_session_id, log_user_session_start
+from analytics_logger_apps_script import generate_session_id, log_user_session_start
 
 
 def is_valid_business_email(email: str) -> tuple[bool, str]:
@@ -57,7 +57,7 @@ def show_user_info_form() -> bool:
         bool: True if user info was successfully collected, False otherwise
     """
     
-    # Simple professional styling matching main app
+    # Clean, professional authentication styling
     st.markdown("""
     <style>
     /* Brand Colors */
@@ -70,269 +70,210 @@ def show_user_info_form() -> bool:
     }
     
     .stApp {
-        background-color: #f7f7f7;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     }
     
-    /* Header styling matching main app */
-    .auth-header {
-        background-color: var(--primary-navy);
-        padding: 1.5rem 1rem;
-        border-radius: 10px;
-        text-align: center;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Hide sidebar completely */
+    section[data-testid="stSidebar"] {
+        display: none !important;
     }
     
+    /* Authentication container */
+    .auth-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    
+    .auth-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 11, 55, 0.12);
+        padding: 2rem;
+        width: 100%;
+        max-width: 100%;
+        border: 1px solid rgba(133, 194, 11, 0.1);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    
+    .auth-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-lime) 0%, var(--secondary-light-lime) 100%);
+    }
+    
+    /* Logo and header */
     .auth-logo {
         max-width: 60px;
         max-height: 60px;
-        margin: 0 auto 0.5rem auto;
+        margin: 0 auto 1rem auto;
         display: block;
     }
     
     .auth-title {
-        color: white !important;
         font-size: 2rem;
         font-weight: 700;
-        margin: 0.5rem 0;
+        color: var(--primary-navy);
+        text-align: center;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
     }
     
     .auth-subtitle {
-        color: var(--primary-lime);
         font-size: 1rem;
-        font-weight: 400;
-        margin: 0;
+        color: var(--secondary-dark-gray);
+        text-align: center;
+        margin-bottom: 1.5rem;
+        line-height: 1.3;
     }
     
-    /* Compact form container styling */
-    .main-form-container {
-        background: white;
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e1e5e9;
-        margin: 1rem auto;
-        max-width: 700px;
+    .auth-highlight {
+        color: var(--primary-lime);
+        font-weight: 600;
     }
     
-    .form-header {
+    /* Form styling */
+    .auth-form-header {
         text-align: center;
         margin-bottom: 1.5rem;
     }
     
-    .form-main-title {
-        font-size: 1.6rem;
+    .auth-form-title {
+        font-size: 1.3rem;
         font-weight: 600;
         color: var(--primary-navy);
         margin-bottom: 0.3rem;
     }
     
-    .form-subtitle {
-        font-size: 0.95rem;
-        color: var(--secondary-dark-gray);
-        margin: 0;
-        line-height: 1.4;
-    }
-    
-    /* Benefits section below form styling */
-    .benefits-section-bottom {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 3rem 2rem;
-        border-radius: 15px;
-        margin-top: 2rem;
-        border: 1px solid #e1e5e9;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    }
-    
-    .benefits-header {
-        text-align: center;
-        margin-bottom: 2.5rem;
-    }
-    
-    .benefits-main-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--primary-navy);
-        margin-bottom: 0.5rem;
-    }
-    
-    .benefits-description {
-        font-size: 1.1rem;
-        color: var(--secondary-dark-gray);
-        margin: 0;
-        font-style: italic;
-    }
-    
-    .benefits-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .benefit-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-left: 4px solid var(--primary-lime);
-    }
-    
-    .benefit-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-    }
-    
-    .benefit-card-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        text-align: center;
-    }
-    
-    .benefit-card-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--primary-navy);
-        margin-bottom: 0.5rem;
-        text-align: center;
-    }
-    
-    .benefit-card-desc {
+    .auth-form-subtitle {
         font-size: 0.9rem;
         color: var(--secondary-dark-gray);
-        line-height: 1.5;
-        text-align: center;
         margin: 0;
     }
     
-    .trust-section {
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        flex-wrap: wrap;
+    /* Input styling */
+    .stTextInput > div > div > input {
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+        background: #f8fafc !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: var(--primary-lime) !important;
+        background: white !important;
+        box-shadow: 0 0 0 3px rgba(133, 194, 11, 0.1) !important;
+    }
+    
+    .stTextInput > div > div > input:hover {
+        border-color: var(--primary-navy) !important;
+        background: white !important;
+    }
+    
+    .stTextInput > label {
+        font-weight: 600 !important;
+        color: var(--primary-navy) !important;
+        font-size: 1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background: linear-gradient(135deg, var(--primary-lime) 0%, var(--secondary-light-lime) 100%) !important;
+        color: var(--primary-navy) !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 1rem 2rem !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        width: 100% !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(133, 194, 11, 0.3) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(135deg, var(--secondary-light-lime) 0%, var(--primary-lime) 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(133, 194, 11, 0.4) !important;
+    }
+    
+    .stButton > button:active {
+        transform: translateY(0) !important;
+    }
+    
+    /* Email hint */
+    .email-hint {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+        color: #92400e;
+        text-align: center;
+    }
+    
+    /* Simple benefits */
+    .auth-benefits {
         margin-top: 1.5rem;
         padding-top: 1.5rem;
-        border-top: 1px solid #cbd5e1;
+        border-top: 1px solid #e2e8f0;
     }
     
-    .trust-badge {
+    .benefit-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        background: white;
-        padding: 0.8rem 1.2rem;
-        border-radius: 25px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--primary-navy);
-    }
-    
-    .trust-badge-icon {
-        font-size: 1.1rem;
-    }
-    
-    .privacy-notice {
-        background: #f0f2f6;
-        border: 1px solid var(--secondary-light-gray);
-        border-radius: 6px;
-        padding: 0.8rem;
-        margin: 1rem 0;
-        font-size: 0.8rem;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
         color: var(--secondary-dark-gray);
     }
     
-    .email-hint {
-        background: #fff3cd;
-        border: 1px solid #f59e0b;
-        border-radius: 6px;
-        padding: 0.6rem;
-        margin-top: 0.5rem;
-        font-size: 0.8rem;
-        color: #92400e;
+    .benefit-icon {
+        font-size: 1.2rem;
+        color: var(--primary-lime);
     }
     
-    /* Compact professional button styling */
-    .stButton>button {
-        width: 100%;
-        padding: 0.7rem 1.5rem;
-        background: linear-gradient(135deg, var(--primary-lime) 0%, var(--secondary-light-lime) 100%);
-        color: var(--primary-navy);
-        font-weight: 600;
-        font-size: 0.95rem;
-        border: none;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        letter-spacing: 0.5px;
-        margin-top: 0.5rem;
-        box-shadow: 0 3px 12px rgba(133, 194, 11, 0.25);
-    }
-
-    .stButton>button:hover {
-        background: linear-gradient(135deg, var(--secondary-light-lime) 0%, var(--primary-lime) 100%);
-        box-shadow: 0 4px 15px rgba(133, 194, 11, 0.35);
-        transform: translateY(-2px);
-    }
-
-    .stButton>button:active {
-        transform: translateY(0px);
-        box-shadow: 0 2px 8px rgba(133, 194, 11, 0.3);
-    }
-    
-    /* Enhanced input fields styling */
-    div[data-baseweb="input"] {
-        border-radius: 10px;
-        border: 2px solid #cbd5e1;
-        background: #f8fafc;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    div[data-baseweb="input"]:focus-within {
-        border-color: var(--primary-lime);
-        background: white;
-        box-shadow: 0 0 0 3px rgba(133, 194, 11, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-
-    div[data-baseweb="input"]:hover {
-        border-color: var(--primary-navy);
-        background: white;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-        transform: translateY(-1px);
-    }
-
-    /* Input labels styling */
-    .stTextInput > label {
-        font-weight: 600;
-        color: var(--primary-navy);
-        font-size: 0.95rem;
-    }
-    
-    /* Placeholder text enhancement */
-    input::placeholder {
-        color: #94a3b8;
-        font-style: italic;
-        font-weight: 400;
-    }
-    
-    /* Ultra compact spacing */
+    /* Compact spacing */
     .main .block-container {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        max-width: 900px;
+        padding: 0.5rem 1rem !important;
+        max-width: 100% !important;
     }
     
-    /* Reduce gaps between sections */
-    .element-container {
-        margin-bottom: 0.5rem;
+    /* Error styling */
+    .stAlert {
+        border-radius: 8px !important;
+        margin: 0.5rem 0 !important;
+    }
+
+    /* Loading state */
+    .auth-loading {
+        opacity: 0.7;
+        pointer-events: none;
     }
     
-    /* Benefit card hover effects */
-    .benefit-card-hover:hover {
-        transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    /* Success message */
+    .auth-success {
+        background: #f0f9ff;
+        border: 1px solid #0ea5e9;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        margin: 1rem 0;
+        color: #0369a1;
+        font-weight: 600;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -344,7 +285,7 @@ def show_user_info_form() -> bool:
     @st.cache_data
     def get_auth_logo_base64():
         try:
-            logo_path = Path("templates/assets/supervity_light_logo.png")
+            logo_path = Path("templates/assets/supervity_logo.png")
             if not logo_path.exists():
                 return ""
             with open(logo_path, "rb") as img_file:
@@ -352,197 +293,107 @@ def show_user_info_form() -> bool:
         except Exception:
             return ""
     
-    # Header section with logo
+    # Single clean authentication card
     logo_base64 = get_auth_logo_base64()
     logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="auth-logo">' if logo_base64 else ""
     
     st.markdown(f"""
-    <div class="auth-header">
+    <div class="auth-card">
         {logo_html}
-        <h1 class="auth-title">Account Research AI Agent</h1>
-        <p class="auth-subtitle">Your intelligent research assistant for comprehensive company analysis</p>
+        <h1 class="auth-title">Account Research <span class="auth-highlight">AI Agent</span></h1>
+        <p class="auth-subtitle">Professional company intelligence reports in minutes</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Compact form container
-    with st.form("user_info_form", clear_on_submit=False):
-        st.markdown("""
-        <div class="main-form-container">
-            <div class="form-header">
-                <h2 class="form-main-title">Get Started</h2>
-                <p class="form-subtitle">Enter your details to access the platform and generate professional company research reports</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Single row: All fields side by side for compact layout
-        form_col1, form_col2, form_col3 = st.columns([2, 2, 3], gap="medium")
-        
-        with form_col1:
-            user_name = st.text_input(
-                "👤 Full Name",
-                placeholder="Your Name",
-                label_visibility="collapsed"
-            )
-        
-        with form_col2:
-            user_company = st.text_input(
-                "🏢 Company",
-                placeholder="Your Company",
-                label_visibility="collapsed"
-            )
-        
-        with form_col3:
-            business_email = st.text_input(
-                "📧 Business Email",
-                placeholder="your.namee@yourcompany.com",
-                label_visibility="collapsed"
-            )
-        
-        # Email validation hint (compact)
-        st.markdown("""
-        <div style="text-align: center; font-size: 0.8rem; color: #92400e; background: #fff3cd; 
-                    border-radius: 6px; padding: 0.4rem; margin: 0.5rem 0;">
-            📝 Use your business email address (no Gmail, Yahoo, etc.)
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Submit button (centered, compact)
-        col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 2])
-        with col_btn2:
-            submit_button = st.form_submit_button(
-                "🚪 Enter Platform",
-                use_container_width=True,
-                type="primary"
-            )
-        
-        st.markdown('</div>', unsafe_allow_html=True)  # Close form container
-    
-    # Benefits section below the form
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Benefits header
+    # Form header section
     st.markdown("""
-    <div style="text-align: center; margin-bottom: 1.5rem;">
-        <h3 style="font-size: 1.5rem; font-weight: 600; color: #000b37; margin-bottom: 0.3rem;">What Awaits You Inside</h3>
-        <p style="font-size: 0.95rem; color: #474747; margin: 0; font-style: italic;">Unlock powerful insights and comprehensive analysis tools</p>
+    <div class="auth-form-header">
+        <h2 class="auth-form-title">Access Platform</h2>
+        <p class="auth-form-subtitle">Start generating comprehensive business research reports</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Benefits cards using Streamlit columns
-    col1, col2, col3, col4 = st.columns(4, gap="medium")
-    
-    with col1:
+    # Clean form without cluttered layout
+    with st.form("user_info_form", clear_on_submit=False):
+        # Full name
+        user_name = st.text_input(
+            "Full Name",
+            placeholder="Enter your full name",
+            help="Required for professional report attribution"
+        )
+        
+        # Business email (most important field)
+        business_email = st.text_input(
+            "Business Email",
+            placeholder="yourname@company.com",
+            help="Must be a business email address (no Gmail, Yahoo, etc.)"
+        )
+        
+        # Company name (optional but helpful)
+        user_company = st.text_input(
+            "Company Name (Optional)",
+            placeholder="Your company or organization",
+            help="Helps personalize your reports"
+        )
+        
+        # Clear email hint
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 1.2rem; 
-                    border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
-                    border: 1px solid #e2e8f0; text-align: center; height: 180px;
-                    transition: transform 0.3s ease, box-shadow 0.3s ease;
-                    position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; 
-                        background: linear-gradient(90deg, #85c20b 0%, #c3fb54 100%);"></div>
-            <div style="font-size: 2.2rem; margin-bottom: 0.8rem; 
-                        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));">🏢</div>
-            <h4 style="font-size: 1.05rem; font-weight: 700; color: #000b37; margin-bottom: 0.5rem;">Professional Reports</h4>
-            <p style="font-size: 0.85rem; color: #475569; line-height: 1.4; margin: 0;">Comprehensive company analysis with detailed insights</p>
+        <div class="email-hint">
+            💡 <strong>Business Email Required:</strong> Use your company email address. Personal emails (Gmail, Yahoo, Hotmail, etc.) are not accepted.
         </div>
         """, unsafe_allow_html=True)
+        
+        # Single, prominent submit button
+        submit_button = st.form_submit_button(
+            "Access Platform",
+            use_container_width=True,
+            type="primary"
+        )
     
-    with col2:
-        st.markdown("""
-        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 1.2rem; 
-                    border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
-                    border: 1px solid #e2e8f0; text-align: center; height: 180px;
-                    transition: transform 0.3s ease, box-shadow 0.3s ease;
-                    position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; 
-                        background: linear-gradient(90deg, #31b8e1 0%, #8289ec 100%);"></div>
-            <div style="font-size: 2.2rem; margin-bottom: 0.8rem; 
-                        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));">🌍</div>
-            <h4 style="font-size: 1.05rem; font-weight: 700; color: #000b37; margin-bottom: 0.5rem;">Multi-Language</h4>
-            <p style="font-size: 0.85rem; color: #475569; line-height: 1.4; margin: 0;">Generate reports in 10+ languages for global reach</p>
+    # Simple benefits below form
+    st.markdown("""
+    <div class="auth-benefits">
+        <div class="benefit-item">
+            <span class="benefit-icon">🏢</span>
+            <span>Professional company analysis reports</span>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 1.2rem; 
-                    border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
-                    border: 1px solid #e2e8f0; text-align: center; height: 180px;
-                    transition: transform 0.3s ease, box-shadow 0.3s ease;
-                    position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; 
-                        background: linear-gradient(90deg, #ff9a5a 0%, #ff94a8 100%);"></div>
-            <div style="font-size: 2.2rem; margin-bottom: 0.8rem; 
-                        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));">📊</div>
-            <h4 style="font-size: 1.05rem; font-weight: 700; color: #000b37; margin-bottom: 0.5rem;">Deep Analysis</h4>
-            <p style="font-size: 0.85rem; color: #475569; line-height: 1.4; margin: 0;">Financials, strategy, management, and competitive insights</p>
+        <div class="benefit-item">
+            <span class="benefit-icon">⚡</span>
+            <span>Generate comprehensive reports in 15-20 minutes</span>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown("""
-        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); padding: 1.2rem; 
-                    border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
-                    border: 1px solid #e2e8f0; text-align: center; height: 180px;
-                    transition: transform 0.3s ease, box-shadow 0.3s ease;
-                    position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; 
-                        background: linear-gradient(90deg, #b181ff 0%, #8289ec 100%);"></div>
-            <div style="font-size: 2.2rem; margin-bottom: 0.8rem; 
-                        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));">⚡</div>
-            <h4 style="font-size: 1.05rem; font-weight: 700; color: #000b37; margin-bottom: 0.5rem;">AI-Powered Speed</h4>
-            <p style="font-size: 0.85rem; color: #475569; line-height: 1.4; margin: 0;">Generate detailed reports in minutes, not hours</p>
+        <div class="benefit-item">
+            <span class="benefit-icon">🌍</span>
+            <span>Multi-language support for global reach</span>
         </div>
-        """, unsafe_allow_html=True)
-    
-    # Trust badges
-    trust_col1, trust_col2, trust_col3 = st.columns([1, 2, 1])
-    with trust_col2:
-        st.markdown("""
-        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
-            <div style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.5rem 1rem; 
-                        border-radius: 20px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); font-weight: 500; color: #000b37; font-size: 0.85rem;">
-                <span style="font-size: 1rem;">🔒</span> Enterprise Security
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.5rem 1rem; 
-                        border-radius: 20px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); font-weight: 500; color: #000b37; font-size: 0.85rem;">
-                <span style="font-size: 1rem;">✨</span> Instant Access
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.4rem; background: white; padding: 0.5rem 1rem; 
-                        border-radius: 20px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); font-weight: 500; color: #000b37; font-size: 0.85rem;">
-                <span style="font-size: 1rem;">🎯</span> Precision Analytics
-            </div>
+        <div class="benefit-item">
+            <span class="benefit-icon">📊</span>
+            <span>Financial, strategic, and competitive insights</span>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
     
     # Handle form submission
     if submit_button:
-        # Create an error container at the top for immediate visibility
-        error_container = st.container()
-        
-        # Validation
+        # Validation with clean error display
         errors = []
         
         if not user_name or not user_name.strip():
-            errors.append("❌ Full name is required")
+            errors.append("Please enter your full name")
         
         if not business_email or not business_email.strip():
-            errors.append("❌ Business email is required")
+            errors.append("Please enter your business email address")
         else:
             email_valid, email_error = is_valid_business_email(business_email.strip())
             if not email_valid:
-                errors.append(f"❌ {email_error}")
+                errors.append(email_error)
         
-        # Display errors prominently at the top if any
+        # Display errors if any
         if errors:
-            with error_container:
-                st.markdown("### ⚠️ Please fix the following issues:")
-                for error in errors:
-                    st.error(error)
-                st.markdown("---")
+            for error in errors:
+                st.error(f"⚠️ {error}")
             return False
         
-        # If validation passes, store user info
+        # If validation passes, store user info and show success
         session_id = generate_session_id()
         
         # Store in session state
@@ -560,7 +411,16 @@ def show_user_info_form() -> bool:
             session_id=session_id
         )
         
-        st.success("✅ Information saved! Redirecting to the app...")
+        # Show professional success message
+        st.markdown("""
+        <div class="auth-success">
+            🎉 <strong>Welcome aboard!</strong> Redirecting you to the platform...
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Smooth transition without jarring rerun
+        import time
+        time.sleep(1)  # Brief pause for better UX
         st.rerun()
         
     return False
