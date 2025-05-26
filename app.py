@@ -20,12 +20,21 @@ from summary_generator import create_executive_summary
 from config import SECTION_ORDER, AVAILABLE_LANGUAGES, PROMPT_FUNCTIONS, LLM_MODEL, LLM_TEMPERATURE
 from google import genai
 
+# Import analytics and user authentication modules
+from analytics_logger import log_report_generation, show_analytics_status
+from user_auth import (
+    check_user_authentication,
+    show_user_info_form,
+    get_user_info,
+    show_user_info_header
+)
+
 # Configure page settings
 st.set_page_config(
     page_title="Account Research AI Agent",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Load logo
@@ -486,17 +495,9 @@ def apply_custom_css():
         box-shadow: 0 0 0 1px var(--primary-lime);
     }
 
-    /* Sidebar styling */
-    .css-1cypcdb, .css-163ttbj {
-        background-color: var(--primary-navy);
-    }
-
-    section[data-testid="stSidebar"] .css-1vq4p4l {
-        padding-top: 5rem;
-    }
-
-    section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 {
-        color: var(--primary-white);
+    /* Hide sidebar */
+    section[data-testid="stSidebar"] {
+        display: none;
     }
 
     /* Success message */
@@ -587,7 +588,12 @@ def metric_card(icon, label, value):
     </div>
     """
 
-# App title and styling
+# Check user authentication first - if not authenticated, show only the auth form
+if not check_user_authentication():
+    show_user_info_form()
+    st.stop()
+
+# User is authenticated - show the main app
 apply_custom_css()
 
 # Header with Supervity branding
@@ -597,6 +603,9 @@ st.markdown(logo_html, unsafe_allow_html=True)
 st.markdown('<h1 class="main-header">Account Research AI Agent</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Your intelligent research assistant for comprehensive company analysis</p>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
+
+# Show analytics status (now hidden for clean UI)
+show_analytics_status()
 
 # Main form
 st.markdown('<div class="form-container">', unsafe_allow_html=True)
@@ -685,6 +694,12 @@ if generate_button:
         else:
             selected_prompts = PROMPT_FUNCTIONS
 
+        # Get user info for analytics
+        user_info = get_user_info()
+        
+        # Record start time for analytics
+        generation_start_time = time.time()
+        
         # Generate report
         with st.spinner(f"Generating report for {target_company} in {language}..."):
             result = generate_report_with_progress(
@@ -699,8 +714,34 @@ if generate_button:
             
             token_stats, pdf_path, base_dir = result
 
+        # Calculate generation time
+        generation_time = time.time() - generation_start_time
+        
         # Check if generation was successful
         pdf_exists = (isinstance(pdf_path, Path) and pdf_path.exists()) if pdf_path else False
+        report_success = token_stats is not None and pdf_exists
+        
+        # Log the report generation to analytics
+        try:
+            sections_generated = [section_id for section_id, _ in selected_prompts] if selected_prompts else []
+            token_count = token_stats['summary']['total_tokens'] if token_stats and 'summary' in token_stats else 0
+            
+            log_report_generation(
+                user_name=user_info['name'],
+                business_email=user_info['email'],
+                target_company=target_company,
+                language=language,
+                sections_generated=sections_generated,
+                report_success=report_success,
+                session_id=user_info['session_id'],
+                generation_time=generation_time,
+                token_count=token_count,
+                context_company=context_company
+            )
+        except Exception as e:
+            # Don't let analytics logging failure break the app
+            st.warning(f"Analytics logging failed: {str(e)}")
+            pass
         
         if token_stats and pdf_exists:
             # Display success message and stats
@@ -815,6 +856,9 @@ if generate_button:
                 )
         else: # Case where generate_report_with_progress returned None for stats/path
             st.error("Failed to generate report. Please check the logs for details.")
+
+# Show user info at bottom
+show_user_info_header()
 
 # Add footer
 st.markdown('<div class="footer">', unsafe_allow_html=True)
