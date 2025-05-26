@@ -565,21 +565,11 @@ SOURCE_LINK_FORMAT_INSTRUCTION = textwrap.dedent("""\
 
 All source links **MUST** follow this exact pattern:
 - Source text: Must be formatted as "Supervity Source X" (where X is the sequential number)
-- URL format: Must begin with "https://vertexaisearch.cloud.google.com/grounding-api-redirect/"
-- Every link must use proper Markdown syntax: [Supervity Source X](https://vertexaisearch.cloud.google.com/grounding-api-redirect/...)
-
-**CORRECT** (do this):
-* [Supervity Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123) - Information about revenue [SS1]
-* [Supervity Source 2](https://vertexaisearch.cloud.google.com/grounding-api-redirect/def456) - Details on business segments [SS2]
-
-**INCORRECT** (never do these):
-* [Source 1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123) - Missing "Supervity" prefix
-* [Supervity Source 1](vertexaisearch.cloud.google.com/grounding-api-redirect/abc123) - Missing https:// prefix
-* [Supervity Source 1](https://example.com/report) - Not using the correct VertexAI URL pattern
-* Supervity Source 1: https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123 - Not using proper link syntax
+- URL format: Must begin with "https://vertexaisearch.cloud.google.com/"
+- Every link must use proper Markdown syntax: [Supervity Source X](https://vertexaisearch.cloud.google.com/)
 
 **VERIFICATION STEP**: Before finalizing, verify all source links:
-1. Confirm every source uses exact pattern: [Supervity Source X](https://vertexaisearch.cloud.google.com/grounding-api-redirect/...)
+1. Confirm every source uses exact pattern: [Supervity Source X](https://vertexaisearch.cloud.google.com/...)
 2. Ensure sources are numbered sequentially (1, 2, 3...) without gaps
 3. Check every source has a brief annotation after the link
 4. Verify each inline citation [SSX] in the text corresponds to a source in the list
@@ -593,9 +583,9 @@ Conclude the *entire* research output, following the 'General Discussion' paragr
 
 **1. Content - MANDATORY URL Type & Source Integrity**:
 -   **Exclusive Source Type**: This list **MUST** contain *only* the specific grounding redirect URLs provided directly by the **Vertex AI Search system** *for this specific query*. These URLs represent the direct grounding evidence used.
--   **URL Pattern**: These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...`. **Only URLs matching this exact pattern are permitted.**
+-   **URL Pattern**: These URLs typically follow the pattern: `https://vertexaisearch.cloud.google.com/`. **Only URLs matching this exact pattern are permitted.**
 -   **Strict Filtering**: Absolutely **DO NOT** include any other type of URL (direct website links, news, PDFs, etc.).
--   **CRITICAL - No Hallucination**: **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/...` URLs** from previous queries or general knowledge if they were not explicitly provided by the Vertex AI Search system as grounding results *for this specific query and for the specific fact being cited*. If a fact is identified by the system and a corresponding `vertexaisearch.cloud.google.com/grounding-api-redirect/...` URL is provided by the system as its grounding source, **that specific URL must be used for that fact's citation, even if its direct click-through behavior for a human user is imperfect (e.g., leads to a document's main page instead of a specific anchor).** Your responsibility is to report the grounding URL the system associated with the fact. If a fact is identified but lacks a corresponding system-provided grounding URL after exhaustive search by the system, it must be silently omitted from the report body AND no source should be listed for it.
+-   **CRITICAL - No Hallucination**: **Under NO circumstances should you invent, fabricate, infer, or reuse `vertexaisearch.cloud.google.com/ URLs** from previous queries or general knowledge if they were not explicitly provided by the Vertex AI Search system as grounding results *for this specific query and for the specific fact being cited*. If a fact is identified by the system and a corresponding `vertexaisearch.cloud.google.com/grounding-api-redirect/...` URL is provided by the system as its grounding source, **that specific URL must be used for that fact's citation, even if its direct click-through behavior for a human user is imperfect (e.g., leads to a document's main page instead of a specific anchor).** Your responsibility is to report the grounding URL the system associated with the fact. If a fact is identified but lacks a corresponding system-provided grounding URL after exhaustive search by the system, it must be silently omitted from the report body AND no source should be listed for it.
 -   **Purpose**: This list verifies the specific grounding data provided by Vertex AI Search for this request—not external knowledge or other URLs.
 
 **2. Formatting and Annotation (CRITICAL FOR PARSING)**:

@@ -154,10 +154,10 @@ type: "executive_summary"
 company: "{company_name}"
 ---
 
-### Company Overview {{{{company-overview}}}}
+### Company Overview
 (A concise yet impactful overview of {company_name}, highlighting its core industry, market position, key business areas, and defining characteristics as derived from the report. Focus on what makes this company stand out and its current strategic posture. Aim for 3-5 sentences.)
 
-### Executive Summary Highlights {{{{exec-summary-highlights}}}}
+### Executive Summary Highlights
 (5 bullet points, each representing an absolute top-level, strategic takeaway or major headline for {company_name}. These are the "executive elevator pitch" points.)
 *   **[Concise Strategic Insight 1]:** (Brief elaboration on why this is a top highlight, linking to its impact.)
 *   **[Concise Strategic Insight 2]:** (Brief elaboration.)
@@ -165,13 +165,13 @@ company: "{company_name}"
 *   **[Concise Strategic Insight 4]:** (Brief elaboration.)
 *   **[Concise Strategic Insight 5]:** (Brief elaboration.)
 
-### Key Findings {{{{key-findings}}}}
+### Key Findings
 (Exactly 15 distinct, specific, and impactful findings. Each point should have a bold title and detail the finding with data and its implication for {company_name}. Integrate critical tables here if relevant.)
 1.  **[Concise Title for Finding 1]:** (First critical finding, backed by specific data/figures, and its direct implication or significance for {company_name}'s performance or strategy.)
 2.  **[Concise Title for Finding 2]:** (Second critical finding, with specific data and its implication. Avoid repetition across points.)
 ... (Continue for a total of exactly 15 distinct and high-impact key findings.)
 
-### Strategic Implications & Outlook {{{{strategic-implications}}}}
+### Strategic Implications & Outlook
 (A comprehensive analytical synthesis of the overarching strategic implications derived from *all* the preceding findings and highlights. Discuss the key opportunities, critical challenges, and forward-looking strategic directives for {company_name}. This section should provide a high-level strategic roadmap based on the report's insights, explaining how the findings inform future decisions and the company's trajectory. This should be a robust paragraph or two, demonstrating advanced analytical depth.)
 
 ## Common Pitfalls to Avoid (Self-Correction Guidelines)
